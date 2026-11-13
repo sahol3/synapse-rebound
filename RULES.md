@@ -32,7 +32,7 @@ If you change a tool, a path or a version, update this file and add a ledger lin
 | gdtoolkit (gdformat, gdlint) | 4.5.0 | `gdformat`, `gdlint` on PATH (installed with `uv tool`) |
 | LibreSprite (pixel art) | v1.3 portable | `tools\libresprite\libresprite.exe` |
 | Tiled (tilemaps) | 1.12.2 portable | `tools\tiled\...\tiled.exe` (MSI admin-extract; `scripts\install_tiled_portable.ps1`) |
-| Inkscape (vector, UI) | 1.4.4 portable | `tools\inkscape\...\bin\inkscape.com` (CLI) / `inkscape.exe` (GUI); `scripts\install_inkscape_portable.ps1` |
+| Inkscape (vector, UI) | 1.4.4, NOT YET INSTALLED (C: full, see LEDGER open item 5) | after install: `tools\inkscape\...\bin\inkscape.com` (CLI) / `inkscape.exe` (GUI); `scripts\install_inkscape_portable.ps1` |
 | Audacity | 3.7.7 | Start menu |
 | FFmpeg | 9.0.2 | `ffmpeg` on PATH |
 | Node | 25.9.0 | `node`, `npm`, `npx` (newer than LTS; do not install NodeJS.LTS on top) |
