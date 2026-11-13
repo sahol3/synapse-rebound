@@ -4,7 +4,7 @@
       "command": "node",
       "args": ["D:/CLAUDE-CODE/haven-dhaka/tools/godot-mcp/build/index.js"],
       "env": {
-        "GODOT_PATH": "C:/Users/Sahol/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.7.2-stable_win64_console.exe",
+        "GODOT_PATH": "D:/CLAUDE-CODE/haven-dhaka/tools/godot/Godot_v4.7.2-stable_win64_console.exe",
         "DEBUG": "false"
       }
     },
@@ -17,11 +17,18 @@
     },
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem@2.3.0", "D:/CLAUDE-CODE/haven-dhaka"]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem@2.3.0", "D:/CLAUDE-CODE/haven-dhaka"],
+      "env": {
+        "npm_config_cache": "D:/CLAUDE-CODE/haven-dhaka/tools/_npmcache"
+      }
     },
     "git": {
-      "command": "uvx",
-      "args": ["mcp-server-git", "--repository", "D:/CLAUDE-CODE/haven-dhaka"]
+      "command": "D:/CLAUDE-CODE/haven-dhaka/tools/pyenv/Scripts/mcp-server-git.exe",
+      "args": ["--repository", "D:/CLAUDE-CODE/haven-dhaka"],
+      "env": {
+        "PYTHONPATH": "",
+        "PYTHONNOUSERSITE": "1"
+      }
     }
   }
 }

@@ -13,7 +13,7 @@ If you change a tool, a path or a version, update this file and add a ledger lin
 | `assets/raw/` | Downloaded packs before import (itch.io, Kenney, OpenGameArt) | no |
 | `assets/licenses/` | One `.txt` per third-party asset pack: source URL, author, license, date | yes |
 | `vn/` | Ren'Py project, if the visual-novel track starts (create with the Ren'Py launcher) | yes |
-| `tools/` | Local tool installs: godot-mcp, ee0pdt-godot-mcp, butler, libresprite, renpy, `bin/` shims | no |
+| `tools/` | Every tool install: godot (self-contained), godot-mcp, ee0pdt-godot-mcp, butler, renpy, libresprite, tiled, itch-app, pyenv, `bin/` shims, `_uvcache`/`_npmcache` | no |
 | `refs/` | Offline references: `godot-docs/` (4.7 branch, .rst only), `gdquest-gdscript-guidelines.md` | docs no, guide yes |
 | `exports/` | Build output for itch.io (`web/`, `windows/`) | no |
 | `scripts/` | Install scripts, `mcp_probe.mjs`, `verify_toolchain.ps1` | yes |
@@ -24,12 +24,13 @@ If you change a tool, a path or a version, update this file and add a ledger lin
 | Tool | Version | How to call it |
 |---|---|---|
 | Godot (standard, GDScript, no .NET) | 4.7.2.stable.official.ed1daf0bf | `tools\bin\godot.cmd` (console) · `tools\bin\godot-editor.cmd` (GUI) |
-| Godot exe (real path) | 4.7.2 | `C:\Users\Sahol\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64_console.exe` |
-| Godot export templates | 4.7.2.stable (35 files) | `tools\export_templates\4.7.2.stable\` on D:, referenced by path in `game/export_presets.cfg`; `%APPDATA%\Godot\export_templates` is a junction to it |
+| Godot exe (real path) | 4.7.2, self-contained (`._sc_`) | `tools\godot\Godot_v4.7.2-stable_win64_console.exe` / `Godot_v4.7.2-stable_win64.exe`. Editor settings, caches and templates live in `tools\godot\editor_data\`, never in AppData |
+| Godot export templates | 4.7.2.stable (35 files) | `tools\godot\editor_data\export_templates\4.7.2.stable\`, referenced by absolute path in `game/export_presets.cfg` |
 | Ren'Py SDK | 8.5.3.26051504 | `tools\renpy\renpy.exe` (launcher) · lint: `tools\renpy\renpy.exe <project> lint <report.txt>` |
 | itch.io butler | v15.32.0 | `tools\bin\butler.exe` |
-| itch.io desktop app | 26.22.0 | Start menu "itch" |
-| gdtoolkit (gdformat, gdlint) | 4.5.0 | `gdformat`, `gdlint` on PATH (installed with `uv tool`) |
+| itch.io desktop app | 26.22.0 | Files on D: in `tools\itch-app\local` and `tools\itch-app\roaming`; `%LOCALAPPDATA%\itch` and `%APPDATA%\itch` are junctions to them. Start-menu and desktop shortcuts point at `tools\itch-app\local\itch-setup.exe` |
+| gdtoolkit (gdformat, gdlint) | 4.5.0 | `tools\bin\gdlint.cmd`, `tools\bin\gdformat.cmd` (venv `tools\pyenv`; the shims clear `PYTHONPATH`) |
+| Project Python venv | 3.13 base | `tools\pyenv` holds gdtoolkit + mcp-server-git. Install into it with `UV_CACHE_DIR=tools\_uvcache` so nothing lands in the C: uv cache |
 | LibreSprite (pixel art) | v1.3 portable | `tools\libresprite\libresprite.exe` |
 | Tiled (tilemaps) | 1.12.2 portable | `tools\tiled\...\tiled.exe` (MSI admin-extract; `scripts\install_tiled_portable.ps1`) |
 | Inkscape (vector, UI) | 1.4.4, NOT YET INSTALLED (C: full, see LEDGER open item 5) | after install: `tools\inkscape\...\bin\inkscape.com` (CLI) / `inkscape.exe` (GUI); `scripts\install_inkscape_portable.ps1` |
@@ -40,7 +41,9 @@ If you change a tool, a path or a version, update this file and add a ledger lin
 | Git | 2.53 | `git` |
 | Python | 3.13 | `py` (bare `python` is the Store stub) |
 
-Re-install from scratch: `scripts\install_winget.ps1`, then `scripts\install_export_templates.sh`, then rebuild the MCP servers (section 3).
+Everything for this project lives on D:. Only Audacity, FFmpeg, Node, Git, uv and Python (all present before this project) sit on C:.
+Never install this project's tools with winget or an MSI into C:. Use portable builds or admin extracts into `tools\`.
+`scripts\install_winget.ps1` is kept only as a record of the first attempt; do not re-run it.
 Check everything in one go: `powershell -ExecutionPolicy Bypass -File scripts\verify_toolchain.ps1`.
 
 ## 3. MCP servers (`.mcp.json` in this folder)
@@ -49,12 +52,12 @@ Check everything in one go: `powershell -ExecutionPolicy Bypass -File scripts\ve
 |---|---|---|---|
 | `godot` | `tools/godot-mcp` (Coding-Solo, commit 1209744, built `npm run build`) | Launch editor, run project, read debug output, create scenes, add nodes, load sprites, UID updates | `GODOT_PATH` (set in `.mcp.json`) |
 | `godot-editor` | `tools/ee0pdt-godot-mcp/server` (ee0pdt, commit b7d08eb, built `npm run build`) | Live editor control: create/delete nodes, edit properties, scripts, scenes, run editor scripts | The editor open on `game/` with the "Godot MCP" plugin enabled; WebSocket `ws://localhost:9080` |
-| `filesystem` | `@modelcontextprotocol/server-filesystem@2.3.0` via npx | File access scoped to this folder | none |
-| `git` | `mcp-server-git` via uvx | Git operations on this repo | none |
+| `filesystem` | `@modelcontextprotocol/server-filesystem@2.3.0` via npx | File access scoped to this folder | npm cache pinned to `tools\_npmcache` |
+| `git` | `tools\pyenv\Scripts\mcp-server-git.exe` | Git operations on this repo | `PYTHONPATH` cleared in `.mcp.json` (the machine-wide value `D:\Stuff_not_dl\Packages` breaks its imports) |
 
-Both Godot servers were probed on 2026-11-13: `godot` returned `get_godot_version` = 4.7.2, and `godot-editor`
-returned `get_project_info` for Haven Dhaka with a headless editor running. Re-probe with
-`node scripts/mcp_probe.mjs <server.js> <tool> '{}'`.
+Probed on 2026-11-13 after the move to D:: `godot` returned `get_godot_version` = 4.7.2, `godot-editor` returned
+`get_project_info` for Haven Dhaka with a headless editor running, and `git` returned `git_status` for this repo.
+Re-probe with `node scripts/mcp_probe.mjs <server.js|server.exe> <tool> '<json args>'` (`PROBE_ARGS` env passes server arguments).
 
 Rules for MCP use:
 - Scene and node changes go through `godot-editor` (or the `godot` scene tools) when the editor is running. Hand-editing
@@ -151,15 +154,21 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 
 ## 10. Known quirks
 
-- C: is full (0 GB free on 2026-11-13). Nothing large goes on C:. Downloads, templates, builds and caches stay under this folder on D:.
-- Agent shells cannot read through the `%APPDATA%\Godot\export_templates` junction (sandbox error "mount point ... not attached").
-  Godot itself does not need it, because the presets use absolute D: paths.
+- C: is nearly full (0 GB free on 2026-11-13, about 2.7 GB after this project's files moved to D:). Nothing from this project goes on C:.
+  Downloads, templates, builds, venvs and caches stay under this folder on D:.
+- Processes started from Claude's tools cannot read or launch through C:→D: junctions ("mount point ... not attached"),
+  even with the sandbox off. Always call tools by their D: path, never through the itch junctions.
+- Running the game (not the editor) still creates empty `%APPDATA%\Godot\app_userdata\Haven Dhaka` folders, because self-contained
+  mode covers only the editor. File logging is off, so they stay empty until the game writes `user://` saves.
+- The machine-wide `PYTHONPATH=D:\Stuff_not_dl\Packages` shadows packages in every venv. Clear it for any Python tool in this project.
 
 - The Bash tool sandbox blocks loopback, so the `godot-editor` WebSocket (`localhost:9080`) is reachable only from PowerShell or the MCP client.
 - `godot.cmd` is the console build: use it for `--headless`, exports and CI. The GUI build gives no stdout.
 - winget has no LibreSprite package; it is the portable GitHub build in `tools\libresprite`.
 - Tiled and Inkscape are admin-extracted MSIs on D:, not installed. A normal MSI install fails while C: is full (Inkscape: 1603)
   or stalls on an elevation prompt (Tiled). `msiexec /a` exits 1618 while another installer session holds the lock; the scripts retry.
-- winget's Ren'Py is 8.3.7 (old). The project uses `tools\renpy` 8.5.3; ignore any other copy.
+- The winget copies of Godot, Ren'Py 8.3.7 and uv were uninstalled on 2026-11-13. `tools\` holds the only copies this project uses.
+- A full Tiled install also landed in `C:\Program Files\Tiled` (66 MB) from the first winget attempt. Removing it needs admin
+  (silent uninstall returned 1603), so it is the operator's to remove from Settings > Apps. Nothing here uses it.
 - The original setup notes named `PatrickJS/awesome-cursorrules` and `GDQuest/GDScript-guidelines`. The first has no
   Godot rules file, and the second does not exist; the GDQuest guide is the GitBook page saved in `refs/`. Section 4 replaces both.

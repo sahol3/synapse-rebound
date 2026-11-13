@@ -5,7 +5,9 @@ tools/libresprite/
 tools/renpy/
 tools/tiled/
 tools/inkscape/
-tools/export_templates/
+tools/godot/
+tools/itch-app/
+tools/pyenv/
 tools/_*/
 tools/bin/*.exe
 tools/_dl/
@@ -17,3 +19,6 @@ assets/raw/
 node_modules/
 export_credentials.cfg
 .env
+tools/_uvcache/
+tools/_uvpython/
+tools/_npmcache/

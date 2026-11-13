@@ -3,7 +3,11 @@
 import { spawn } from "node:child_process";
 
 const [server, tool, rawArgs] = process.argv.slice(2);
-const child = spawn("node", [server], { env: { ...process.env, MCP_TRANSPORT: "stdio" } });
+// .exe servers (e.g. tools/pyenv/Scripts/mcp-server-git.exe) run directly; .js servers run under node.
+const extra = process.env.PROBE_ARGS ? process.env.PROBE_ARGS.split(" ") : [];
+const child = server.endsWith(".exe")
+  ? spawn(server, extra, { env: { ...process.env } })
+  : spawn("node", [server, ...extra], { env: { ...process.env, MCP_TRANSPORT: "stdio" } });
 let buf = "";
 const send = (m) => child.stdin.write(JSON.stringify(m) + "\n");
 child.stdout.on("data", (d) => {
