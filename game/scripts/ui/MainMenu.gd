@@ -1,12 +1,39 @@
 class_name MainMenu
 extends Node2D
-## Title screen over a drifting, rain-soaked Warped City skyline.
+## Title screen over a drifting, rain-soaked Warped City skyline. The interface layer is scaled 2x,
+## so all positions are interface pixels (576x324) and all text is PixelFont.
+## W/S or the arrow keys move, Space, Enter or a click selects; the mouse also hovers items.
+## Esc or Space leaves the Controls and Credits lists.
 
 signal start_requested
 
+const CYAN: Color = Color("#00F0FF")
+const MAGENTA: Color = Color("#FF0055")
+const AMBER: Color = Color("#FF9900")
+const TEXT: Color = Color("#E9EEF7")
+const DIM: Color = Color("#7F8AA6")
+const INK: Color = Color("#0A0814")
+
+const CONTROLS: Array = [
+	["A  D", "Move"], ["Space", "Jump, hold for height"], ["Mouse", "Aim"],
+	["Click", "Deflect toward the cursor"], ["Shift", "Air-dash toward the cursor"],
+	["W  S", "Change depth lane right after a deflection"], ["Q  E", "Stabilize or Overclock a module"],
+	["R", "Rewind to the last checkpoint"], ["Esc", "Pause"],
+]
+const CREDITS: Array = [
+	["Art and music", "Warped City by Ansimuz (CC0)"],
+	["Effects", "Free Effect and Bullet 16x16 by BDragon1727"],
+	["Sound effects", "Synthesized in code at runtime"],
+	["Typeface", "5x7 pixel font drawn for this game"],
+	["Engine", "Godot 4.7"],
+	["", "No AI-generated art, music or voice."],
+]
+
 var _cam: Camera2D
-var _title: Label
-var _prompt: Label
+var _ui: Control
+var _items: PackedStringArray = ["Start", "Controls", "Credits"]
+var _sel: int = 0
+var _panel: String = ""
 var _t: float = 0.0
 var _started: bool = false
 
@@ -43,57 +70,19 @@ func _ready() -> void:
 	add_child(_cam)
 	_cam.make_current()
 	JuiceManager.camera = null
-	var ui := CanvasLayer.new()
-	ui.layer = 55
-	add_child(ui)
-	var root := Control.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ui.add_child(root)
-	var shade := ColorRect.new()
-	shade.color = Color(0.01, 0.0, 0.05, 0.45)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(shade)
-	_title = _label("SYNAPSE // REBOUND", 78, Color("#00F0FF"))
-	_title.position = Vector2(0, 150)
-	_title.size = Vector2(1152, 100)
-	var glitch := ShaderMaterial.new()
-	glitch.shader = load("res://shaders/glitch_text.gdshader")
-	glitch.set_shader_parameter("tint", Color("#00F0FF"))
-	glitch.set_shader_parameter("intensity", 0.5)
-	_title.material = glitch
-	root.add_child(_title)
-	var sub := _label("NEO-DHAKA  //  00:00:00  //  LAZARUS LOOP ARMED  //  BOUNCE BACK", 18, Color("#FF0055"))
-	sub.position = Vector2(0, 250)
-	sub.size = Vector2(1152, 30)
-	root.add_child(sub)
-	_prompt = _label("CLICK  OR  PRESS  SPACE  TO  WAKE  UP", 26, Color.WHITE)
-	_prompt.position = Vector2(0, 340)
-	_prompt.size = Vector2(1152, 40)
-	root.add_child(_prompt)
-	var controls := _label("[A][D] MOVE    [SPACE] JUMP    [MOUSE] AIM    [CLICK] DEFLECT    [SHIFT] AIR-DASH\n[W][S] SWITCH DEPTH LANE AFTER A DEFLECTION    [Q][E] MODULE CHOICE    [R] REWIND    [ESC] PAUSE", 15, Color(0.75, 0.85, 1.0))
-	controls.position = Vector2(0, 450)
-	controls.size = Vector2(1152, 60)
-	root.add_child(controls)
-	var credit := _label("Hack Club Haven Dhaka 2026  //  Art & music: Ansimuz \"Warped City\", BDragon1727 effects  //  No AI-generated art or audio", 12, Color(0.55, 0.6, 0.75))
-	credit.position = Vector2(0, 606)
-	credit.size = Vector2(1152, 20)
-	root.add_child(credit)
+	if OS.get_name() != "Web":
+		_items.append("Quit")
+	var layer := CanvasLayer.new()
+	layer.layer = 55
+	layer.transform = Transform2D.IDENTITY.scaled(Vector2(2, 2))
+	add_child(layer)
+	_ui = Control.new()
+	_ui.size = Vector2(576, 324)
+	_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui.draw.connect(_draw_ui)
+	layer.add_child(_ui)
 	AudioManager.play_music("stage")
 	AudioManager.set_menu_muffle(true)
-
-
-func _label(text: String, size: int, color: Color) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", color)
-	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	l.add_theme_constant_override("outline_size", 8)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return l
 
 
 func _process(delta: float) -> void:
@@ -101,14 +90,81 @@ func _process(delta: float) -> void:
 	_cam.position.x += 22.0 * delta
 	if _cam.position.x > 2600.0:
 		_cam.position.x = 400.0
-	_prompt.modulate.a = 0.55 + 0.45 * sin(_t * 4.0)
+	_cam.position = Vector2(_cam.position.x, 110.0)
+	if _panel == "":
+		var m: Vector2 = _ui.get_local_mouse_position()
+		for i: int in _items.size():
+			if Rect2(44, 148 + i * 16, 120, 13).has_point(m) and _sel != i and Input.get_last_mouse_velocity().length() > 0.0:
+				_sel = i
+				AudioManager.play_sfx("ui_move")
+	_ui.queue_redraw()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _started or _t < 0.6:
 		return
-	if event.is_action_pressed("jump") or event.is_action_pressed("parry"):
-		_started = true
-		AudioManager.play_sfx("ui_select")
-		AudioManager.play_sfx("vhs_rewind")
-		start_requested.emit()
+	if _panel != "":
+		if event.is_action_pressed("pause") or event.is_action_pressed("jump") or event.is_action_pressed("parry") \
+				or event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel"):
+			_panel = ""
+			AudioManager.play_sfx("ui_move")
+		return
+	if event.is_action_pressed("lane_back") or event.is_action_pressed("ui_up"):
+		_sel = (_sel + _items.size() - 1) % _items.size()
+		AudioManager.play_sfx("ui_move")
+	elif event.is_action_pressed("lane_front") or event.is_action_pressed("ui_down"):
+		_sel = (_sel + 1) % _items.size()
+		AudioManager.play_sfx("ui_move")
+	elif event.is_action_pressed("jump") or event.is_action_pressed("parry") or event.is_action_pressed("ui_accept"):
+		_choose(_items[_sel])
+
+
+func _choose(item: String) -> void:
+	AudioManager.play_sfx("ui_select")
+	match item:
+		"Start":
+			_started = true
+			AudioManager.play_sfx("vhs_rewind")
+			start_requested.emit()
+		"Controls":
+			_panel = "controls"
+		"Credits":
+			_panel = "credits"
+		"Quit":
+			get_tree().quit()
+
+
+# ================================================================= drawing
+
+func _txt(pos: Vector2, text: String, scale: int, col: Color, align: int = 0) -> void:
+	PixelFont.draw(_ui, pos, text, scale, col, align)
+
+
+func _draw_ui() -> void:
+	_ui.draw_rect(Rect2(0, 0, 576, 324), Color(INK.r, INK.g, INK.b, 0.38))
+	var x: float = 48
+	_txt(Vector2(x, 96), "SYNAPSE", 3, CYAN)
+	var w1: float = PixelFont.width("SYNAPSE ", 3)
+	_txt(Vector2(x + w1, 96), "//", 3, MAGENTA)
+	_txt(Vector2(x + w1 + PixelFont.width("// ", 3), 96), "REBOUND", 3, TEXT)
+	if _panel == "":
+		for i: int in _items.size():
+			var y: float = 150 + i * 16
+			var on: bool = i == _sel
+			if on:
+				_txt(Vector2(x, y), ">", 1, AMBER)
+			_txt(Vector2(x + 12, y), _items[i], 1, TEXT if on else DIM)
+	else:
+		_draw_panel(CONTROLS if _panel == "controls" else CREDITS)
+	_txt(Vector2(x, 304), "Hack Club Haven Dhaka 2026", 1, DIM)
+
+
+func _draw_panel(rows: Array) -> void:
+	var x: float = 48
+	var key_w: float = 0.0
+	for r: Array in rows:
+		key_w = maxf(key_w, PixelFont.width(r[0]))
+	for i: int in rows.size():
+		var ry: float = 150 + i * 13
+		_txt(Vector2(x, ry), rows[i][0], 1, AMBER)
+		_txt(Vector2(x + key_w + 12, ry), rows[i][1], 1, TEXT)

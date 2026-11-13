@@ -11,10 +11,10 @@ const LINES: Dictionary = {
 		{"who": "SARA", "text": "Your kinetic wrist-guard is still online. Aim at their fire and bounce it back into their teeth!"},
 	],
 	"s1_tutorial": [
-		{"who": "SYS", "text": "[CLICK] DEFLECT TOWARD CURSOR    [SPACE] JUMP    [SHIFT] AIR-DASH"},
+		{"who": "SYS", "text": "Click to deflect toward the cursor. Space jumps, Shift air-dashes."},
 	],
 	"s1_pogo": [
-		{"who": "SYS", "text": "DEFLECT IN MID-AIR TO RECOIL OFF THE SHOT. IT RESETS YOUR AIR-DASH."},
+		{"who": "SYS", "text": "Deflect in mid-air to recoil off the shot. It gives your air-dash back."},
 	],
 	"s1_first_kill": [
 		{"who": "SARA", "text": "Clean deflection! Keep climbing the scaffolding, I'm holding an extraction shuttle on the roof!"},
@@ -25,7 +25,7 @@ const LINES: Dictionary = {
 	],
 	"s1_enforcer": [
 		{"who": "SARA", "text": "Syndicate Enforcer! His kinetic shield throws your deflection straight back. Keep the rally going until the shot goes supernova!"},
-		{"who": "SYS", "text": "RALLY: PARRY -> SHIELD -> PARRY. THE THIRD BOUNCE BECOMES A RAILGUN."},
+		{"who": "SYS", "text": "Keep parrying what the shield throws back. The third bounce becomes a railgun."},
 	],
 	"s1_module": [
 		{"who": "SARA", "text": "You got your Dash Relay back! Don't overclock it, Vincent. Your neural sync will spike and burn out your memory core. Press [Q] to Stabilize!"},
@@ -34,14 +34,14 @@ const LINES: Dictionary = {
 	# ---------------------------------------------------------------- STAGE 2
 	"s2_intro": [
 		{"who": "SARA", "text": "Snipers on the parallel overpass! Use heavy recoil or the kinetic rings to bounce yourself across lanes!"},
-		{"who": "SYS", "text": "[W]/[S] RIGHT AFTER A DEFLECTION, OR TOUCH A Z-RING: SWITCH LANES. PARRY SNIPER SHOTS BACK INTO THE DEPTH."},
+		{"who": "SYS", "text": "Press W or S right after a deflection, or touch a Z-ring, to change lanes. Parry sniper shots back into the depth."},
 	],
 	"s2_first_lane": [
 		{"who": "WORLD", "text": "SHE LOCKED YOUR HOLSTER."},
 		{"who": "ECHO", "text": "Memory fragment restored: 23:58. Two minutes before the fall. Only two people had the encryption key to disable your sidearm. You... and Sara."},
 	],
 	"s2_wallslam": [
-		{"who": "SYS", "text": "SLAM INTO A WALL, THEN DEFLECT WITHIN 0.1s: KINETIC WALL-SLAM RICOCHET."},
+		{"who": "SYS", "text": "Hit a wall and deflect within 0.1s to ricochet off it."},
 	],
 	"s2_ambush": [
 		{"who": "SARA", "text": "Vincent, your cortical telemetry is spiking! Stop listening to those feedback ghosts. The Lazarus rewind scrambles short-term memory!"},
@@ -57,7 +57,7 @@ const LINES: Dictionary = {
 	"s3_intro": [
 		{"who": "WORLD", "text": "CLIMB BACK TO THE SCENE OF THE CRIME."},
 		{"who": "SARA", "text": "Wait. Why are you taking the express shaft straight to Rooftop 09?! The landing pad is too hot, turn back to Sector 4!"},
-		{"who": "SYS", "text": "THE FLOOR IS GONE. CHAIN AIR DEFLECTIONS TO CLIMB. GOLD DRONES RALLY BACK."},
+		{"who": "SYS", "text": "The floor is gone. Chain deflections in the air to climb. Gold drones rally back."},
 	],
 	"s3_rally": [
 		{"who": "ECHO", "text": "Audio log recovered [23:59:42]: 'I'm sorry, Vincent. Command says if a courier reads the Lazarus files, we pull the plug.' ...That was her voice."},
@@ -71,16 +71,16 @@ const LINES: Dictionary = {
 	"s4_intro": [
 		{"who": "WORLD", "text": "ROOFTOP 09 // 00:00:00"},
 		{"who": "SARA", "text": "You really came back. Fine. The Valkyrie doesn't miss twice."},
-		{"who": "SYS", "text": "DEFLECT HER PLASMA INTO THE WING TURRETS."},
+		{"who": "SYS", "text": "Deflect her plasma into the wing turrets."},
 	],
 	"s4_phase2": [
 		{"who": "SARA", "text": "Pulling back to the depth lane. Let's see you bounce across ninety stories of air."},
-		{"who": "SYS", "text": "PARRY THE RAIL-MISSILES BACK ACROSS THE DEPTH PLANE. Z-RINGS AND [W]/[S] SWITCH LANES."},
+		{"who": "SYS", "text": "Parry the rail missiles back across the depth plane. Z-rings and W or S change lanes."},
 	],
 	"s4_phase3": [
 		{"who": "SARA", "text": "Cockpit deflector online! Every shot you send, I send back. You can't win a rally against a gunship!"},
 		{"who": "ECHO", "text": "Five bounces. That's all it takes. She taught us that."},
-		{"who": "SYS", "text": "5-BOUNCE EXECUTION RALLY. DON'T DROP THE CORE."},
+		{"who": "SYS", "text": "Five bounces to break the core. Don't drop it."},
 	],
 	"s4_win": [
 		{"who": "SARA", "text": "No... no, no, NO..."},
@@ -90,7 +90,7 @@ const LINES: Dictionary = {
 		{"who": "ECHO", "text": "Rewind. Again. You've died on this roof before, Vincent. Count the loops."},
 	],
 	"first_blackout": [
-		{"who": "SYS", "text": "BLACKOUT // DEFLECT ANY SHOT BEFORE THE TIMER ENDS TO REBOUND."},
+		{"who": "SYS", "text": "Blackout. Deflect any shot before the timer runs out to rebound."},
 	],
 	"first_rebound": [
 		{"who": "ECHO", "text": "There it is. We always bounce back."},

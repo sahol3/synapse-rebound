@@ -201,6 +201,12 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
   (or more passes, never a failure) before any commit that touches gameplay. Input in tests goes through
   `Input.parse_input_event(InputEventAction)`; `Input.action_press` does not register as `just_pressed`.
 - Debug start: `godot.cmd --path game -- --stage=N` skips the menu (modules for earlier stages are auto-picked).
-- Visual checks without a window: `--write-movie <dir>\f.png --fixed-fps 30 --quit-after N`, then read the PNGs.
+- Visual checks without a window: `--write-movie <ABSOLUTE dir>\f.png --fixed-fps 30 --quit-after N` (a relative path
+  fails silently), then read the PNGs. `scripts\capture_frames.ps1 -Tag <name>` records menu, stages 1-4 and the MechTest
+  run into `tools\_frames\<name>\`; `py -I scripts\contact_sheet.py <name>` builds `sheet_shots.jpg` and `sheet_mech.jpg`.
+- UI type is `scripts/ui/PixelFont.gd`, a 5x7 bitmap face drawn by hand and built in memory (fixed size 9, integer
+  scaling only). HUD and menu layers are scaled 2x (576x324 interface pixels); world text uses it at 2x world pixels.
+  The operator rejected boxed panels, tag blocks, bold display type and explanatory sub-labels (2026-11-13, "It looks
+  more AI now") and approved the minimal pass ("much much better"); keep the HUD to outlined text and thin bars.
 - Web check: launch config `synapse-web` in `D:\CLAUDE-CODE\.claude\launch.json` serves `exports/web` on port 4180.
   A hidden Browser pane throttles the page, so judge feel and frame rate in a visible browser, not from the pane.

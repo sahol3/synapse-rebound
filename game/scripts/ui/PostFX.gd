@@ -102,6 +102,7 @@ func vhs_hold(on: bool) -> void:
 
 func _on_tier(t: int) -> void:
 	_crt.set_shader_parameter("border_color", GameState.TIER_COLORS[t])
-	_crt.set_shader_parameter("border_strength", [0.12, 0.2, 0.35, 0.6][t])
+	## Frame only from Overclocked up; Degraded and Synced leave the screen edge alone.
+	_crt.set_shader_parameter("border_strength", [0.0, 0.0, 0.8, 1.0][t])
 	_crt.set_shader_parameter("berserk", 1.0 if t == GameState.Tier.BERSERK else 0.0)
-	_crt.set_shader_parameter("aberration", [0.0010, 0.0014, 0.0022, 0.0030][t])
+	_crt.set_shader_parameter("aberration", 0.0)

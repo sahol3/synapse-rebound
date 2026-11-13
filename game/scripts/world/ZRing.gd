@@ -17,8 +17,8 @@ func _ready() -> void:
 	c.radius = 13.0
 	cs.shape = c
 	add_child(cs)
-	_sprite = FxLib.sprite("zring", "green")
-	_sprite.scale = Vector2(2.2, 2.2)
+	_sprite = FxLib.sprite("zring", "cyan")
+	_sprite.scale = Vector2(2, 2)
 	_sprite.z_index = -2
 	add_child(_sprite)
 	area_entered.connect(_on_area)
@@ -27,7 +27,9 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_cd -= delta
 	_t += delta
-	_sprite.modulate = Color(0.6, 1.4, 1.0, 0.55 + 0.35 * sin(_t * 6.0)) if _cd <= 0.0 else Color(1, 1, 1, 0.25)
+	## Hard two-state blink (pixel lamps switch, they do not breathe); dim while recharging.
+	var on: bool = int(_t * 4.0) % 2 == 0
+	_sprite.modulate = Color(1, 1, 1, 1.0 if on else 0.7) if _cd <= 0.0 else Color(1, 1, 1, 0.25)
 
 
 func _on_area(a: Area2D) -> void:
@@ -36,5 +38,5 @@ func _on_area(a: Area2D) -> void:
 		return
 	_cd = 0.7
 	p.zring_launch(1 - p.lane, impulse)
-	JuiceManager.ring(global_position, Color("#5CFFB0"), 36.0, 0.3, 3.0, true)
+	JuiceManager.ring(global_position, Color("#00F0FF"), 36.0, 0.3, 3.0, true)
 	JuiceManager.hitstop(0.05)

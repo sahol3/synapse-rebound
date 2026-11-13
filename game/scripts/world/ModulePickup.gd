@@ -21,17 +21,10 @@ func _ready() -> void:
 	cs.shape = c
 	add_child(cs)
 	_sprite = FxLib.sprite("pickup", "green")
-	_sprite.scale = Vector2(2.4, 2.4)
+	_sprite.scale = Vector2(2, 2)
 	add_child(_sprite)
-	var l := Label.new()
-	l.text = "MODULE 0%d" % stage_index
-	l.add_theme_font_size_override("font_size", 28)
-	l.add_theme_color_override("font_color", Color("#5CFFB0"))
-	l.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	l.add_theme_constant_override("outline_size", 6)
-	l.scale = Vector2(0.25, 0.25)
-	l.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	l.position = Vector2(-l.get_minimum_size().x * 0.125, -30)
+	var l := PixelFont.label("MODULE %02d" % stage_index, 1, Color("#5CFFB0"))
+	l.position = Vector2(-l.get_minimum_size().x * 0.5, -30).round()
 	add_child(l)
 	z_index = 10
 	_base_y = position.y

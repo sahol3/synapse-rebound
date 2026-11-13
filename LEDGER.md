@@ -21,6 +21,21 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-13 · UI de-AI pass (Claude Code, Opus 5.5), approved
+- Operator: "many things look and feel ai". Pass 1 (pixel font at 3x, boxed panels, tag blocks, bold display type,
+  landing-page menu) was rejected mid-turn: "It looks more AI now". Logged in the design-orchestrator taste ledger.
+- Pass 2 (current files): `scripts/ui/PixelFont.gd` hand-drawn 5x7 bitmap face built in memory; HUD and menu at 2x with
+  outlined text and no panels; clock, loops and modules moved to the pause screen; 4-segment sync bar; one boss bar
+  with a segment per hit point; one comms channel so Sara and The Echo never overlap; hints wait for the stage name;
+  tutorial hints in sentence case; Echo's burned text plays " // " segments as one-line beats; CRT pass samples nearest,
+  scanlines on the 3 px grid, no constant colour split or edge glow; VHS and Blackout shaders move in whole art pixels;
+  Z-rings cyan at 2x with a hard blink; pickup sprite at 2x.
+- Verified: MechTest 26/26 after each step; rendered frames in `tools/_frames/after4` and
+  `tools/_frames/compare_before_after4.jpg`; fx frames for VHS and Blackout show no shader errors; Web and Windows
+  re-exported, exe exits 0 headless.
+- Not verified: feel in a visible window; the web build in a browser after this pass.
+- Verdict on pass 2: "THIS CURRENT VERSION IS MUCH MUCH BETTER AND NICE". Committed. Keep this direction.
+
 ### 2026-11-13 · SYNAPSE // REBOUND build (Claude Code, Opus 5.5)
 - Built the game from the operator's spec (now `docs/DESIGN.md`) with the Warped City assets: four stages (Alley, Highway
   with two depth lanes, vertical Shaft, Rooftop boss), 360 degree deflection with hit-stop, air recoil and dash refill,

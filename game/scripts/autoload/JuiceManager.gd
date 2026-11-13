@@ -130,20 +130,16 @@ func text_pop(pos: Vector2, text: String, color: Color, size: int = 10) -> void:
 	## Small world-space kinetic number ("x3 RALLY", "+50%").
 	if fx_root == null:
 		return
-	var l := Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font_size", size * 4)
-	l.add_theme_color_override("font_color", color)
-	l.add_theme_color_override("font_outline_color", Color(0.02, 0.0, 0.06))
-	l.add_theme_constant_override("outline_size", 10)
-	l.scale = Vector2(0.25, 0.25)
+	## Pixel face, whole-pixel rise, flickers out instead of fading (no sub-pixel smear).
+	var l := PixelFont.label(text, 2 if size >= 14 else 1, color)
 	l.z_index = 40
-	l.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	fx_root.add_child(l)
-	l.global_position = pos + Vector2(-l.get_minimum_size().x * 0.125, -14)
+	var start: Vector2 = (pos + Vector2(-l.get_minimum_size().x * 0.5, -16)).round()
+	l.global_position = start
 	var tw := l.create_tween()
 	tw.set_ignore_time_scale(true)
-	tw.set_parallel(true)
-	tw.tween_property(l, "position:y", l.position.y - 18.0, 0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.tween_property(l, "modulate:a", 0.0, 0.6).set_delay(0.25)
-	tw.chain().tween_callback(l.queue_free)
+	tw.tween_method(func(k: float) -> void:
+		if is_instance_valid(l):
+			l.global_position = start + Vector2(0, -roundf(12.0 * (1.0 - pow(1.0 - k, 3.0))))
+			l.visible = k < 0.6 or int(k * 30.0) % 2 == 0, 0.0, 1.0, 0.65)
+	tw.tween_callback(l.queue_free)

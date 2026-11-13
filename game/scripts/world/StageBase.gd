@@ -348,7 +348,8 @@ func burn_text(text: String, intensity: float = 1.0) -> void:
 	g.text = text
 	g.intensity = intensity
 	world_text.add_child(g)
-	g.global_position = center + Vector2(0, -40 + randf_range(-10, 10))
+	## Upper-middle band: below the comms line, above the player's head; whole pixels only.
+	g.global_position = (center + Vector2(0, -36 + randf_range(-4, 4))).round()
 	AudioManager.play_sfx("echo_glitch", 0.75)
 
 
