@@ -124,5 +124,9 @@ func _run() -> void:
 	_check("L6 strong bot: challenge rose", float(strong["c"]) > float(strong["c0"]) + 0.15,
 			"challenge %.2f -> %.2f (highest %.2f)" % [strong["c0"], strong["c"], strong["high"]])
 	_check("L7 strong bot: never died", int(strong["deaths"]) == 0, "deaths=%d" % strong["deaths"])
+	var dbg: PackedStringArray = Director.debug_lines()
+	_check("L8 strong bot: the timing model measured real swings and the room model knows the room",
+			Director.time_n >= 5 and Director._room_key != "" and dbg.size() == 9,
+			"swings=%d mean=%.2fs room=%s | %s | %s" % [Director.time_n, Director.time_mean, Director._room_key, dbg[5], dbg[7]])
 	print("DIRECTORLIVE passed=%d failed=%d" % [passed, failed])
 	get_tree().quit(1 if failed > 0 else 0)

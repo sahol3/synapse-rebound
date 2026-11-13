@@ -310,6 +310,7 @@ func _start_dash(forced: Vector2 = Vector2.ZERO) -> void:
 		_air_dashes -= 1
 	if GameState.has_mod("phase_dash"):
 		_invuln = maxf(_invuln, DASH_TIME + 0.25)
+	Director.skill_used("airjump" if forced != Vector2.ZERO else "dash")
 	AudioManager.play_sfx("dash")
 	JuiceManager.ghost(_sprite)
 	_facing = 1 if _dash_dir.x >= 0.0 else -1
@@ -331,6 +332,7 @@ func _start_parry() -> void:
 	_shoot_pose = 0.18
 	_facing = 1 if _parry_aim.x >= 0.0 else -1
 	_last_parry_ms = Time.get_ticks_msec()
+	Director.parry_pressed(self)
 	var c: Vector2 = chest()
 	JuiceManager.fx("slash", "cyan", c + _parry_aim * 16.0 * _visual_scale(), _parry_aim.angle(), 1.6 * _visual_scale())
 	AudioManager.play_sfx("swing", randf_range(0.9, 1.15))
@@ -623,6 +625,7 @@ func _rebound() -> void:
 	_invuln = 1.0
 	_knockback = 0.0
 	GameState.rebounds += 1
+	Director.skill_used("rebound")
 	JuiceManager.set_base_time_scale(1.0)
 	AudioManager.set_blackout(false)
 	AudioManager.play_sfx("blackout_rebound")

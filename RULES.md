@@ -217,7 +217,9 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 - Difficulty: every number the difficulty changes is read through `Director` (shot speed, fire interval, charge time,
   shot cap, parry window/radius/arc, Blackout length, mercy shot, aim lead, fall assist). `Director.enabled = false`
   returns the original fixed values; MechTest and ClimbTest run that way, and no test may save the profile
-  (`Director.persist = false`). The three models and what they learn from are described in `README.md`.
+  (`Director.persist = false`). The eight models and what they learn from are described in `README.md`.
+  Every knob reads `Director.level(lever)`, never `challenge` directly, so the room model and the lever bandit apply
+  everywhere. New saved model state gets an optional key in `from_dict`; an older profile must still load.
   Blackout runs at quarter speed, so an ordinary shot cannot arrive inside the window: the mercy shot is what makes a
   rebound possible, do not remove it without replacing it.
 - Enemies are plain Node2D, not physics bodies: anything that moves one (shove, knock-back) must keep walkers on
@@ -226,8 +228,8 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
   `on_rewind`, in the same frame as the respawn.
 - Climb rule: a plain jump is 55 px. Any step taller than 48 px needs the air-dash (Space again in mid-air), and a
   stage that needs it must say so on screen. A new or changed climb gets a bot run like `tests/ClimbTest.gd`.
-- More test gates: `DirectorTest.tscn` (`DIRECTORTEST passed=27 failed=0`), `ClimbTest.tscn` (`CLIMBTEST passed=11
-  failed=0`, about 90 s) and `DirectorLive.tscn` (`DIRECTORLIVE passed=7 failed=0`, about 100 s) after any change to
+- More test gates: `DirectorTest.tscn` (`DIRECTORTEST passed=47 failed=0`), `ClimbTest.tscn` (`CLIMBTEST passed=11
+  failed=0`, about 90 s) and `DirectorLive.tscn` (`DIRECTORLIVE passed=8 failed=0`, about 100 s) after any change to
   the director, the player's movement or a stage layout.
 - Enemy art: `EnemyBase.SKINS` holds each character's sheet layout, feet offset, hurtbox, shield and muzzle. Look at
   `res://tests/EnemyGallery.tscn` (every kind on one roof) after changing it:

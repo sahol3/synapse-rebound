@@ -48,7 +48,7 @@ below produces the build for itch.io.
 
 ## Adaptive difficulty
 
-The game adjusts itself to the person playing. Three small models run on the player's own machine and learn only from
+The game adjusts itself to the person playing. Eight small models run on the player's own machine and learn only from
 that player. Nothing is uploaded. The profile is one JSON file in Godot's user data folder (`user://director.json`), and
 deleting it returns the game to its starting difficulty.
 
@@ -57,12 +57,25 @@ deleting it returns the game to its starting difficulty.
 | Hit model | Online logistic regression, five weights | The chance that an incoming shot hits you, given its speed, how many shots are in the air, whether you are airborne and how close the shooter is | Every shot you deflect, dodge or take |
 | Quit model | Online logistic regression, six weights, starting from hand-set values | The chance that you stop playing before the next checkpoint, estimated at each death from the death streak, the time stuck, deaths in the last minute, how short the last life was and your recent deflect rate | What happened next: you reached the checkpoint, quit to the menu, closed the window or went idle for 30 seconds |
 | Move model | N-gram over six movement states, five samples a second, three steps of context with back-off to two and one | Where you will be when a shot arrives | Your movement |
+| Timing model | Running mean and spread of how early you swing, with a normal distribution over it | The chance that your next swing is still active when the shot arrives | The time between each click and the nearest incoming shot reaching you, and how often a hit lands with no swing at all |
+| Room model | One rating for you and one for every room, updated like chess Elo | The chance that you clear the room you are in on this attempt | Every death in a room and every room cleared |
+| Lever bandit | UCB1 over three kinds of help: timing, pace and density | Which kind of help makes your next life go better | Whether the life after a boost was longer than your usual one or reached a checkpoint |
+| Pacing wave | Intensity meter with a six-second half-life | When a fight has peaked and needs a release | Hits, deflects and near misses |
+| Skill tracing | Bayesian knowledge tracing, one value per mechanic (deflect, dash, air dash, rebound, lane change) | The chance that you know each mechanic | Once per life, whether you used a mechanic you had the chance to use |
 
 A director turns those predictions into one number from 0 to 1, the challenge level. It solves the hit model for the
 level at which about 26% of threatening shots would hit you, lowers that target toward 10% as the quit risk rises, and
 moves toward the answer faster downward than upward. The level sets shot speed (70% to 115%), fire rate, the warning
 time before a shot, how many shots may be in the air at once, the size and length of the parry window, the length of
 Blackout, aim lines on enemies, and whether enemies lead their shots with the move model. A new player starts at 25%.
+
+The other five models decide how that level is applied. The timing model widens the deflect window by up to 0.08
+seconds, only as far as needed to bring your swings to 75% on time, and lengthens the warning before a shot if you
+often take a hit without swinging. The room model lowers the level by up to 0.18 in a room that has beaten you before,
+from the moment you enter it. On a death streak the lever bandit gives one kind of help an extra boost for the next
+life and keeps score of which kind works for you. The pacing wave makes enemies fire slower for five seconds after a
+peak and slightly faster in a long calm at a high level. When the game sees you stuck, every second hint is about the
+mechanic the skill model says you have not shown yet.
 
 During Blackout one enemy that can see you fires a fast tracking shot, at every challenge level, because at quarter
 speed an ordinary shot does not arrive before the timer ends. That shot is the one to rebound off. After two deaths
@@ -124,7 +137,7 @@ Four headless tests drive the real game.
 | Scene | Checks |
 |---|---|
 | `res://tests/MechTest.tscn` | The fixed mechanics with the director off: deflection, the Enforcer rally and railgun kill, Blackout and Rebound, death and rewind, the module choice, lane switching, all three boss phases and the ending screen |
-| `res://tests/DirectorTest.tscn` | The three models against simulated players (struggling, middling, expert), the profile save and load, the display scale rule across 1,317 window sizes, and the progress save file |
+| `res://tests/DirectorTest.tscn` | The eight models against simulated players (struggling, middling, expert), the profile save and load, the display scale rule across 1,317 window sizes, and the progress save file |
 | `res://tests/DirectorLive.tscn` | The director inside Stage 1 with a weak bot and a strong bot in front of a real turret |
 | `res://tests/ClimbTest.tscn` | Continue resumes a saved run at its checkpoint. A keyboard-only bot climbs the Ascent Shaft from the floor to the roof deck, and a control run with plain jumps shows that it cannot |
 

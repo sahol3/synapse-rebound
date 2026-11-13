@@ -254,5 +254,155 @@ func _run() -> void:
 	GameState.save_run(1)
 	_check("S6 with saving off nothing is written", not FileAccess.file_exists(GameState.save_path))
 
+	# ------------------------------------------------------------ model 4: timing
+	Director.enabled = true
+	Director.reset_profile()
+	var rng4 := RandomNumberGenerator.new()
+	rng4.seed = 11
+	for i: int in 5:
+		Director.timing_learn(0.30)
+	_check("M4a no personal deflect window before 8 swings were measured", is_zero_approx(Director.timing_bonus()),
+			"bonus=%.3f n=%d" % [Director.timing_bonus(), Director.time_n])
+	for i: int in 40:
+		Director.timing_learn(maxf(rng4.randfn(0.27, 0.05), 0.0))
+	var early_p: float = Director.predict_on_time(0.0)
+	var early_bonus: float = Director.timing_bonus()
+	_check("M4b a player who swings early is predicted late and gets a wider window",
+			early_p < 0.6 and early_bonus > 0.02 and early_bonus <= 0.08,
+			"on_time=%.2f bonus=%.3f mean=%.3f sd=%.3f" % [early_p, early_bonus, Director.time_mean, sqrt(Director.time_var)])
+	_check("M4c the wider window raises the predicted on-time rate", Director.predict_on_time(0.08) > early_p + 0.1,
+			"%.2f -> %.2f" % [early_p, Director.predict_on_time(0.08)])
+	Director.reset_profile()
+	for i: int in 40:
+		Director.timing_learn(maxf(rng4.randfn(0.08, 0.03), 0.0))
+	_check("M4d a player with tight timing gets no extra window", is_zero_approx(Director.timing_bonus()),
+			"on_time=%.2f bonus=%.3f" % [Director.predict_on_time(0.0), Director.timing_bonus()])
+
+	# ------------------------------------------------------------ model 5: room rating
+	Director.reset_profile()
+	Director.room_entered(1, 0, false)
+	var fresh_speed: float = Director.shot_speed_mult()
+	Director.room_entered(3, 1, false)
+	for i: int in 6:
+		Director.room_result(false)
+	var hard_p: float = Director.predict_clear()
+	var hard_ease: float = Director.room_ease()
+	var hard_speed: float = Director.shot_speed_mult()
+	Director.room_entered(3, 2, false)
+	var next_p: float = Director.predict_clear()
+	_check("M5a six deaths in one room: low clear chance there, and that room is eased, the next is not",
+			hard_p < 0.30 and hard_ease > 0.03 and next_p > hard_p + 0.1 and is_zero_approx(Director.room_ease()),
+			"hard=%.2f ease=%.3f next=%.2f" % [hard_p, hard_ease, next_p])
+	_check("M5b shots are slower in the room that beat the player", hard_speed < fresh_speed - 0.01,
+			"%.3f vs %.3f" % [hard_speed, fresh_speed])
+	Director.room_entered(3, 1, false)
+	for i: int in 8:
+		Director.room_result(true)
+	_check("M5c clearing the room again and again removes the easing", is_zero_approx(Director.room_ease()),
+			"clear=%.2f ease=%.3f" % [Director.predict_clear(), Director.room_ease()])
+
+	# ------------------------------------------------------------ model 6: lever bandit
+	Director.reset_profile()
+	var rng6 := RandomNumberGenerator.new()
+	rng6.seed = 23
+	var picks: Array[int] = [0, 0, 0]
+	for i: int in 90:
+		var a: int = Director.arm_choose()
+		picks[a] += 1
+		Director.arm_score(a, rng6.randf() < (0.8 if a == Director.LEVER_PACE else 0.2))
+	_check("M6a the bandit finds the lever that helps (pace helps 80%, the others 20%)",
+			picks[Director.LEVER_PACE] > 45 and picks[0] >= 3 and picks[2] >= 3, str(picks))
+	Director.reset_profile()
+	Director.tilt = 0.6
+	var win_plain: float = Director.parry_window_bonus()
+	var speed_plain: float = Director.shot_speed_mult()
+	Director.arm = Director.LEVER_TIMING
+	_check("M6b a boosted timing lever widens the deflect window and leaves shot speed alone",
+			Director.parry_window_bonus() > win_plain + 0.005 and is_equal_approx(Director.shot_speed_mult(), speed_plain),
+			"window %.3f -> %.3f, speed %.3f -> %.3f" % [win_plain, Director.parry_window_bonus(), speed_plain, Director.shot_speed_mult()])
+	Director.arm = Director.LEVER_PACE
+	_check("M6c a boosted pace lever slows shots and leaves the window alone",
+			Director.shot_speed_mult() < speed_plain - 0.01 and is_equal_approx(Director.parry_window_bonus(), win_plain),
+			"speed %.3f -> %.3f" % [speed_plain, Director.shot_speed_mult()])
+
+	# ------------------------------------------------------------ model 7: pacing wave
+	Director.reset_profile()
+	var calm_interval: float = Director.fire_interval_mult()
+	Director.bump(0.5)
+	Director.bump(0.5)
+	_check("M7a after a peak the enemies fire slower", Director.fire_interval_mult() > calm_interval * 1.3,
+			"%.2f -> %.2f" % [calm_interval, Director.fire_interval_mult()])
+	Director.decay(6.0)
+	_check("M7b the release ends after five seconds and intensity has halved",
+			is_equal_approx(Director.fire_interval_mult(), calm_interval) and Director.intensity < 0.51,
+			"interval=%.2f intensity=%.2f" % [Director.fire_interval_mult(), Director.intensity])
+	Director.decay(40.0)
+	Director.challenge = 0.8
+	Director.tilt = 0.0
+	_check("M7c in a long calm at high challenge they fire a little faster",
+			is_equal_approx(Director.fire_interval_mult(), lerpf(1.50, 0.85, 0.8) * 0.92),
+			"%.3f" % Director.fire_interval_mult())
+
+	# ------------------------------------------------------------ model 8: skill tracing
+	Director.reset_profile()
+	Director.skill_used("parry")
+	Director.skills_close(1.5)
+	_check("M8a a life under three seconds is not an observation", Director.skill_lives == 0 and Director.skill_p.is_empty())
+	for i: int in 4:
+		Director.skill_used("parry")
+		Director.skill_used("dash")
+		Director.skills_close(10.0)
+	_check("M8b used every life: known. Never used: the weakest. Never had the chance (rebound): not judged",
+			float(Director.skill_p["parry"]) > 0.8 and Director.weakest_skill() == "airjump" and not Director.skill_p.has("rebound"),
+			"%s weakest=%s" % [str(Director.skill_p), Director.weakest_skill()])
+	_check("M8c hints alternate: stage hint first, then the weakest mechanic",
+			Director.hint_skill() == "" and Director.hint_skill() == "airjump")
+	for i: int in 3:
+		Director.skill_used("airjump")
+		Director.skill_used("parry")
+		Director.skill_used("dash")
+		Director.skills_close(10.0)
+	_check("M8d once the mechanic is used the skill hint stops", Director.weakest_skill() == "", str(Director.skill_p))
+
+	# ------------------------------------------------------------ models 4 to 8: saving and the off switch
+	Director.reset_profile()
+	for i: int in 12:
+		Director.timing_learn(0.2)
+	Director.room_entered(2, 1, false)
+	Director.room_result(false)
+	Director.arm_score(1, true)
+	Director.skill_used("dash")
+	Director.skills_close(10.0)
+	var snap: Dictionary = JSON.parse_string(JSON.stringify(Director.to_dict()))
+	Director.reset_profile()
+	var loaded: bool = Director.from_dict(snap)
+	_check("M9a the new models survive a save and load",
+			loaded and Director.time_n == 12 and Director.room_r.has("2:1") and is_equal_approx(Director.arm_n[1], 1.0)
+			and Director.skill_p.has("dash") and Director.skill_lives == 1,
+			"n=%d rooms=%s arms=%s skills=%s" % [Director.time_n, str(Director.room_r), str(Director.arm_n), str(Director.skill_p)])
+	for k: String in ["time_mean", "time_var", "time_n", "no_react", "player_r", "room_r", "arm_n", "arm_r", "life_ema", "skill_p", "skill_lives"]:
+		snap.erase(k)
+	snap["hit_n"] = 77
+	Director.reset_profile()
+	_check("M9b a profile saved before these models existed still loads",
+			Director.from_dict(snap) and Director.hit_n == 77 and Director.time_n == 0 and Director.room_r.is_empty())
+	Director.room_entered(3, 1, false)
+	for i: int in 6:
+		Director.room_result(false)
+	for i: int in 20:
+		Director.timing_learn(0.4)
+	Director.arm = Director.LEVER_PACE
+	Director.bump(1.0)
+	Director.no_react = 1.0
+	Director.enabled = false
+	_check("M9c with the director off every knob is the original fixed value",
+			is_equal_approx(Director.shot_speed_mult(), 1.0) and is_equal_approx(Director.fire_interval_mult(), 1.0)
+			and is_equal_approx(Director.charge_time(), 0.45) and is_zero_approx(Director.parry_window_bonus())
+			and Director.max_threats() == 99 and is_equal_approx(Director.parry_radius_mult(), 1.0),
+			"speed=%.2f interval=%.2f charge=%.2f window=%.2f" % [Director.shot_speed_mult(), Director.fire_interval_mult(),
+			Director.charge_time(), Director.parry_window_bonus()])
+	Director.enabled = true
+	Director.reset_profile()
+
 	print("DIRECTORTEST passed=%d failed=%d" % [passed, failed])
 	get_tree().quit(1 if failed > 0 else 0)

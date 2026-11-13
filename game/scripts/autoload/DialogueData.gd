@@ -116,6 +116,16 @@ const STUCK_HINTS: PackedStringArray = [
 	"Send her shots back: the wing turrets first, then the hull, then five bounces off the cockpit.",
 ]
 
+## Shown in place of the stage hint when the director's skill model says the player has had the
+## chance to use a mechanic and has not shown it yet.
+const SKILL_HINTS: Dictionary = {
+	"parry": "To deflect, put the cursor on the shot and click just before it reaches you.",
+	"rebound": "When you are hit, time slows and the screen turns red. Deflect any shot in that moment to come back.",
+	"airjump": "In the air, press Space again to dash upward. Hold A or D to steer the dash.",
+	"dash": "Shift dashes toward the cursor. It crosses gaps and gets you out of a crossfire.",
+	"lane": "Deflect a shot, then press W or S at once to change lanes.",
+}
+
 ## Burned onto the buildings at random while Sync is 200%+ (The Echo leaking through).
 const ECHO_FRAGMENTS: PackedStringArray = [
 	"WHO PULLED THE TRIGGER",

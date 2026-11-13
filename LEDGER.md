@@ -24,6 +24,20 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-13 · Director models 4 to 8 (Claude Code, Fable 5.2)
+- Operator: "mind adding more prediction and modulating models so that it goes very well?"
+- Added to `Director.gd`: timing model (how early the player swings, P(on time), personal deflect window up to +0.08 s,
+  longer telegraph for hits taken with no swing), room model (Elo-style rating per room and for the player,
+  P(clear this attempt), up to 0.18 challenge taken off in a room that beat the player before), lever bandit (UCB1 over
+  timing / pace / density help, boosted for one life on a death streak, scored by whether that life went better),
+  pacing wave (intensity meter, five-second release after a peak, slight pressure in a long calm), skill tracing
+  (BKT per mechanic, drives every second stuck hint through `DialogueData.SKILL_HINTS`).
+- Hooks: `Player._start_parry` -> `parry_pressed`, `_start_dash` and `_rebound` -> `skill_used`, `StageBase._enter_room`
+  and `resume_at` -> `room_entered`. All knobs now read `Director.level(lever)`. F3 shows four more lines.
+- Profile file keeps version 1: the new keys are optional, an older profile loads and starts these models fresh.
+- Verified: see the test line in the commit. All of it is on simulated players and scripted bots.
+- Not verified: whether the new models feel better to a person. Constants (caps, learning rates) are first guesses.
+
 ### 2026-11-13 · Second playtest round: freeze, shoved enemies, saving (Claude Code, Fable 5.2)
 - Operator, playing the new Windows build: "the character sometimes just freezes, in level 3 especially", "it has no
   permanent saving options", and a screenshot of the Stage 1 Enforcer standing inside the building under the walkway

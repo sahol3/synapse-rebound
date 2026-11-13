@@ -45,7 +45,9 @@ func _ready() -> void:
 	hud.ending_closed.connect(show_menu)
 	Director.stuck.connect(func() -> void:
 		if _state == "play" and not _busy:
-			hud.system(DialogueData.STUCK_HINTS[GameState.current_stage - 1], 7.0))
+			var skill: String = Director.hint_skill()
+			hud.system(DialogueData.SKILL_HINTS[skill] if DialogueData.SKILL_HINTS.has(skill)
+					else DialogueData.STUCK_HINTS[GameState.current_stage - 1], 7.0))
 	Director.assist_changed.connect(func(kind: String) -> void:
 		if _state == "play":
 			hud.say("assist_" + kind))

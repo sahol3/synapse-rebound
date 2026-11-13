@@ -19,6 +19,30 @@ extends Node
 ## challenge at which the predicted hit rate equals a target (26% of threatening shots, falling
 ## to 10% as quit risk rises) and walks toward it, faster down than up. Every knob below reads
 ## `challenge`. With `enabled = false` every knob returns the original fixed value.
+##
+## Five more models shape how that one number is spent:
+##
+##  4. Timing model - running mean and spread of how early this player swings (seconds between
+##                    the click and the shot reaching the deflect radius). Predicts P(the next
+##                    swing is on time) and widens the deflect window just enough to reach 75%.
+##                    It also tracks how often a hit lands with no swing at all, and lengthens
+##                    the muzzle telegraph for players who do not react.
+##  5. Room model   - a rating for the player and one for every room, updated like chess Elo on
+##                    each death (room wins) and each room cleared (player wins). Predicts
+##                    P(clear this room on this attempt). A room that has beaten this player
+##                    before is eased the moment they walk in, not after three more deaths.
+##  6. Lever bandit - three kinds of help: timing (deflect window, radius, arc), pace (shot
+##                    speed, fire rate) and density (shots in the air, telegraph). On a death
+##                    streak it picks one lever by UCB1, gives it an extra boost for the next
+##                    life, and scores it by whether that life went better. It learns which
+##                    kind of help works for this player.
+##  7. Pacing wave  - an intensity meter fed by hits, deflects and near misses. After a peak
+##                    the enemies fire slower for five seconds; in a long calm at high challenge
+##                    they fire a little faster. Fights get a rhythm of pressure and release.
+##  8. Skill tracing - Bayesian knowledge tracing per mechanic (deflect, dash, air dash, rebound,
+##                    lane change): P(the player knows it), updated once per life from whether
+##                    they used it. A stuck player gets the hint for the mechanic they have not
+##                    shown, in place of the general stage hint.
 
 signal assist_changed(kind: String)
 ## The player looks stuck: the game shows the stage's one-line hint again.
@@ -35,6 +59,17 @@ const MOVE_STEP: float = 0.2
 const MOVE_MIN_SEEN: float = 3.0
 const TARGET_HIT_CALM: float = 0.26
 const TARGET_HIT_TILTED: float = 0.10
+const LEVER_TIMING: int = 0
+const LEVER_PACE: int = 1
+const LEVER_DENSITY: int = 2
+const LEVER_NAMES: PackedStringArray = ["timing", "pace", "density"]
+const TIMING_MIN_N: int = 8
+const TIMING_GOAL: float = 0.75
+const SKILLS: PackedStringArray = ["parry", "rebound", "airjump", "dash", "lane"]
+const BKT_START: float = 0.15
+const BKT_LEARN: float = 0.12
+const BKT_SLIP: float = 0.15
+const BKT_GUESS: float = 0.10
 
 var enabled: bool = true
 var persist: bool = true
@@ -55,6 +90,28 @@ var move_base_acc: float = 0.34
 var move_n: int = 0
 var parry_rate: float = 0.5
 var runs: int = 0
+var time_mean: float = 0.12     # model 4: seconds between the swing and the shot arriving
+var time_var: float = 0.01
+var time_n: int = 0
+var no_react: float = 0.0       # share of hits taken with no swing at all
+var player_r: float = 0.0       # model 5
+var room_r: Dictionary = {}     # "stage:room" -> rating
+var arm_n: PackedFloat32Array = PackedFloat32Array([0.0, 0.0, 0.0])  # model 6
+var arm_r: PackedFloat32Array = PackedFloat32Array([0.0, 0.0, 0.0])
+var life_ema: float = 12.0
+var skill_p: Dictionary = {}    # model 8: skill -> P(known); a skill appears once it had a chance
+var skill_lives: int = 0
+
+# --- session state of models 4 to 8 (not saved)
+var intensity: float = 0.0      # model 7
+var arm: int = -1               # lever boosted for this life, -1 = none
+var _relax_left: float = 0.0
+var _room_key: String = ""
+var _stage_idx: int = 0
+var _last_press_ms: int = -100000
+var _life_used: Dictionary = {}
+var _life_blackout: bool = false
+var _hint_flip: bool = false
 
 # --- session counters (not saved)
 var mercy_shots: int = 0
@@ -127,11 +184,30 @@ func _reset_models() -> void:
 	parry_rate = 0.5
 	challenge = START_CHALLENGE
 	tilt = 0.0
+	time_mean = 0.12
+	time_var = 0.01
+	time_n = 0
+	no_react = 0.0
+	player_r = 0.0
+	room_r = {}
+	arm_n = PackedFloat32Array([0.0, 0.0, 0.0])
+	arm_r = PackedFloat32Array([0.0, 0.0, 0.0])
+	life_ema = 12.0
+	skill_p = {}
+	skill_lives = 0
 
 
 func reset_profile() -> void:
 	## Forget everything learned (tests, or a fresh player).
 	_reset_models()
+	intensity = 0.0
+	arm = -1
+	_relax_left = 0.0
+	_room_key = ""
+	_stage_idx = 0
+	_life_used.clear()
+	_life_blackout = false
+	_hint_flip = false
 	_streak = 0
 	_fall_streak = 0
 	_death_times.clear()
@@ -149,44 +225,58 @@ func _now() -> float:
 
 # ================================================================= knobs read by the game
 
+func level(lever: int = -1) -> float:
+	## The challenge a knob actually reads: the global number, lowered in a room that has beaten
+	## this player before (model 5) and lowered again for the lever the bandit is boosting (model 6).
+	var c: float = challenge - room_ease()
+	if lever >= 0 and arm == lever:
+		c -= arm_boost()
+	return clampf(c, 0.0, 1.0)
+
+
 func shot_speed_mult() -> float:
-	return lerpf(0.70, 1.15, challenge) if enabled else 1.0
+	return lerpf(0.70, 1.15, level(LEVER_PACE)) if enabled else 1.0
 
 
 func fire_interval_mult() -> float:
-	return lerpf(1.50, 0.85, challenge) if enabled else 1.0
+	return lerpf(1.50, 0.85, level(LEVER_PACE)) * pace_mult() if enabled else 1.0
 
 
 func charge_time() -> float:
-	## Muzzle telegraph before an enemy fires.
-	return lerpf(0.70, 0.40, challenge) if enabled else 0.45
+	## Muzzle telegraph before an enemy fires. Longer for a player who often takes a hit
+	## without swinging at all (model 4).
+	if not enabled:
+		return 0.45
+	return lerpf(0.70, 0.40, level(LEVER_DENSITY)) + 0.15 * no_react * (1.0 - challenge)
 
 
 func max_threats() -> int:
 	## How many enemy shots may be in the air near the player before the next enemy holds fire.
-	if not enabled or challenge >= 0.85:
+	var c: float = level(LEVER_DENSITY)
+	if not enabled or c >= 0.85:
 		return 99
-	if challenge < 0.25:
-		return 1
-	return 2 if challenge < 0.6 else 3
+	var cap: int = 1 if c < 0.25 else (2 if c < 0.6 else 3)
+	if _relax_left > 0.0:
+		cap = maxi(cap - 1, 1)
+	return cap
 
 
 func parry_window_bonus() -> float:
-	return lerpf(0.10, 0.0, challenge) if enabled else 0.0
+	return lerpf(0.10, 0.0, level(LEVER_TIMING)) + timing_bonus() if enabled else 0.0
 
 
 func parry_radius_mult() -> float:
-	return lerpf(1.22, 1.0, challenge) if enabled else 1.0
+	return lerpf(1.22, 1.0, level(LEVER_TIMING)) if enabled else 1.0
 
 
 func parry_arc_mult() -> float:
-	return lerpf(1.40, 1.0, challenge) if enabled else 1.0
+	return lerpf(1.40, 1.0, level(LEVER_TIMING)) if enabled else 1.0
 
 
 func blackout_bonus() -> float:
 	if not enabled:
 		return 0.0
-	return lerpf(1.0, 0.0, challenge) + (0.5 if tilt > 0.35 else 0.0)
+	return lerpf(1.0, 0.0, level()) + (0.5 if tilt > 0.35 else 0.0)
 
 
 func mercy_enabled() -> bool:
@@ -196,7 +286,7 @@ func mercy_enabled() -> bool:
 
 
 func show_sights() -> bool:
-	return enabled and challenge < 0.4
+	return enabled and level() < 0.4
 
 
 func lead_amount() -> float:
@@ -329,6 +419,10 @@ func _take_sample(p: Projectile) -> PackedFloat32Array:
 func shot_deflected(p: Projectile, in_blackout: bool) -> void:
 	var x: PackedFloat32Array = _take_sample(p)
 	## Blackout runs at quarter speed, so its deflections say nothing about normal play.
+	bump(0.07)
+	if not in_blackout:
+		_life_used["parry"] = true
+		no_react = lerpf(no_react, 0.0, 0.08)
 	if x.is_empty() or in_blackout:
 		return
 	hit_learn(x, false)
@@ -336,6 +430,11 @@ func shot_deflected(p: Projectile, in_blackout: bool) -> void:
 
 func player_hit(p: Projectile, in_blackout: bool) -> void:
 	var x: PackedFloat32Array = _take_sample(p)
+	bump(0.5)
+	if not in_blackout:
+		## Did the player swing at all in the half second before the hit?
+		var swung: bool = Time.get_ticks_msec() - _last_press_ms < 500
+		no_react = lerpf(no_react, 0.0 if swung else 1.0, 0.15)
 	if x.is_empty() or in_blackout:
 		return
 	hit_learn(x, true)
@@ -349,6 +448,7 @@ func shot_ended(p: Projectile) -> void:
 	var x: PackedFloat32Array = _take_sample(p)
 	var pl: Player = _player()
 	if near and not x.is_empty() and pl != null and not pl.in_blackout and not pl.dead:
+		bump(0.12)
 		hit_learn(x, false)
 
 
@@ -384,7 +484,18 @@ func quit_learn(x: PackedFloat32Array, quit_happened: bool) -> void:
 func player_died(cause: String, _pos: Vector2 = Vector2.ZERO) -> void:
 	deaths_by_cause[cause] = int(deaths_by_cause.get(cause, 0)) + 1
 	var now: float = _now()
+	var life: float = now - _life_start
+	if cause != "restart":
+		room_result(false)
+		skills_close(life)
+	if arm >= 0:
+		arm_score(arm, life > life_ema * 1.15)
+	life_ema = lerpf(life_ema, clampf(life, 1.0, 120.0), 0.2)
+	intensity = 0.0
+	_relax_left = 0.0
 	_streak += 1
+	## On a death streak one kind of help gets an extra boost for the next life.
+	arm = arm_choose() if _streak >= 2 and cause != "restart" else -1
 	_death_times.append(now)
 	while not _death_times.is_empty() and now - _death_times[0] > 60.0:
 		_death_times.pop_front()
@@ -410,6 +521,10 @@ func progress(_kind: String) -> void:
 	for s: Dictionary in _pending:
 		quit_learn(s["x"], false)
 	_pending.clear()
+	if arm >= 0:
+		arm_score(arm, true)
+		arm = -1
+	skills_close(999.0)
 	if _streak == 0:
 		challenge = clampf(challenge + 0.05, 0.0, 1.0)
 	_streak = 0
@@ -519,9 +634,210 @@ func aim_point(pl: Player, from: Vector2, speed: float, lead: float = -1.0) -> V
 	return chest + Vector2(expected_dir() * Player.RUN_SPEED * flight * trust * amount, 0.0)
 
 
+# ================================================================= model 4: timing model
+
+func parry_pressed(pl: Player) -> void:
+	## Called when a swing starts. Measures how early it was: the seconds until the nearest
+	## incoming shot reaches the deflect radius. A swing with nothing on the way is not a sample.
+	_last_press_ms = Time.get_ticks_msec()
+	if pl == null or pl.in_blackout:
+		return
+	var chest: Vector2 = pl.chest()
+	var radius: float = Player.PARRY_RADIUS * parry_radius_mult()
+	var best: float = 99.0
+	for node: Node in get_tree().get_nodes_in_group("projectiles"):
+		var p: Projectile = node as Projectile
+		if p == null or p.spent() or p.team != Projectile.Team.ENEMY or p.lane != pl.lane or not p.parryable:
+			continue
+		var rel: Vector2 = chest - p.global_position
+		var dist: float = rel.length()
+		if dist > 420.0:
+			continue
+		var closing: float = p.velocity.dot(rel / maxf(dist, 0.001))
+		if closing < 30.0:
+			continue
+		best = minf(best, maxf(dist - radius, 0.0) / closing)
+	if best <= 1.0:
+		timing_learn(best)
+
+
+func timing_learn(early: float) -> void:
+	if time_n == 0:
+		time_mean = early
+	else:
+		var d: float = early - time_mean
+		time_mean += 0.15 * d
+		time_var = 0.85 * (time_var + 0.15 * d * d)
+	time_n += 1
+
+
+func predict_on_time(extra: float = 0.0) -> float:
+	## P(the next swing is still active when the shot arrives), for the current deflect window
+	## plus `extra` seconds. Normal distribution, logistic approximation of its CDF.
+	var window: float = 0.18 + lerpf(0.10, 0.0, level(LEVER_TIMING)) + extra
+	var sd: float = sqrt(maxf(time_var, 0.0004))
+	return _sig(1.702 * (window - time_mean) / sd)
+
+
+func timing_bonus() -> float:
+	## The smallest extra deflect window that brings this player's swings to 75% on time,
+	## at most 0.08 s, and less of it the higher the challenge.
+	if not enabled or time_n < TIMING_MIN_N:
+		return 0.0
+	var extra: float = 0.0
+	while extra < 0.08 and predict_on_time(extra) < TIMING_GOAL:
+		extra += 0.01
+	return minf(extra, 0.08) * lerpf(1.0, 0.35, challenge)
+
+
+# ================================================================= model 5: room model
+
+func room_entered(stage: int, room: int, cleared_previous: bool) -> void:
+	if cleared_previous and _room_key != "":
+		room_result(true)
+	_stage_idx = stage
+	_room_key = "%d:%d" % [stage, room]
+
+
+func predict_clear() -> float:
+	## P(the player clears the current room on this attempt).
+	if _room_key == "":
+		return 0.5
+	return _sig(player_r - float(room_r.get(_room_key, 0.0)))
+
+
+func room_result(cleared: bool) -> void:
+	if _room_key == "":
+		return
+	var err: float = (1.0 if cleared else 0.0) - predict_clear()
+	player_r = clampf(player_r + 0.15 * err, -4.0, 4.0)
+	room_r[_room_key] = clampf(float(room_r.get(_room_key, 0.0)) - 0.35 * err, -4.0, 4.0)
+
+
+func room_ease() -> float:
+	## How much challenge is taken off in this room. Nothing while the player is expected to
+	## clear it within about two and a half attempts.
+	if not enabled or _room_key == "":
+		return 0.0
+	return clampf((0.40 - predict_clear()) * 0.5, 0.0, 0.18)
+
+
+# ================================================================= model 6: lever bandit
+
+func arm_choose() -> int:
+	## UCB1: the lever with the best record so far, with a bonus for levers tried less often.
+	var total: float = 0.0
+	for i: int in arm_n.size():
+		if arm_n[i] < 1.0:
+			return i
+		total += arm_n[i]
+	var best: int = 0
+	var best_score: float = -1.0
+	for i: int in arm_n.size():
+		var score: float = arm_r[i] / arm_n[i] + sqrt(0.8 * log(total) / arm_n[i])
+		if score > best_score:
+			best_score = score
+			best = i
+	return best
+
+
+func arm_score(which: int, went_better: bool) -> void:
+	if which < 0 or which >= arm_n.size():
+		return
+	for i: int in arm_n.size():
+		## Old results fade slowly: what helps a beginner may not help the same player later.
+		arm_n[i] *= 0.995
+		arm_r[i] *= 0.995
+	arm_n[which] += 1.0
+	if went_better:
+		arm_r[which] += 1.0
+
+
+func arm_boost() -> float:
+	## Extra challenge taken off the boosted lever: more of it the longer the streak and the
+	## higher the quit risk.
+	return 0.20 * clampf(float(_streak) / 5.0 + tilt, 0.3, 1.0)
+
+
+# ================================================================= model 7: pacing wave
+
+func bump(amount: float) -> void:
+	intensity = minf(intensity + amount, 1.0)
+	if intensity >= 0.8 and _relax_left <= 0.0:
+		_relax_left = 5.0
+
+
+func decay(dt: float) -> void:
+	intensity *= pow(0.5, dt / 6.0)
+	_relax_left = maxf(_relax_left - dt, 0.0)
+
+
+func pace_mult() -> float:
+	## Multiplier on the time between enemy shots: release after a peak, a little more
+	## pressure in a long calm when the player is doing well.
+	if not enabled:
+		return 1.0
+	if _relax_left > 0.0:
+		return 1.35
+	if challenge > 0.5 and tilt < 0.2 and intensity < 0.12:
+		return 0.92
+	return 1.0
+
+
+# ================================================================= model 8: skill tracing
+
+func skill_used(skill: String) -> void:
+	_life_used[skill] = true
+
+
+func skills_close(life: float) -> void:
+	## One observation per life (or per stretch up to a checkpoint) for every skill that had a
+	## chance to be used. Lives shorter than three seconds say nothing.
+	if life >= 3.0:
+		var lanes: bool = StageBase.current != null and StageBase.current.has_lanes
+		for s: String in SKILLS:
+			var used: bool = _life_used.has(s)
+			var chance: bool = true
+			if s == "rebound":
+				chance = _life_blackout
+			elif s == "lane":
+				chance = lanes
+			if not chance and not used:
+				continue
+			var p: float = float(skill_p.get(s, BKT_START))
+			if used:
+				p = p * (1.0 - BKT_SLIP) / (p * (1.0 - BKT_SLIP) + (1.0 - p) * BKT_GUESS)
+			else:
+				p = p * BKT_SLIP / (p * BKT_SLIP + (1.0 - p) * (1.0 - BKT_GUESS))
+			skill_p[s] = clampf(p + (1.0 - p) * BKT_LEARN, 0.01, 0.99)
+		skill_lives += 1
+	_life_used.clear()
+	_life_blackout = false
+
+
+func weakest_skill() -> String:
+	## The mechanic this player has had a chance to use and most likely does not know yet.
+	if skill_lives < 3:
+		return ""
+	var worst: String = ""
+	var worst_p: float = 0.45
+	for s: String in SKILLS:
+		if skill_p.has(s) and float(skill_p[s]) < worst_p:
+			worst_p = float(skill_p[s])
+			worst = s
+	return worst
+
+
+func hint_skill() -> String:
+	## Every second stuck hint is about the weakest mechanic; the others stay the stage hint.
+	_hint_flip = not _hint_flip
+	return "" if _hint_flip else weakest_skill()
+
+
 # ================================================================= mercy shot (Blackout)
 
 func blackout_started() -> void:
+	_life_blackout = true
 	_mercy_open = mercy_enabled()
 	_mercy_at = _now() + 0.25
 	_blackout_end = _now() + GameState.blackout_duration()
@@ -578,9 +894,19 @@ func run_started() -> void:
 	_last_input_ms = Time.get_ticks_msec()
 	_idle_flagged = false
 	_last_hint = _now()
+	intensity = 0.0
+	arm = -1
+	_relax_left = 0.0
+	_room_key = ""
+	_stage_idx = 0
+	_life_used.clear()
+	_life_blackout = false
+	_hint_flip = false
 
 
-func stage_loaded(_index: int) -> void:
+func stage_loaded(index: int) -> void:
+	## Walking into the next stage means the last room of the one before was cleared.
+	room_entered(index, 0, _in_run and index == _stage_idx + 1)
 	_save()
 	_last_progress = _now()
 	_life_start = _now()
@@ -623,6 +949,7 @@ func _process(_delta: float) -> void:
 		_last_input_ms = now_ms
 		return
 	tilt *= pow(0.5, dt / 45.0)
+	decay(dt)
 	var now: float = _now()
 	if _in_run and now - _last_save > 20.0:
 		## What the models learned is written during play too, not only at deaths and checkpoints.
@@ -666,7 +993,22 @@ func debug_lines() -> PackedStringArray:
 		"move model  acc %.2f  repeat-last %.2f  n %d" % [move_acc, move_base_acc, move_n],
 		"shots x%.2f  interval x%.2f  window +%.2f  cap %d  mercy %d" % [shot_speed_mult(),
 				fire_interval_mult(), parry_window_bonus(), max_threats(), mercy_shots],
+		"timing  swings %.2fs early +-%.2f  on time %.2f  no swing %.2f  n %d" % [time_mean,
+				sqrt(maxf(time_var, 0.0)), predict_on_time(timing_bonus()), no_react, time_n],
+		"room %s  clear chance %.2f  eased %.2f  player %.2f" % [_room_key, predict_clear(), room_ease(), player_r],
+		"lever %s  tried %d/%d/%d  pace %s x%.2f  intensity %.2f" % [
+				LEVER_NAMES[arm] if arm >= 0 else "none", int(round(arm_n[0])), int(round(arm_n[1])),
+				int(round(arm_n[2])), "relax" if _relax_left > 0.0 else "build", pace_mult(), intensity],
+		"skills  %s" % _skills_text(),
 	])
+
+
+func _skills_text() -> String:
+	var parts: PackedStringArray = PackedStringArray()
+	for s: String in SKILLS:
+		if skill_p.has(s):
+			parts.append("%s %.2f" % [s, float(skill_p[s])])
+	return "  ".join(parts) if not parts.is_empty() else "no data yet"
 
 
 # ================================================================= persistence
@@ -678,6 +1020,9 @@ func to_dict() -> Dictionary:
 		"move_c3": Array(move_c3),
 		"move_acc": move_acc, "move_base_acc": move_base_acc, "move_n": move_n,
 		"parry_rate": parry_rate, "runs": runs,
+		"time_mean": time_mean, "time_var": time_var, "time_n": time_n, "no_react": no_react,
+		"player_r": player_r, "room_r": room_r, "arm_n": Array(arm_n), "arm_r": Array(arm_r),
+		"life_ema": life_ema, "skill_p": skill_p, "skill_lives": skill_lives,
 	}
 
 
@@ -710,6 +1055,31 @@ func from_dict(d: Dictionary) -> bool:
 	move_n = int(d.get("move_n", 0))
 	parry_rate = float(d.get("parry_rate", 0.5))
 	runs = int(d.get("runs", 0))
+	## Models 4 to 8 were added later: a profile without them keeps what it has and starts these fresh.
+	time_mean = clampf(float(d.get("time_mean", 0.12)), 0.0, 1.0)
+	time_var = clampf(float(d.get("time_var", 0.01)), 0.0, 1.0)
+	time_n = int(d.get("time_n", 0))
+	no_react = clampf(float(d.get("no_react", 0.0)), 0.0, 1.0)
+	player_r = clampf(float(d.get("player_r", 0.0)), -4.0, 4.0)
+	room_r = {}
+	var rooms: Variant = d.get("room_r", {})
+	if rooms is Dictionary:
+		for k: Variant in rooms:
+			room_r[str(k)] = clampf(float(rooms[k]), -4.0, 4.0)
+	var an: Variant = d.get("arm_n", [])
+	var ar: Variant = d.get("arm_r", [])
+	if an is Array and ar is Array and an.size() == arm_n.size() and ar.size() == arm_r.size():
+		for i: int in arm_n.size():
+			arm_n[i] = maxf(float(an[i]), 0.0)
+			arm_r[i] = clampf(float(ar[i]), 0.0, arm_n[i])
+	life_ema = clampf(float(d.get("life_ema", 12.0)), 1.0, 120.0)
+	skill_p = {}
+	var skills: Variant = d.get("skill_p", {})
+	if skills is Dictionary:
+		for k: Variant in skills:
+			if SKILLS.has(str(k)):
+				skill_p[str(k)] = clampf(float(skills[k]), 0.01, 0.99)
+	skill_lives = int(d.get("skill_lives", 0))
 	return true
 
 

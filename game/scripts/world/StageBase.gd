@@ -414,6 +414,7 @@ func _enter_room(idx: int) -> void:
 	var cp: Dictionary = _checkpoints[idx - 1]
 	checkpoint_pos = cp["pos"]
 	checkpoint_lane = cp["lane"]
+	Director.room_entered(stage_index, idx, true)
 	Director.progress("checkpoint")
 	GameState.save_run(current_room)
 	checkpoint_reached.emit()
@@ -425,6 +426,7 @@ func resume_at(room: int) -> void:
 	if r <= 0:
 		return
 	current_room = r
+	Director.room_entered(stage_index, r, false)
 	var cp: Dictionary = _checkpoints[r - 1]
 	checkpoint_pos = cp["pos"]
 	checkpoint_lane = cp["lane"]
