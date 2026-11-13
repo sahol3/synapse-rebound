@@ -206,6 +206,23 @@ func _run() -> void:
 	GameState.persist = false
 	main._begin_run(3)
 	await _wait(1.0)
+	# Freeze check: die after climbing well above the last checkpoint (any cause), then again at once.
+	var fp: Player = _p()
+	fp.global_position.y -= 420.0
+	fp.velocity = Vector2.ZERO
+	await _wait(0.2)
+	var loops0: int = GameState.loop_deaths
+	fp.die("hit")
+	await _wait(1.5)
+	_check("F1 dying high above the checkpoint rewinds; the character is never left frozen",
+			not fp.dead and not main._busy and fp.input_enabled, "dead=%s busy=%s loops +%d kill_y=%.0f player_y=%.0f"
+			% [str(fp.dead), str(main._busy), GameState.loop_deaths - loops0, main.stage.kill_y, fp.global_position.y])
+	fp.die("hit")
+	await _wait(0.2)
+	fp.die("hit")
+	await _wait(1.5)
+	_check("F2 a second death during the rewind is not lost", not fp.dead and not main._busy,
+			"dead=%s busy=%s" % [str(fp.dead), str(main._busy)])
 	var last: int = PLATS.size() - 1
 	## Control: the same bot with plain jumps only. It must fail, or this test proves nothing.
 	var plain: Dictionary = await _climb(false, 12.0, true)

@@ -23,6 +23,7 @@ var menu: Node
 
 var _state: String = "menu"
 var _busy: bool = false
+var _death_pending: bool = false
 
 
 func _ready() -> void:
@@ -144,6 +145,9 @@ func load_stage(index: int, room: int = 0) -> void:
 	camera.snap_to_target()
 	stage.dialogue.connect(hud.say)
 	stage.module_collected.connect(_on_module_collected)
+	stage.checkpoint_reached.connect(func() -> void:
+		if GameState.persist:
+			hud.saved_flash())
 	if stage.has_signal("boss_defeated"):
 		stage.connect("boss_defeated", _on_boss_defeated)
 	hud.player = player
@@ -168,9 +172,15 @@ func load_stage(index: int, room: int = 0) -> void:
 # ================================================================= death / rewind
 
 func _on_player_died() -> void:
-	if _busy or _state != "play":
+	if _state != "play":
+		return
+	if _busy:
+		## A death that lands while a rewind is still running must not be dropped: the player
+		## would stay dead with nothing left to bring them back (the Stage 3 freeze).
+		_death_pending = true
 		return
 	_busy = true
+	_death_pending = false
 	GameState.register_death()
 	Director.player_died(player.death_cause, player.global_position)
 	GameState.save_run(stage.current_room)
@@ -194,6 +204,8 @@ func _on_player_died() -> void:
 	if GameState.current_stage != 1 and GameState.once("first_death"):
 		hud.say("first_death")
 	_busy = false
+	if _state == "play" and player != null and is_instance_valid(player) and player.dead:
+		_on_player_died.call_deferred()
 
 
 func _on_blackout_started() -> void:
@@ -269,6 +281,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		player.die("restart")
 
 
+func _notification(what: int) -> void:
+	## Closing the window mid-run keeps the clock and stats up to the last moment.
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and _state == "play" and stage != null and is_instance_valid(stage):
+		GameState.save_run(stage.current_room)
+
+
 func _set_paused(on: bool) -> void:
 	get_tree().paused = on
 	hud.set_paused_panel(on)
@@ -286,4 +304,6 @@ func _on_pause_action(action: String) -> void:
 		"menu":
 			_set_paused(false)
 			Director.quit("menu")
+			if stage != null and is_instance_valid(stage):
+				GameState.save_run(stage.current_room)
 			show_menu()

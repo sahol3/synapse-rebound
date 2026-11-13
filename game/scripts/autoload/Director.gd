@@ -82,6 +82,8 @@ var _m_t: float = 0.0
 var _near_tick: int = 0
 var _last_ms: int = 0
 var _last_hint: float = 0.0
+var _last_save: float = 0.0
+var save_path: String = SAVE_PATH
 
 
 func _ready() -> void:
@@ -91,6 +93,13 @@ func _ready() -> void:
 	persist = not GameState.is_dev_run()
 	if persist:
 		_load()
+	for arg: String in OS.get_cmdline_user_args():
+		## Dev check of the real save path in an exported build: `-- --profile-file=name.json`
+		## writes the profile to that file even on a debug start, never to the player's own.
+		if arg.begins_with("--profile-file="):
+			save_path = "user://" + arg.get_slice("=", 1).get_file()
+			persist = true
+			_load()
 	_last_ms = Time.get_ticks_msec()
 	_last_input_ms = _last_ms
 
@@ -572,6 +581,7 @@ func run_started() -> void:
 
 
 func stage_loaded(_index: int) -> void:
+	_save()
 	_last_progress = _now()
 	_life_start = _now()
 	_m1 = 1
@@ -614,6 +624,9 @@ func _process(_delta: float) -> void:
 		return
 	tilt *= pow(0.5, dt / 45.0)
 	var now: float = _now()
+	if _in_run and now - _last_save > 20.0:
+		## What the models learned is written during play too, not only at deaths and checkpoints.
+		_save()
 	if _in_run and now - _last_progress > 50.0 and now - _last_hint > 50.0:
 		_last_hint = now
 		stuck.emit()
@@ -703,17 +716,18 @@ func from_dict(d: Dictionary) -> bool:
 func _save() -> void:
 	if not persist:
 		return
-	var f: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var f: FileAccess = FileAccess.open(save_path, FileAccess.WRITE)
 	if f == null:
 		return
+	_last_save = _now()
 	f.store_string(JSON.stringify(to_dict()))
 	f.close()
 
 
 func _load() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
+	if not FileAccess.file_exists(save_path):
 		return
-	var f: FileAccess = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var f: FileAccess = FileAccess.open(save_path, FileAccess.READ)
 	if f == null:
 		return
 	var parsed: Variant = JSON.parse_string(f.get_as_text())

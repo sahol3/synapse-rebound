@@ -73,8 +73,9 @@ The pause screen shows the current level, and F3 shows the models' numbers durin
 
 ## Saving
 
-The run is saved at every stage start, checkpoint and death: the stage, the checkpoint, the module choices, the
-clock, the loop count and the stats. When a save exists the title screen shows Continue with the stage name, and New
+The run is saved at every stage start, checkpoint and death, and when you quit to the title screen or close the
+window: the stage, the checkpoint, the module choices, the clock, the loop count and the stats. A small "saved"
+appears under the sync meter at each checkpoint. When a save exists the title screen shows Continue with the stage name, and New
 game starts over. Finishing the game clears the save. The file is `user://save.json` in Godot's user data folder.
 
 ## Enemies

@@ -201,7 +201,7 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 - Time: `Engine.time_scale` belongs to JuiceManager only (`set_base_time_scale`, `hitstop`, `reset_time`). Anything that
   must run during hit-stop or Blackout uses real time: `create_timer(t, true, false, true)` and `Tween.set_ignore_time_scale(true)`.
 - Physics layers: 1 world_fg, 2 world_bg, 4 player_hurt, 8 enemy_hurt, 32 triggers. Lane 1 (background) uses layer 2.
-- Test gate: `tools\bin\godot.cmd --headless --path game res://tests/MechTest.tscn` must print `MECHTEST passed=27 failed=0`
+- Test gate: `tools\bin\godot.cmd --headless --path game res://tests/MechTest.tscn` must print `MECHTEST passed=28 failed=0`
   (or more passes, never a failure) before any commit that touches gameplay. Input in tests goes through
   `Input.parse_input_event(InputEventAction)` for taps (MechTest, DirectorLive); held keys in ClimbTest use
   `Input.action_press` / `action_release` with one released physics frame between two presses.
@@ -220,9 +220,13 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
   (`Director.persist = false`). The three models and what they learn from are described in `README.md`.
   Blackout runs at quarter speed, so an ordinary shot cannot arrive inside the window: the mercy shot is what makes a
   rebound possible, do not remove it without replacing it.
+- Enemies are plain Node2D, not physics bodies: anything that moves one (shove, knock-back) must keep walkers on
+  their platform inside the patrol range and leave turrets where they are. A death signal must never be dropped:
+  `Main._on_player_died` replays one that arrives during a rewind. A stage that moves `kill_y` updates it in
+  `on_rewind`, in the same frame as the respawn.
 - Climb rule: a plain jump is 55 px. Any step taller than 48 px needs the air-dash (Space again in mid-air), and a
   stage that needs it must say so on screen. A new or changed climb gets a bot run like `tests/ClimbTest.gd`.
-- More test gates: `DirectorTest.tscn` (`DIRECTORTEST passed=27 failed=0`), `ClimbTest.tscn` (`CLIMBTEST passed=9
+- More test gates: `DirectorTest.tscn` (`DIRECTORTEST passed=27 failed=0`), `ClimbTest.tscn` (`CLIMBTEST passed=11
   failed=0`, about 90 s) and `DirectorLive.tscn` (`DIRECTORLIVE passed=7 failed=0`, about 100 s) after any change to
   the director, the player's movement or a stage layout.
 - Enemy art: `EnemyBase.SKINS` holds each character's sheet layout, feet offset, hurtbox, shield and muzzle. Look at

@@ -44,6 +44,7 @@ var _card_t: float = -1.0
 var _card_index: int = 0
 var _loop_t: float = -1.0
 var _loop_n: int = 0
+var _saved_t: float = -1.0
 var _module_open: bool = false
 var _module_stage: int = 0
 var _module_t: float = 0.0
@@ -107,6 +108,10 @@ func _process(_delta: float) -> void:
 		_loop_t += dt
 		if _loop_t > 0.9:
 			_loop_t = -1.0
+	if _saved_t >= 0.0:
+		_saved_t += dt
+		if _saved_t > 1.8:
+			_saved_t = -1.0
 	if _module_open:
 		_module_t += dt
 	if _ending_open:
@@ -168,6 +173,11 @@ func clear_dialogue() -> void:
 func stage_card(index: int) -> void:
 	_card_index = index
 	_card_t = 0.0
+
+
+func saved_flash() -> void:
+	## A checkpoint was reached and the run was written to disk.
+	_saved_t = 0.0
 
 
 func loop_flash(deaths: int) -> void:
@@ -258,6 +268,8 @@ func _draw_overlay() -> void:
 			_t(sp + Vector2(0, -38), "W/S", 1, AMBER, 2)
 		if not _module_open and not _paused:
 			_draw_reticle()
+	if _saved_t >= 0.0 and not Director.debug and not _module_open and not _paused:
+		_t(Vector2(W - 12.0, 50), "saved", 1, DIM, 1)
 	if Director.debug and not _module_open and not _paused:
 		var dbg: PackedStringArray = Director.debug_lines()
 		for i: int in dbg.size():
@@ -416,7 +428,7 @@ func _draw_pause() -> void:
 	var x: float = _ox()
 	var oy: float = _oy()
 	_t(Vector2(x, 92 + oy), "PAUSED", 2, TEXT)
-	var rows: Array = [["Esc", "Resume"], ["R", "Rewind to the last checkpoint"], ["M", "Quit to the title screen"]]
+	var rows: Array = [["Esc", "Resume"], ["R", "Rewind to the last checkpoint"], ["M", "Quit to the title screen (progress is saved)"]]
 	for i: int in rows.size():
 		_t(Vector2(x, 124 + oy + i * 14), rows[i][0], 1, AMBER)
 		_t(Vector2(x + 32.0, 124 + oy + i * 14), rows[i][1], 1, TEXT)

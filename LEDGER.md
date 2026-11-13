@@ -19,9 +19,35 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 | 10 | Upload `exports/web` and `exports/windows` to itch.io with butler (needs items 3 and 4) | operator, then agent | open |
 | 11 | Push the 2026-11-13 playtest-fix commits to GitHub | operator says yes, then agent | open |
 | 12 | Bot runs from start to exit for Stages 1, 2 and 4 (only Stage 3 has one) | agent | open |
+| 13 | After the next real session, check that `user://director.json` shows `runs` above 0 and samples (`hit_n`); on 2026-11-13 it stayed untouched through one session | agent | open |
 | 5 | Inkscape 1.4.4 not installed: Windows Installer needs 171,620 KB free on C: and only 109,488 KB was free (log `tools\_ink\admin.log`). Free ~300 MB on C:, then run `scripts\install_inkscape_portable.ps1` (MSI already downloaded) | operator, then agent | blocked on C: space |
 
 ## Entries
+
+### 2026-11-13 · Second playtest round: freeze, shoved enemies, saving (Claude Code, Fable 5.2)
+- Operator, playing the new Windows build: "the character sometimes just freezes, in level 3 especially", "it has no
+  permanent saving options", and a screenshot of the Stage 1 Enforcer standing inside the building under the walkway
+  ("characters or items go out of the total area I could even hit").
+- Causes, each reproduced by a test before the fix:
+  1. Freeze: `Main._on_player_died` dropped a death that arrived while a rewind was still running, so the player stayed
+     dead for good. Stage 3 triggered it often: `kill_y` follows the highest point reached, and after a respawn it was
+     updated one frame late, so a player who had climbed more than 230 px above the checkpoint was killed again by the
+     stale line. ClimbTest F1/F2 failed with `dead=true busy=false kill_y=79 player_y=240`.
+  2. Enemies out of reach: `EnemyBase.shove` moved enemies freely, and they are not physics bodies. A rebound from
+     above pushed walkers into the floor and turrets off their mounts, with the module the walker carried. MechTest T3
+     (new check) failed with `walker moved (-71, 4.4), turret moved (-40, 10.5)`.
+  3. Saving worked (his session wrote `save.json` at 23:13: stage 1, checkpoint 3) but nothing on screen said so, and
+     quitting to the title or closing the window did not save the clock and stats of the current life.
+- Fixes: a death during a rewind is replayed when the rewind ends; Stage 3 moves its kill line in `on_rewind`; walkers
+  slide only along their platform inside their patrol range, turrets and snipers do not move, flyers drift and return;
+  "saved" shows under the sync meter at each checkpoint; quitting to the title and closing the window save; the pause
+  screen says progress is saved; afterimages no longer stack on a standing player and recolour the sprite; the
+  difficulty profile is also written every 20 s of play and at each stage start.
+- Verified: see the test line below. The exported exe wrote a save file and a profile file on a real run
+  (`-- --save-file=` / `--profile-file=` dev arguments).
+- Open question: during his 23:11 session `director.json` was not rewritten although `save.json` was. A plain launch of
+  the same exe at 23:14 did rewrite it. Not explained. The timed save and the exe check narrow it; item 13 tracks it.
+- Not verified: feel. No person has played the build with these fixes.
 
 ### 2026-11-13 · Playtest fixes: adaptive difficulty, any window size, Stage 3, saving, enemy art (Claude Code, Fable 5.2)
 - Operator played the build: could not clear Stage 1 at first, then could not pass Stage 3 "in any way"; "some mechanics

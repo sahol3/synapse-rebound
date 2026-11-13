@@ -91,6 +91,9 @@ func _process(delta: float) -> void:
 
 func on_rewind() -> void:
 	_highest_y = checkpoint_pos.y
+	## Move the kill line now, not on the next frame: the player is already standing at the
+	## checkpoint, and a stale line above it would kill them again before this stage updates.
+	kill_y = _highest_y + 230.0
 
 
 func on_player_deflect(p: Projectile) -> void:

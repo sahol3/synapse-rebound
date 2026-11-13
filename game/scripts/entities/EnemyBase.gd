@@ -237,8 +237,18 @@ func _physics_process(delta: float) -> void:
 	if _flash_t <= 0.0:
 		_flash_mat.set_shader_parameter("active", false)
 	if _shove.length() > 1.0:
-		position += _shove * delta
-		_anchor += _shove * delta * (0.0 if kind in [Kind.DRONE, Kind.DEFLECTOR] else 1.0)
+		## Enemies are not physics bodies, so a shove must never carry them through the world.
+		## (A rebound from above used to push walkers into the floor, out of reach, and the
+		## module they carried with them.)
+		match kind:
+			Kind.DRONE, Kind.DEFLECTOR:
+				## Flyers drift, then ease back to their anchor.
+				position += _shove * delta
+			Kind.ENFORCER, Kind.HEAVY:
+				## Walkers slide along their platform only, inside their patrol range.
+				position.x = clampf(position.x + _shove.x * delta, _anchor.x - patrol, _anchor.x + patrol)
+			_:
+				pass  # turrets, snipers and wing turrets are bolted down: stunned, not moved
 		_shove = _shove.move_toward(Vector2.ZERO, 600.0 * delta)
 	var player: Player = _player()
 	match kind:

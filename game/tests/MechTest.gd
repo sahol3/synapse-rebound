@@ -122,6 +122,15 @@ func _run() -> void:
 
 	# T3: blackout -> rebound
 	bot_on = false
+	## Bystanders for the rebound shockwave: a walker and a turret to the player's left.
+	var walker := EnemyBase.create(EnemyBase.Kind.ENFORCER, p.global_position + Vector2(-70, 0), 0, {"patrol": 30.0})
+	walker.active = false
+	main.stage.enemies_node.add_child(walker)
+	var bolted := EnemyBase.create(EnemyBase.Kind.TURRET, p.global_position + Vector2(-115, Player.FEET_Y), 0, {})
+	bolted.active = false
+	main.stage.enemies_node.add_child(bolted)
+	var walker_at: Vector2 = walker.position
+	var bolted_at: Vector2 = bolted.position
 	await _wait(1.2)
 	_shoot_at_player(60.0)
 	await _wait(0.35)
@@ -135,6 +144,13 @@ func _run() -> void:
 	await _wait(0.9)
 	_check("T3 deflect during Blackout = Rebound", not p.in_blackout and GameState.rebounds == 1, "rebounds=%d" % GameState.rebounds)
 	_check("T3 time restored", is_equal_approx(JuiceManager.base_time_scale, 1.0))
+	await _wait(0.6)
+	_check("T3 the rebound shockwave leaves a walker on its platform and a turret where it was",
+			is_instance_valid(walker) and is_instance_valid(bolted) and absf(walker.position.y - walker_at.y) < 0.5
+			and absf(walker.position.x - walker_at.x) <= 30.5 and bolted.position.distance_to(bolted_at) < 0.5,
+			"walker moved %s, turret moved %s" % [str(walker.position - walker_at), str(bolted.position - bolted_at)])
+	walker.queue_free()
+	bolted.queue_free()
 
 	# T4: blackout -> second hit -> death -> VHS rewind
 	bot_on = false

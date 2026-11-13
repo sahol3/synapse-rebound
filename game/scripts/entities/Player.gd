@@ -724,6 +724,9 @@ func _afterimages(real_delta: float) -> void:
 		trail = true
 	if not trail:
 		return
+	## Standing still, the afterimages would stack on the player and recolour the sprite.
+	if velocity.length() < 40.0 and _dash_time <= 0.0 and _slam_time <= 0.0 and not in_blackout:
+		return
 	_ghost_t -= real_delta
 	if _ghost_t <= 0.0:
 		_ghost_t = 0.035

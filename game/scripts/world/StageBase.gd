@@ -8,6 +8,7 @@ extends Node2D
 signal dialogue(id: String)
 signal module_collected(stage_index: int)
 signal stage_finished(stage_index: int)
+signal checkpoint_reached
 
 const T: int = 16
 const BG_TINT: Color = Color(0.62, 0.72, 0.95)
@@ -415,6 +416,7 @@ func _enter_room(idx: int) -> void:
 	checkpoint_lane = cp["lane"]
 	Director.progress("checkpoint")
 	GameState.save_run(current_room)
+	checkpoint_reached.emit()
 
 
 func resume_at(room: int) -> void:

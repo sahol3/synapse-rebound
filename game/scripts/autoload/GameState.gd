@@ -63,6 +63,12 @@ var _since_last_sync_gain: float = 0.0
 func _enter_tree() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	persist = not is_dev_run()
+	for arg: String in OS.get_cmdline_user_args():
+		## Dev check of the real save path in an exported build: `-- --save-file=name.json` saves to
+		## that file in the user folder even on a debug start, and never to the player's own save.
+		if arg.begins_with("--save-file="):
+			save_path = "user://" + arg.get_slice("=", 1).get_file()
+			persist = true
 	_register_inputs()
 
 
