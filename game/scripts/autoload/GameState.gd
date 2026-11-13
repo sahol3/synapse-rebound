@@ -239,13 +239,10 @@ func format_time(seconds: float) -> String:
 
 static func is_dev_run() -> bool:
 	## Tests, frame captures and the `--stage=N` debug start must never touch the player's files.
-	if DisplayServer.get_name() == "headless":
+	if DisplayServer.get_name() == "headless" or OS.has_feature("movie"):
 		return true
-	for a: String in OS.get_cmdline_args():
-		if a.begins_with("--write-movie"):
-			return true
 	for a: String in OS.get_cmdline_user_args():
-		if a.begins_with("--stage="):
+		if a.begins_with("--stage=") or a.begins_with("--shot="):
 			return true
 	return false
 

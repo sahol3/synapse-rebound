@@ -21,6 +21,12 @@ var size: Vector2 = Vector2(1152, 648)
 var view: Vector2 = Vector2(384, 216)
 var ui_size: Vector2 = Vector2(576, 324)
 
+## Dev capture: `-- --shot=<absolute.png> [--shot-frame=N]` saves one screenshot of the real window
+## and quits. The movie writer always records the design size, so it cannot check other windows.
+var _shot_path: String = ""
+var _shot_frame: int = 150
+var _frame: int = 0
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -28,18 +34,33 @@ func _ready() -> void:
 	win.min_size = Vector2i(640, 360)
 	get_tree().root.size_changed.connect(_recompute)
 	_recompute()
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--shot="):
+			_shot_path = arg.get_slice("=", 1)
+		elif arg.begins_with("--shot-frame="):
+			_shot_frame = int(arg.get_slice("=", 1))
+	set_process(_shot_path != "")
 	if _should_maximize():
 		win.mode = Window.MODE_MAXIMIZED
 
 
+func _process(_delta: float) -> void:
+	_frame += 1
+	if _frame == _shot_frame:
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png(_shot_path)
+		get_tree().quit()
+
+
 func _should_maximize() -> bool:
-	## A plain desktop launch opens maximized. Tests, captures and explicit sizes are left alone.
-	if OS.get_name() == "Web" or DisplayServer.get_name() == "headless" or OS.has_feature("editor"):
+	## A plain desktop launch opens maximized. Tests, captures, debug starts and a window that was
+	## given its own size on the command line are left alone. (Engine arguments such as
+	## --resolution are not visible to scripts in an exported build, so the size itself is the test.)
+	if OS.get_name() == "Web" or DisplayServer.get_name() == "headless" or OS.has_feature("editor") or OS.has_feature("movie") or GameState.is_dev_run():
 		return false
-	for a: String in OS.get_cmdline_args():
-		if a.begins_with("--resolution") or a.begins_with("--write-movie") or a == "--windowed" or a == "--fullscreen":
-			return false
-	return true
+	var design := Vector2i(int(ProjectSettings.get_setting("display/window/size/viewport_width")),
+			int(ProjectSettings.get_setting("display/window/size/viewport_height")))
+	return get_window().size == design
 
 
 static func scales_for(window: Vector2) -> Vector2i:

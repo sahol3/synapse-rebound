@@ -36,7 +36,7 @@ def main():
         want = tuple(int(v) for v in os.path.basename(size_dir).split("x"))
         thumbs = []
         for shot in ("menu", "stage1", "stage3"):
-            frames = sorted(glob.glob(os.path.join(size_dir, shot, "f*.png")))
+            frames = sorted(glob.glob(os.path.join(size_dir, shot, "*.png")))
             log = ""
             for name in ("out.txt", "err.txt"):
                 path = os.path.join(size_dir, shot, name)

@@ -14,9 +14,11 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 | 4 | Create itch.io project page and note its `<user>/<game>` slug here | operator | open |
 | 6 | Click the itch shortcut once to confirm the app starts from D: (not verifiable from Claude's tools) | operator | open |
 | 7 | Uninstall Tiled from Settings > Apps (the 66 MB C: copy; the project uses `tools\tiled`) | operator | open |
-| 8 | Hand playtest of all four stages in a visible browser and on Windows (feel, difficulty, frame rate, audio) | operator | open |
+| 8 | Hand playtest of all four stages in a visible browser and on Windows (feel, difficulty, frame rate, audio). First playtest 2026-11-13 led to the adaptive director, Stage 3 fix, saving and new enemy art; play again and press F3 to see what the director thinks | operator | open |
 | 9 | Public GitHub repo: https://github.com/sahol3/synapse-rebound (created and pushed 2026-11-13 on the operator's yes) | agent | done 2026-11-13 |
 | 10 | Upload `exports/web` and `exports/windows` to itch.io with butler (needs items 3 and 4) | operator, then agent | open |
+| 11 | Push the 2026-11-13 playtest-fix commits to GitHub | operator says yes, then agent | open |
+| 12 | Bot runs from start to exit for Stages 1, 2 and 4 (only Stage 3 has one) | agent | open |
 | 5 | Inkscape 1.4.4 not installed: Windows Installer needs 171,620 KB free on C: and only 109,488 KB was free (log `tools\_ink\admin.log`). Free ~300 MB on C:, then run `scripts\install_inkscape_portable.ps1` (MSI already downloaded) | operator, then agent | blocked on C: space |
 
 ## Entries
@@ -50,13 +52,19 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
   - Enemy characters from "Sideview Sci-Fi - Patreon Collection" by Ansimuz (CC0, OpenGameArt, 2.47 MB zip in
     `assets/raw/sideview_scifi`, 14 sheets copied unchanged by `scripts/import_sprites.py`): marine = Enforcer, bipedal
     unit = Stage 3 Command Enforcer, mech = Heavy, tank = sniper, flying enemy = Deflector.
-- Verified so far (headless, real input actions): MECHTEST 27/27, DIRECTORTEST 27/27 (three simulated players, save file,
-  1,317 window sizes), CLIMBTEST 9/9 (Continue resumes at the checkpoint; keyboard-only climb of Stage 3 in two timings;
-  the plain-jump control fails as it must), DIRECTORLIVE 7/7 (weak bot: challenge 0.25 -> 0.00, 6 mercy shots, 6
-  rebounds, 0 deaths; strong bot: 0.25 -> 0.93, 0 deaths). All four stages boot headless with no script error.
-- STATE (work in progress, local WIP commit): still to do in this session: read the enemy gallery frames and the six
-  window-size captures (`scripts\capture_sizes.ps1`, `py scripts\check_sizes.py sizes`), fix what they show, re-export Web
-  and Windows, final commit. Nothing is pushed.
+- Verified (final runs, 23:00): MECHTEST 27/27 (director off; T3 now uses a shot fast enough to be a real rebound),
+  DIRECTORTEST 27/27 (three simulated players, save file logic, 1,317 window sizes), CLIMBTEST 9/9 (Continue resumes
+  at the checkpoint; keyboard-only climb of Stage 3 in two timings, 26 jumps and 26 air-dashes, 0 deaths; the
+  plain-jump control never leaves the floor), DIRECTORLIVE 7/7 (weak bot: challenge 0.25 -> 0.00, 6 mercy shots, 6
+  rebounds, 0 deaths; strong bot: 0.25 -> 0.93, 0 deaths). `check_sizes.py sizes2`: 18 of 18 screenshots from a real
+  window at 1152x648, 1366x768, 1600x900, 1024x768, 960x540 and 1800x720 have the asked size, no empty bar and no
+  script error; the bar check fails on a letterboxed control frame. Enemy gallery frame read: all seven kinds stand
+  on the roof with their own art. Exports rebuilt (Web 22:59, Windows 23:00); the exported exe took Stage 2 and
+  Stage 3 screenshots at 1600x900 and 1366x768 and ran headless with no script error; the web build booted in the
+  Browser pane at 1280x800 with a 1280x800 canvas and no console error.
+- Two test tools were wrong and are fixed: the movie writer records 1152x648 whatever `--resolution` says, so the
+  first size captures proved nothing (check_sizes caught it, 15 of 18 SIZE-WRONG); engine arguments are not visible
+  to scripts in an exported build, so dev runs are now detected by feature tag and user arguments.
 - Not verified: how any of it feels to a person. The three models have met simulated players and two bots only; no
   recorded human play exists. Stages 1, 2 and 4 have no start-to-exit bot run (only Stage 3 has). The web build was not
   opened in a browser after these changes. Fullscreen on a second monitor and windows larger than this screen were not

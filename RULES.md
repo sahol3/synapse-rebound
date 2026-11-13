@@ -203,7 +203,8 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 - Physics layers: 1 world_fg, 2 world_bg, 4 player_hurt, 8 enemy_hurt, 32 triggers. Lane 1 (background) uses layer 2.
 - Test gate: `tools\bin\godot.cmd --headless --path game res://tests/MechTest.tscn` must print `MECHTEST passed=27 failed=0`
   (or more passes, never a failure) before any commit that touches gameplay. Input in tests goes through
-  `Input.parse_input_event(InputEventAction)`; `Input.action_press` does not register as `just_pressed`.
+  `Input.parse_input_event(InputEventAction)` for taps (MechTest, DirectorLive); held keys in ClimbTest use
+  `Input.action_press` / `action_release` with one released physics frame between two presses.
   The first run right after an import of new assets can fail the landing check on a cold cache; run it again.
 - Sound gate (any change to `AudioManager.gd` or the samples): record `res://tests/SfxProbe.tscn` with
   `--write-movie <ABS>\f.png --fixed-fps 30 --quit-after 640`, then `py -I scripts\sfx_probe_check.py <f.wav> <slots>`
@@ -224,6 +225,12 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 - More test gates: `DirectorTest.tscn` (`DIRECTORTEST passed=27 failed=0`), `ClimbTest.tscn` (`CLIMBTEST passed=9
   failed=0`, about 90 s) and `DirectorLive.tscn` (`DIRECTORLIVE passed=7 failed=0`, about 100 s) after any change to
   the director, the player's movement or a stage layout.
+- Enemy art: `EnemyBase.SKINS` holds each character's sheet layout, feet offset, hurtbox, shield and muzzle. Look at
+  `res://tests/EnemyGallery.tscn` (every kind on one roof) after changing it:
+  `godot --path game --windowed --resolution 1280x400 res://tests/EnemyGallery.tscn -- --shot=<ABS>.png --shot-frame=110`.
+- Dev runs (headless, movie writer, `--stage=`, `--shot=`) never read or write `user://director.json` or
+  `user://save.json` (`GameState.is_dev_run()`). Engine arguments such as `--resolution` are not visible to scripts in
+  an exported build; do not branch on them.
 - Debug start: `godot.cmd --path game -- --stage=N` skips the menu (modules for earlier stages are auto-picked).
 - Visual checks without a window: `--write-movie <ABSOLUTE dir>\f.png --fixed-fps 30 --quit-after N` (a relative path
   fails silently), then read the PNGs. `scripts\capture_frames.ps1 -Tag <name>` records menu, stages 1-4 and the MechTest
