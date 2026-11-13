@@ -1,7 +1,7 @@
 shader_type canvas_item;
 // Final screen pass, kept honest to the pixel art:
 // - samples with NEAREST, so the 3x pixels are never smeared;
-// - scanlines sit on the 3 px art grid (the last row of every art pixel is a touch darker),
+// - scanlines sit on the art-pixel grid (the last row of every art pixel is a touch darker),
 //   instead of a sine wave that beats against it;
 // - chromatic split only when something violent happens (berserk, hits), never at rest;
 // - Sync tier shows as a hard 1-art-pixel frame from Overclocked up, not a glowing wash;
@@ -16,6 +16,7 @@ uniform float border_strength : hint_range(0.0, 1.0) = 0.0;
 uniform float berserk : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 flash_color : source_color = vec4(1.0, 1.0, 1.0, 0.0);
 uniform vec2 screen_size = vec2(1152.0, 648.0);
+uniform float art_px = 3.0;  // screen pixels per art pixel (Display.art)
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
@@ -30,21 +31,21 @@ void fragment() {
 		col = texture(screen_texture, uv).rgb;
 	}
 
-	float row = mod(floor(px.y), 3.0);
-	col *= 1.0 - scanline_strength * step(1.5, row);
+	float row = mod(floor(px.y), art_px);
+	col *= 1.0 - scanline_strength * step(art_px - 1.5, row) * step(1.5, art_px);
 
 	vec2 d = uv - 0.5;
 	float vig = smoothstep(0.45, 0.9, length(d * vec2(1.2, 1.0)));
 	col *= 1.0 - vignette_strength * vig;
 
-	// Tier frame: 3 screen px (one art pixel) on every edge.
+	// Tier frame: one art pixel on every edge.
 	float edge = min(min(px.x, screen_size.x - px.x), min(px.y, screen_size.y - px.y));
-	float frame = step(edge, 3.0) * border_strength;
+	float frame = step(edge, art_px) * border_strength;
 	vec3 bc = border_color.rgb;
 	if (berserk > 0.0) {
 		float flick = step(0.5, fract(TIME * 3.0));
 		bc = mix(vec3(1.0, 0.6, 0.0), vec3(1.0, 0.0, 0.2), flick);
-		frame = step(edge, 6.0);
+		frame = step(edge, art_px * 2.0);
 	}
 	col = mix(col, bc, frame);
 

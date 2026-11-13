@@ -12,10 +12,12 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [autoload]
 
+Display="*res://scripts/autoload/Display.gd"
 GameState="*res://scripts/autoload/GameState.gd"
 AudioManager="*res://scripts/autoload/AudioManager.gd"
 JuiceManager="*res://scripts/autoload/JuiceManager.gd"
 DialogueData="*res://scripts/autoload/DialogueData.gd"
+Director="*res://scripts/autoload/Director.gd"
 
 [debug]
 
@@ -30,8 +32,6 @@ gdscript/warnings/unsafe_call_argument=0
 
 window/size/viewport_width=1152
 window/size/viewport_height=648
-window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
 
 [editor_plugins]
 

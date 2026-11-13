@@ -4,6 +4,13 @@ extends Node
 ## WORLD (giant kinetic typography burned onto the buildings), SYS (HUD banner).
 
 const LINES: Dictionary = {
+	# ---------------------------------------------------------------- ADAPTIVE DIRECTOR
+	"assist_ease": [
+		{"who": "SARA", "text": "I'm jamming their fire control. Their shots are slower now, so watch one and send it back."},
+	],
+	"assist_hard": [
+		{"who": "ECHO", "text": "They have stopped holding back. So have you."},
+	],
 	# ---------------------------------------------------------------- STAGE 1
 	"s1_intro": [
 		{"who": "WORLD", "text": "00:00:00 // IMPACT AVOIDED // BOUNCING BACK -60.0s"},
@@ -11,7 +18,7 @@ const LINES: Dictionary = {
 		{"who": "SARA", "text": "Your kinetic wrist-guard is still online. Aim at their fire and bounce it back into their teeth!"},
 	],
 	"s1_tutorial": [
-		{"who": "SYS", "text": "Click to deflect toward the cursor. Space jumps, Shift air-dashes."},
+		{"who": "SYS", "text": "Click to deflect toward the cursor. Space jumps, and Space again in the air dashes upward. Shift dashes toward the cursor."},
 	],
 	"s1_pogo": [
 		{"who": "SYS", "text": "Deflect in mid-air to recoil off the shot. It gives your air-dash back."},
@@ -57,7 +64,7 @@ const LINES: Dictionary = {
 	"s3_intro": [
 		{"who": "WORLD", "text": "CLIMB BACK TO THE SCENE OF THE CRIME."},
 		{"who": "SARA", "text": "Wait. Why are you taking the express shaft straight to Rooftop 09?! The landing pad is too hot, turn back to Sector 4!"},
-		{"who": "SYS", "text": "The floor is gone. Chain deflections in the air to climb. Gold drones rally back."},
+		{"who": "SYS", "text": "The floor is gone. Jump, then press Space again to dash upward. A deflection in the air gives the dash back."},
 	],
 	"s3_rally": [
 		{"who": "ECHO", "text": "Audio log recovered [23:59:42]: 'I'm sorry, Vincent. Command says if a courier reads the Lazarus files, we pull the plug.' ...That was her voice."},
@@ -90,7 +97,7 @@ const LINES: Dictionary = {
 		{"who": "ECHO", "text": "Rewind. Again. You've died on this roof before, Vincent. Count the loops."},
 	],
 	"first_blackout": [
-		{"who": "SYS", "text": "Blackout. Deflect any shot before the timer runs out to rebound."},
+		{"who": "SYS", "text": "Blackout. A shot is coming for you. Deflect it before the timer runs out to rebound."},
 	],
 	"first_rebound": [
 		{"who": "ECHO", "text": "There it is. We always bounce back."},
@@ -99,6 +106,15 @@ const LINES: Dictionary = {
 		{"who": "WORLD", "text": "BERSERK OVERDRIVE"},
 	],
 }
+
+## Shown again when the director sees the player stuck (repeat deaths, or a long time without
+## reaching the next checkpoint). One per stage, the one thing that gets you through it.
+const STUCK_HINTS: PackedStringArray = [
+	"Put the cursor on a shot and click as it reaches you. Space again in the air dashes upward.",
+	"Deflect a shot, then press W or S at once to change lanes. A Z-ring changes lanes for you.",
+	"Jump, then press Space again to dash upward. Hold A or D to steer the dash.",
+	"Send her shots back: the wing turrets first, then the hull, then five bounces off the cockpit.",
+]
 
 ## Burned onto the buildings at random while Sync is 200%+ (The Echo leaking through).
 const ECHO_FRAGMENTS: PackedStringArray = [

@@ -31,6 +31,15 @@ func _ready() -> void:
 	_crt = crt_rect.material
 	GameState.tier_changed.connect(_on_tier)
 	_on_tier(GameState.tier)
+	Display.changed.connect(_apply_display)
+	_apply_display()
+
+
+func _apply_display() -> void:
+	## The passes work on the art-pixel grid, so they need the real window size and scale.
+	for m: ShaderMaterial in [_blackout, _vhs, _crt]:
+		m.set_shader_parameter("screen_size", Display.size)
+		m.set_shader_parameter("art_px", float(Display.art))
 
 
 func _pass(shader_path: String) -> ColorRect:

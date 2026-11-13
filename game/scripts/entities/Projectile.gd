@@ -86,6 +86,11 @@ func _ready() -> void:
 	_lane_visual = float(origin_lane)
 	_refresh_visual()
 	area_entered.connect(_on_area_entered)
+	if team == Team.ENEMY:
+		## The director scales fresh enemy fire and follows every shot to learn from its outcome.
+		if bounce_count == 0 and not is_core and not has_meta("mercy"):
+			velocity *= Director.shot_speed_mult()
+		Director.track_shot(self)
 
 
 func _physics_process(delta: float) -> void:
@@ -131,6 +136,8 @@ func deflect(dir: Vector2, by_player: bool) -> void:
 	elif bounce_count >= 3 and not is_core:
 		_become_rail()
 	_refresh_visual()
+	if not by_player:
+		Director.track_shot(self)
 
 
 func cross_to_lane(new_lane: int) -> void:
@@ -294,10 +301,17 @@ func _explode() -> void:
 	_die()
 
 
+func spent() -> bool:
+	## True once the shot has hit something or expired. It stays in the tree for a few frames
+	## while it fades, and must not be deflected in that time.
+	return _dead
+
+
 func _die() -> void:
 	if _dead:
 		return
 	_dead = true
+	Director.shot_ended(self)
 	set_deferred("monitoring", false)
 	visible = false
 	var tw := create_tween()

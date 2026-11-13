@@ -1,9 +1,8 @@
 class_name GameCamera
 extends Camera2D
-## Zoom-3 pixel camera: follows the player with mouse look-ahead, trauma-based shake that runs
+## Pixel camera (zoom = Display.art, a whole number at every window size): follows the player with mouse look-ahead, trauma-based shake that runs
 ## on real time (so hit-stop still rattles), and per-stage limits.
 
-const ZOOM: float = 3.0
 const LOOK_AHEAD: float = 0.16
 const MAX_OFFSET: Vector2 = Vector2(14, 10)
 const MAX_ROLL: float = 0.025
@@ -19,10 +18,13 @@ var lock_y: float = NAN
 var _noise := FastNoiseLite.new()
 var _t: float = 0.0
 var _last_ms: int = 0
+var _limit_rect: Rect2
+var _has_limits: bool = false
 
 
 func _ready() -> void:
-	zoom = Vector2(ZOOM, ZOOM)
+	Display.changed.connect(_apply_display)
+	_apply_display()
 	position_smoothing_enabled = true
 	position_smoothing_speed = 7.0
 	ignore_rotation = false
@@ -37,10 +39,31 @@ func add_trauma(amount: float) -> void:
 
 
 func set_limits(rect: Rect2) -> void:
-	limit_left = int(rect.position.x)
-	limit_top = int(rect.position.y)
-	limit_right = int(rect.end.x)
-	limit_bottom = int(rect.end.y)
+	_limit_rect = rect
+	_has_limits = true
+	_apply_limits()
+
+
+func _apply_display() -> void:
+	zoom = Vector2(Display.art, Display.art)
+	if _has_limits:
+		_apply_limits()
+
+
+func _apply_limits() -> void:
+	## A view larger than the stage is centred on it instead of pinned to one edge.
+	var r: Rect2 = _limit_rect
+	var v: Vector2 = Display.view
+	if v.x > r.size.x:
+		r.position.x -= (v.x - r.size.x) * 0.5
+		r.size.x = v.x
+	if v.y > r.size.y:
+		r.position.y -= (v.y - r.size.y) * 0.5
+		r.size.y = v.y
+	limit_left = int(floor(r.position.x))
+	limit_top = int(floor(r.position.y))
+	limit_right = int(ceil(r.end.x))
+	limit_bottom = int(ceil(r.end.y))
 
 
 func snap_to_target() -> void:

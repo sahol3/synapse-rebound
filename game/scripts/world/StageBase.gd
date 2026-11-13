@@ -62,6 +62,8 @@ var _rng := RandomNumberGenerator.new()
 var _traffic_items: Array[Dictionary] = []
 var _module_spawned: bool = false
 var _echo_cd: float = 6.0
+var _par_rects: Array[Dictionary] = []
+var _sky_fill: ColorRect
 
 
 static func spawn(node: Node) -> void:
@@ -411,6 +413,25 @@ func _enter_room(idx: int) -> void:
 	var cp: Dictionary = _checkpoints[idx - 1]
 	checkpoint_pos = cp["pos"]
 	checkpoint_lane = cp["lane"]
+	Director.progress("checkpoint")
+	GameState.save_run(current_room)
+
+
+func resume_at(room: int) -> void:
+	## Continue from a saved checkpoint: the rewind point moves there and earlier rooms count as cleared.
+	var r: int = clampi(room, 0, _checkpoints.size())
+	if r <= 0:
+		return
+	current_room = r
+	var cp: Dictionary = _checkpoints[r - 1]
+	checkpoint_pos = cp["pos"]
+	checkpoint_lane = cp["lane"]
+	for i: int in _enemy_defs.size():
+		if int(_enemy_defs[i]["room"]) < r and _live.has(i) and is_instance_valid(_live[i]):
+			_live[i].queue_free()
+			_live.erase(i)
+	if has_method("on_rewind"):
+		call("on_rewind")
 
 
 func _spawn_rooms_from(room: int) -> void:
@@ -477,9 +498,36 @@ func _build_parallax() -> void:
 	pb.layer = -10
 	add_child(pb)
 	var vertical: bool = parallax_mode == "shaft"
+	if not vertical:
+		## A taller window shows more sky. The layers stay anchored to the bottom of the view
+		## and this flat strip, in the skyline's own top colour, fills the gap above them.
+		var fill_layer := ParallaxLayer.new()
+		fill_layer.motion_scale = Vector2.ZERO
+		pb.add_child(fill_layer)
+		_sky_fill = ColorRect.new()
+		_sky_fill.color = Color8(0, 0, 60)
+		var sky: Texture2D = load("res://assets/warped_city/background/skyline-a.png")
+		var img: Image = sky.get_image() if sky else null
+		if img != null and not img.is_empty() and not img.is_compressed():
+			_sky_fill.color = img.get_pixel(0, 0)
+		_sky_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		fill_layer.add_child(_sky_fill)
 	_par_layer(pb, "skyline-a", Vector2(0.08, 0.04 if vertical else 0.0), Vector2(0, 0), Vector2(1024, 240), vertical)
 	_par_layer(pb, "buildings-bg", Vector2(0.25, 0.1 if vertical else 0.0), Vector2(0, 116), Vector2(1008, 124), vertical)
 	_par_layer(pb, "near-buildings-bg", Vector2(0.45, 0.22 if vertical else 0.0), Vector2(0, 31), Vector2(986, 209), vertical)
+	Display.changed.connect(_fit_parallax)
+	_fit_parallax()
+
+
+func _fit_parallax() -> void:
+	var shift: float = Display.view.y - Display.DESIGN_VIEW.y
+	for d: Dictionary in _par_rects:
+		if not bool(d["vertical"]):
+			(d["rect"] as TextureRect).position.y = float(d["y"]) + shift
+	if _sky_fill != null:
+		_sky_fill.visible = shift > 0.0
+		_sky_fill.position = Vector2(-64, -8)
+		_sky_fill.size = Vector2(Display.view.x + 128.0, shift + 9.0)
 
 
 func _par_layer(pb: ParallaxBackground, tex: String, motion: Vector2, offset: Vector2, size: Vector2, vertical: bool) -> void:
@@ -493,5 +541,6 @@ func _par_layer(pb: ParallaxBackground, tex: String, motion: Vector2, offset: Ve
 	tr.position = offset
 	tr.size = size if not vertical else Vector2(size.x, size.y)
 	layer.add_child(tr)
+	_par_rects.append({"rect": tr, "y": offset.y, "vertical": vertical})
 	if tex == "near-buildings-bg":
 		layer.modulate = Color(0.85, 0.85, 1.0)

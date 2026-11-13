@@ -22,7 +22,7 @@ const JUMP_VELOCITY: float = -318.0
 const JUMP_CUT: float = 0.45
 const COYOTE_TIME: float = 0.12
 const JUMP_BUFFER: float = 0.10
-const PARRY_BUFFER: float = 0.10
+const PARRY_BUFFER: float = 0.14
 const PARRY_COOLDOWN: float = 0.26
 const PARRY_RADIUS: float = 42.0
 const RECOIL_FORCE: float = 330.0
@@ -44,6 +44,8 @@ var dead: bool = false
 var in_blackout: bool = false
 ## Non-zero overrides mouse aim (automated tests, future gamepad stick).
 var aim_override: Vector2 = Vector2.ZERO
+## Why the last death happened: "hit", "timeout", "fall" or "restart" (read by the director).
+var death_cause: String = ""
 
 var _coyote: float = 0.0
 var _jump_buffer: float = 0.0
@@ -154,7 +156,7 @@ func _physics_process(delta: float) -> void:
 	_update_lane_visual(real_delta)
 	_arc.queue_redraw()
 	if StageBase.current != null and global_position.y > StageBase.current.kill_y:
-		die()
+		die("fall")
 
 
 func _tick(delta: float, real_delta: float) -> void:
@@ -162,7 +164,9 @@ func _tick(delta: float, real_delta: float) -> void:
 	_jump_buffer -= delta
 	_parry_buffer -= delta
 	_parry_active -= delta
-	_parry_cd -= delta
+	## In Blackout the world runs at quarter speed. The parry recharge stays on real time there,
+	## so a click that came too early does not lock the player out when the shot arrives.
+	_parry_cd -= real_delta if in_blackout else delta
 	_dash_cd -= delta
 	_lane_charge -= real_delta
 	_lane_cd -= real_delta
@@ -183,12 +187,17 @@ func _tick(delta: float, real_delta: float) -> void:
 			_heartbeat_t = 0.62
 			AudioManager.play_sfx("blackout_heartbeat")
 		if _blackout_left <= 0.0:
-			die()
+			die("timeout")
 
 
 func _read_input() -> void:
 	if Input.is_action_just_pressed("jump"):
-		_jump_buffer = JUMP_BUFFER
+		if not is_on_floor() and _coyote <= 0.0 and _air_dashes > 0 and _dash_time <= 0.0:
+			## Space again in mid-air spends the air-dash straight up, steered by A/D. It is the
+			## keyboard way to climb: no need to swing the cursor above your head first.
+			_start_dash(Vector2(Input.get_axis("move_left", "move_right") * 0.55, -1.0))
+		else:
+			_jump_buffer = JUMP_BUFFER
 	_jump_held = Input.is_action_pressed("jump")
 	if Input.is_action_just_pressed("parry"):
 		_parry_buffer = PARRY_BUFFER
@@ -271,8 +280,8 @@ func _post_move(pre: Vector2) -> void:
 	var now: int = Time.get_ticks_msec()
 	var on_floor: bool = is_on_floor()
 	if on_floor:
-		_coyote = COYOTE_TIME
-		_air_dashes = 1
+		_coyote = COYOTE_TIME + Director.coyote_bonus()
+		_air_dashes = 1 + Director.extra_air_dashes()
 		_air_chain = 0
 		if not _was_on_floor and pre.y > 220.0:
 			AudioManager.play_sfx("land", randf_range(0.9, 1.1))
@@ -287,9 +296,12 @@ func _post_move(pre: Vector2) -> void:
 			_wall_slam()
 
 
-func _start_dash() -> void:
+func _start_dash(forced: Vector2 = Vector2.ZERO) -> void:
 	var dir: Vector2 = aim_dir
-	if absf(dir.y) < 0.25:
+	if forced != Vector2.ZERO:
+		dir = forced
+		_jumping = false  # releasing Space must not cut the rise that follows the dash
+	elif absf(dir.y) < 0.25:
 		dir = Vector2(signf(dir.x) if dir.x != 0.0 else float(_facing), 0.0)
 	_dash_dir = dir.normalized()
 	_dash_time = DASH_TIME
@@ -332,10 +344,10 @@ func _parry_scan() -> void:
 		return
 	var c: Vector2 = chest()
 	var half_arc: float = deg_to_rad(GameState.parry_arc_degrees()) * 0.5
-	var radius: float = PARRY_RADIUS * _visual_scale()
+	var radius: float = PARRY_RADIUS * _visual_scale() * Director.parry_radius_mult()
 	for node: Node in get_tree().get_nodes_in_group("projectiles"):
 		var p: Projectile = node as Projectile
-		if p == null or p.team != Projectile.Team.ENEMY or not p.parryable or p.lane != lane:
+		if p == null or p.spent() or p.team != Projectile.Team.ENEMY or not p.parryable or p.lane != lane:
 			continue
 		var d: Vector2 = p.global_position - c
 		var reach: float = radius + 6.0 * p.scale.x
@@ -347,6 +359,7 @@ func _parry_scan() -> void:
 
 
 func _deflect(p: Projectile) -> void:
+	Director.shot_deflected(p, in_blackout)
 	var dir: Vector2 = _parry_aim if _parry_active > 0.0 else (p.global_position - chest()).normalized()
 	var target: Node2D = _assist_target(dir, p)
 	if target != null:
@@ -432,11 +445,12 @@ func _shockwave_dash_scan() -> void:
 		return
 	for node: Node in get_tree().get_nodes_in_group("projectiles"):
 		var p: Projectile = node as Projectile
-		if p == null or p.team != Projectile.Team.ENEMY or p.lane != lane:
+		if p == null or p.spent() or p.team != Projectile.Team.ENEMY or p.lane != lane:
 			continue
 		if p.global_position.distance_to(chest()) < 22.0:
 			var t: Node2D = _nearest_enemy(p.global_position)
 			var dir: Vector2 = (t.global_position - p.global_position).normalized() if t else _dash_dir
+			Director.shot_deflected(p, in_blackout)
 			p.deflect(dir, true)
 			p.velocity *= 2.0
 			GameState.register_parry(p.bounce_count)
@@ -570,6 +584,7 @@ func receive_projectile(p: Projectile) -> bool:
 		return false
 	if _dash_time > 0.0 and GameState.has_mod("phase_dash"):
 		return false
+	Director.player_hit(p, in_blackout)
 	take_hit(p.velocity.normalized())
 	return true
 
@@ -578,7 +593,7 @@ func take_hit(from_dir: Vector2) -> void:
 	if dead or _invuln > 0.0:
 		return
 	if in_blackout:
-		die()
+		die("hit")
 		return
 	_enter_blackout(from_dir)
 
@@ -599,6 +614,7 @@ func _enter_blackout(from_dir: Vector2) -> void:
 	JuiceManager.flash(Color(1.0, 0.0, 0.15, 0.35), 0.12)
 	AudioManager.play_sfx("hurt")
 	AudioManager.set_blackout(true)
+	Director.blackout_started()
 	blackout_started.emit()
 
 
@@ -629,10 +645,11 @@ func _rebound() -> void:
 	blackout_ended.emit(true)
 
 
-func die() -> void:
+func die(cause: String = "hit") -> void:
 	if dead:
 		return
 	dead = true
+	death_cause = cause
 	if in_blackout:
 		in_blackout = false
 		AudioManager.set_blackout(false)
@@ -740,7 +757,7 @@ func _draw_arc() -> void:
 	if _parry_active <= 0.0 and not omni:
 		return
 	var c: Vector2 = chest() - global_position
-	var r: float = PARRY_RADIUS * _visual_scale()
+	var r: float = PARRY_RADIUS * _visual_scale() * Director.parry_radius_mult()
 	var k: float = clampf(_parry_active / GameState.parry_window(), 0.0, 1.0)
 	if omni:
 		_arc.draw_arc(c, r, 0.0, TAU, 40, Color(0.0, 0.94, 1.0, 0.7), 2.0)

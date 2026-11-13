@@ -42,6 +42,12 @@ func _ready() -> void:
 	hud.module_choice.connect(func(_c: String) -> void: pass)
 	hud.pause_action.connect(_on_pause_action)
 	hud.ending_closed.connect(show_menu)
+	Director.stuck.connect(func() -> void:
+		if _state == "play" and not _busy:
+			hud.system(DialogueData.STUCK_HINTS[GameState.current_stage - 1], 7.0))
+	Director.assist_changed.connect(func(kind: String) -> void:
+		if _state == "play":
+			hud.say("assist_" + kind))
 	var start_stage: int = 0
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--stage="):
@@ -63,9 +69,11 @@ func show_menu() -> void:
 	hud.clear_dialogue()
 	_clear_stage()
 	JuiceManager.reset_time()
+	Director.run_ended()
 	menu = load(MENU_SCENE).instantiate()
 	world.add_child(menu)
 	menu.start_requested.connect(func() -> void: _begin_run(1))
+	menu.continue_requested.connect(_continue_run)
 
 
 func _begin_run(first_stage: int) -> void:
@@ -73,11 +81,29 @@ func _begin_run(first_stage: int) -> void:
 		menu.queue_free()
 		menu = null
 	GameState.reset_run()
+	Director.run_started()
 	for i: int in first_stage - 1:
 		GameState.choose_module(i + 1, "Q" if i % 2 == 0 else "E")
 	GameState.timer_running = true
 	AudioManager.set_menu_muffle(false)
 	load_stage(first_stage)
+
+
+func _continue_run() -> void:
+	## Resume the saved run: same stage and checkpoint, same modules, clock and loop count.
+	var d: Dictionary = GameState.saved_run()
+	if d.is_empty():
+		_begin_run(1)
+		return
+	if menu and is_instance_valid(menu):
+		menu.queue_free()
+		menu = null
+	GameState.reset_run()
+	GameState.apply_save(d)
+	Director.run_started()
+	GameState.timer_running = true
+	AudioManager.set_menu_muffle(false)
+	load_stage(int(d["stage"]), int(d.get("room", 0)))
 
 
 func _clear_stage() -> void:
@@ -87,12 +113,13 @@ func _clear_stage() -> void:
 	player = null
 
 
-func load_stage(index: int) -> void:
+func load_stage(index: int, room: int = 0) -> void:
 	_clear_stage()
 	JuiceManager.reset_time()
 	_busy = false
 	_state = "play"
 	GameState.current_stage = index
+	Director.stage_loaded(index)
 	stage = load(STAGE_SCENES[index - 1]).instantiate()
 	world.add_child(stage)
 	JuiceManager.fx_root = stage.fx
@@ -127,6 +154,11 @@ func load_stage(index: int) -> void:
 	AudioManager.play_sfx("vhs_rewind")
 	post.vhs(0.6)
 	stage.start()
+	if room > 0:
+		stage.resume_at(room)
+		player.respawn(stage.checkpoint_pos, stage.checkpoint_lane)
+		camera.snap_to_target()
+	GameState.save_run(stage.current_room)
 	if stage.get("boss") != null:
 		hud.boss = stage.get("boss")
 	else:
@@ -140,6 +172,8 @@ func _on_player_died() -> void:
 		return
 	_busy = true
 	GameState.register_death()
+	Director.player_died(player.death_cause, player.global_position)
+	GameState.save_run(stage.current_room)
 	AudioManager.play_sfx("vhs_rewind")
 	post.set_blackout(false)
 	post.vhs_hold(true)
@@ -180,6 +214,7 @@ func _on_module_collected(stage_index: int) -> void:
 	if _state != "play":
 		return
 	_state = "choice"
+	Director.progress("module")
 	player.input_enabled = false
 	JuiceManager.set_base_time_scale(0.12)
 	hud.say("s%d_module" % stage_index)
@@ -209,6 +244,8 @@ func _on_boss_defeated() -> void:
 	if _state != "play":
 		return
 	_state = "ending"
+	Director.progress("boss")
+	GameState.clear_save()
 	player.input_enabled = false
 	GameState.timer_running = false
 	hud.say("s4_win")
@@ -229,7 +266,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
 		_set_paused(not get_tree().paused)
 	elif event.is_action_pressed("restart") and not get_tree().paused and player and not player.dead:
-		player.die()
+		player.die("restart")
 
 
 func _set_paused(on: bool) -> void:
@@ -245,7 +282,8 @@ func _on_pause_action(action: String) -> void:
 		"restart":
 			_set_paused(false)
 			if player and not player.dead:
-				player.die()
+				player.die("restart")
 		"menu":
 			_set_paused(false)
+			Director.quit("menu")
 			show_menu()

@@ -12,6 +12,9 @@ var _release_next: bool = false
 
 
 func _ready() -> void:
+	## These checks pin the fixed mechanics, so the adaptive director is off and never saves.
+	Director.enabled = false
+	Director.persist = false
 	main = load("res://scenes/Main.tscn").instantiate()
 	add_child(main)
 	_run.call_deferred()
@@ -126,7 +129,9 @@ func _run() -> void:
 	_check("T3 world slowed to 0.25", is_equal_approx(JuiceManager.base_time_scale, 0.25))
 	bot_on = true
 	bot_target = null
-	_shoot_at_player(50.0, 120.0)
+	## Fast enough to catch the player, who is still sliding away from the first hit. (Until 2026-11-13
+	## this check passed by deflecting the shot that had already hit; that is no longer possible.)
+	_shoot_at_player(50.0, 600.0)
 	await _wait(0.9)
 	_check("T3 deflect during Blackout = Rebound", not p.in_blackout and GameState.rebounds == 1, "rebounds=%d" % GameState.rebounds)
 	_check("T3 time restored", is_equal_approx(JuiceManager.base_time_scale, 1.0))

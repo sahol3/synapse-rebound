@@ -136,7 +136,7 @@ func _barrage(delta: float) -> void:
 	_fire_t -= delta
 	if _fire_t > 0.0:
 		return
-	_fire_t = 2.1
+	_fire_t = 2.1 * Director.fire_interval_mult()
 	var player: Player = _player()
 	if player == null or player.dead:
 		return
@@ -154,7 +154,7 @@ func _missiles(delta: float) -> void:
 	_fire_t -= delta
 	if _fire_t > 0.0:
 		return
-	_fire_t = 1.7
+	_fire_t = 1.7 * Director.fire_interval_mult()
 	var player: Player = _player()
 	if player == null or player.dead:
 		return

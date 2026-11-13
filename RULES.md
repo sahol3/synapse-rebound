@@ -104,10 +104,11 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 ## 5. Project settings that stay fixed
 
 - Renderer: GL Compatibility (desktop and mobile). It is the only renderer that exports to the web for itch.io.
-- Base viewport 1152x648 (camera zoom 3, so the world view is 384x216 with 16 px tiles), stretch mode `canvas_items`,
-  aspect `keep`, default texture filter Nearest (pixel art). Physics runs at 120 ticks per second.
+- Design size 1152x648 (art scale 3, so the world view is 384x216 with 16 px tiles). Godot's stretch is OFF; the
+  `Display` autoload picks whole-number art and interface scales from the real window size (section 11). Default
+  texture filter Nearest (pixel art). Physics runs at 120 ticks per second.
 - Main scene `res://scenes/Main.tscn` (capital M; the old `main.tscn`/`main.gd` were removed).
-- Autoloads, in this order: GameState, AudioManager, JuiceManager, DialogueData.
+- Autoloads, in this order: Display, GameState, AudioManager, JuiceManager, DialogueData, Director.
 - Changing any of these is a decision: write it in `docs/DECISIONS.md` and the ledger.
 
 ## 6. Assets
@@ -207,12 +208,29 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 - Sound gate (any change to `AudioManager.gd` or the samples): record `res://tests/SfxProbe.tscn` with
   `--write-movie <ABS>\f.png --fixed-fps 30 --quit-after 640`, then `py -I scripts\sfx_probe_check.py <f.wav> <slots>`
   (slots = the `SFXPROBE slots=` line it prints) must end `VERDICT: N of N`.
+- Display: never write 1152, 648, 576, 324 or a zoom of 3 into game code. Read `Display.art` (camera zoom),
+  `Display.ui` (HUD/menu layer scale), `Display.view` (world pixels on screen), `Display.ui_size` (interface pixels) and
+  connect to `Display.changed`. HUD blocks anchor to the real edges or use `_oy()` / `_ox()`; the screen shaders take
+  `screen_size` and `art_px` from PostFX. Check: `powershell -File scripts\capture_sizes.ps1` then
+  `py scripts\check_sizes.py sizes` (frame size, empty bars, script errors at six window sizes).
+- Difficulty: every number the difficulty changes is read through `Director` (shot speed, fire interval, charge time,
+  shot cap, parry window/radius/arc, Blackout length, mercy shot, aim lead, fall assist). `Director.enabled = false`
+  returns the original fixed values; MechTest and ClimbTest run that way, and no test may save the profile
+  (`Director.persist = false`). The three models and what they learn from are described in `README.md`.
+  Blackout runs at quarter speed, so an ordinary shot cannot arrive inside the window: the mercy shot is what makes a
+  rebound possible, do not remove it without replacing it.
+- Climb rule: a plain jump is 55 px. Any step taller than 48 px needs the air-dash (Space again in mid-air), and a
+  stage that needs it must say so on screen. A new or changed climb gets a bot run like `tests/ClimbTest.gd`.
+- More test gates: `DirectorTest.tscn` (`DIRECTORTEST passed=27 failed=0`), `ClimbTest.tscn` (`CLIMBTEST passed=9
+  failed=0`, about 90 s) and `DirectorLive.tscn` (`DIRECTORLIVE passed=7 failed=0`, about 100 s) after any change to
+  the director, the player's movement or a stage layout.
 - Debug start: `godot.cmd --path game -- --stage=N` skips the menu (modules for earlier stages are auto-picked).
 - Visual checks without a window: `--write-movie <ABSOLUTE dir>\f.png --fixed-fps 30 --quit-after N` (a relative path
   fails silently), then read the PNGs. `scripts\capture_frames.ps1 -Tag <name>` records menu, stages 1-4 and the MechTest
   run into `tools\_frames\<name>\`; `py -I scripts\contact_sheet.py <name>` builds `sheet_shots.jpg` and `sheet_mech.jpg`.
 - UI type is `scripts/ui/PixelFont.gd`, a 5x7 bitmap face drawn by hand and built in memory (fixed size 9, integer
-  scaling only). HUD and menu layers are scaled 2x (576x324 interface pixels); world text uses it at 2x world pixels.
+  scaling only). HUD and menu layers are scaled by `Display.ui` (2x and 576x324 interface pixels at the design size);
+  world text uses it at 2x world pixels.
   The operator rejected boxed panels, tag blocks, bold display type and explanatory sub-labels (2026-11-13, "It looks
   more AI now") and approved the minimal pass ("much much better"); keep the HUD to outlined text and thin bars.
 - Web check: launch config `synapse-web` in `D:\CLAUDE-CODE\.claude\launch.json` serves `exports/web` on port 4180.

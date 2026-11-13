@@ -21,6 +21,49 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-13 · Playtest fixes: adaptive difficulty, any window size, Stage 3, saving, enemy art (Claude Code, Fable 5.2)
+- Operator played the build: could not clear Stage 1 at first, then could not pass Stage 3 "in any way"; "some mechanics
+  are not clear enough and sometimes don't act as they should"; the game "does not adapt to different screen sizes and
+  aspect ratios"; "there is no progress saving"; "the villains are all the same, go for a similar pack". He asked for
+  two or three lightweight prediction models that make the game easier or harder per player and keep people from quitting.
+- Found by reading and testing, not known before:
+  1. Stage 3 could not be climbed with the keyboard. Steps are 64 to 80 px, a jump is 55 px, so each of the 25 platforms
+     needed a dash aimed above the head with the mouse, and a 230 px fall kills. `ClimbTest` C0 (plain jumps) never
+     leaves the floor. MechTest never climbed; it teleports.
+  2. Blackout was survivable by luck only. It runs at quarter speed, so in the 1.5 s window a 140 px/s shot travels
+     about 52 px. Rebounds in play and in MechTest T3 came from a bug: the shot that had just hit stayed deflectable for
+     0.05 s of game time (0.2 s real).
+  3. In a window, a click outside the game took focus away and every key stopped working.
+  4. The parry recharge ran four times slower during Blackout (it used game time).
+  5. Enforcer and Heavy were the player's own sprite with a tint; the firing pose showed for one tick.
+- Built:
+  - `scripts/autoload/Director.gd`: hit model and quit model (online logistic regression), move model (n-gram, 3 steps,
+    back-off), one `challenge` value 0..1 that every difficulty knob reads; new players start at 0.25; profile in
+    `user://director.json`; F3 shows the numbers; the pause screen shows the level. Mercy shot in Blackout (homing, all
+    levels), fall assist after two fall deaths, stage hint again when stuck.
+  - `scripts/autoload/Display.gd`: Godot stretch off; whole-number art and interface scales from the real window; HUD,
+    menu, camera limits, parallax, rain and the three screen shaders follow it; F11 fullscreen; desktop opens maximized.
+  - Space again in mid-air = upward dash steered by A/D. Spent shots are not deflectable. Parry recharge on real time in
+    Blackout, parry input buffer 0.10 -> 0.14 s. Mouse confined to the window while playing (desktop).
+  - Save and Continue: `user://save.json` (stage, checkpoint, modules, clock, loops, stats), written at stage start,
+    checkpoint and death, cleared at the ending.
+  - Enemy characters from "Sideview Sci-Fi - Patreon Collection" by Ansimuz (CC0, OpenGameArt, 2.47 MB zip in
+    `assets/raw/sideview_scifi`, 14 sheets copied unchanged by `scripts/import_sprites.py`): marine = Enforcer, bipedal
+    unit = Stage 3 Command Enforcer, mech = Heavy, tank = sniper, flying enemy = Deflector.
+- Verified so far (headless, real input actions): MECHTEST 27/27, DIRECTORTEST 27/27 (three simulated players, save file,
+  1,317 window sizes), CLIMBTEST 9/9 (Continue resumes at the checkpoint; keyboard-only climb of Stage 3 in two timings;
+  the plain-jump control fails as it must), DIRECTORLIVE 7/7 (weak bot: challenge 0.25 -> 0.00, 6 mercy shots, 6
+  rebounds, 0 deaths; strong bot: 0.25 -> 0.93, 0 deaths). All four stages boot headless with no script error.
+- STATE (work in progress, local WIP commit): still to do in this session: read the enemy gallery frames and the six
+  window-size captures (`scripts\capture_sizes.ps1`, `py scripts\check_sizes.py sizes`), fix what they show, re-export Web
+  and Windows, final commit. Nothing is pushed.
+- Not verified: how any of it feels to a person. The three models have met simulated players and two bots only; no
+  recorded human play exists. Stages 1, 2 and 4 have no start-to-exit bot run (only Stage 3 has). The web build was not
+  opened in a browser after these changes. Fullscreen on a second monitor and windows larger than this screen were not
+  captured.
+- Next: operator plays again (item 8) and says where it still feels unfair; F3 shows what the director thinks.
+  Then commit and push on his yes, and itch.io (items 3, 4, 10).
+
 ### 2026-11-13 · Recorded SFX replace synthesized sound (Claude Code, Opus 5.5)
 - Operator: synthesized sound is not allowed; SFX must come from downloaded asset packs. The first build synthesized
   18 cues and RULES/CREDITS wrongly said that was allowed. Corrected in RULES section 6, CREDITS, the menu credits,

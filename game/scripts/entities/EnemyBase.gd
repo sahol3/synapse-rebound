@@ -3,6 +3,9 @@ extends Node2D
 ## Turrets, flying drones, background snipers, Syndicate Enforcers (kinetic shield that rallies
 ## your deflection back), Highway Heavies, gold Deflector drones, and the boss's wing turrets.
 ## One class, behaviour picked by `kind`, so every enemy shares telegraphs, lanes, hit-flash and death.
+## Each kind has its own look: turrets and drones from Warped City; the Enforcer (rifle soldier),
+## the Stage 3 commander (bipedal walker), the Heavy (mech), the sniper (tank) and the Deflector
+## (winged drone) from the Sideview Sci-Fi pack. `skin` picks the art, never the behaviour.
 
 signal killed(enemy: EnemyBase)
 signal sniper_locked
@@ -12,6 +15,41 @@ enum Kind { TURRET, DRONE, SNIPER, ENFORCER, HEAVY, DEFLECTOR, WING }
 const BG_SCALE: float = 0.78
 const BG_TINT: Color = Color(0.65, 0.75, 0.95)
 const SHIELD_COLOR: Color = Color("#FF0055")
+const SV: String = "res://assets/sideview_scifi/"
+## Art for the kinds that have their own character (Sideview Sci-Fi by Ansimuz, CC0).
+## anims: [name, file, frame width, frame height, frames, fps, crop x, crop width]; a "%d" in the
+## file name means one numbered file per frame. pos puts the feet (or the body, for flyers) on
+## the node; faces is the direction the art looks (1 right, -1 left).
+const SKINS: Dictionary = {
+	"marine": {
+		"anims": [["idle", "space-marine-idle.png", 48, 48, 4, 7.0, 0, 48], ["walk", "space-marine-run.png", 48, 48, 11, 14.0, 0, 48],
+				["shoot", "space-marine-shoot.png", 64, 48, 2, 12.0, 7, 48]],
+		"pos": Vector2(6, -4), "faces": 1, "hurt": Vector2(16, 32), "hurt_pos": Vector2(0, 3),
+		"shield": 23.0, "shield_pos": Vector2(0, 2), "muzzle": Vector2(14, -3),
+	},
+	"bipedal": {
+		"anims": [["idle", "bipedal-unit.png", 80, 64, 1, 1.0, 0, 80], ["walk", "bipedal-unit.png", 80, 64, 7, 10.0, 0, 80],
+				["shoot", "bipedal-unit.png", 80, 64, 1, 1.0, 0, 80]],
+		"pos": Vector2(2, -12), "faces": 1, "hurt": Vector2(28, 50), "hurt_pos": Vector2(0, -6),
+		"shield": 33.0, "shield_pos": Vector2(0, -8), "muzzle": Vector2(12, -14),
+	},
+	"mech": {
+		"anims": [["idle", "mech-unit.png", 96, 80, 1, 1.0, 0, 96], ["walk", "mech-unit.png", 96, 80, 10, 9.0, 0, 96],
+				["shoot", "mech-unit.png", 96, 80, 1, 1.0, 0, 96]],
+		"pos": Vector2(4, -13), "faces": 1, "hurt": Vector2(30, 56), "hurt_pos": Vector2(0, -2),
+		"shield": 37.0, "shield_pos": Vector2(0, -5), "muzzle": Vector2(16, -12),
+	},
+	"tank": {
+		"anims": [["default", "tank-unit.png", 128, 64, 4, 8.0, 0, 128]],
+		"pos": Vector2(0, -32), "faces": 1, "hurt": Vector2(70, 36), "hurt_pos": Vector2(0, -20),
+		"shield": 0.0, "shield_pos": Vector2.ZERO, "muzzle": Vector2(53, -34),
+	},
+	"wasp": {
+		"anims": [["default", "alien-enemy-flying%d.png", 83, 64, 8, 12.0, 0, 83]],
+		"pos": Vector2(-8, 2), "faces": -1, "hurt": Vector2(40, 40), "hurt_pos": Vector2.ZERO,
+		"shield": 34.0, "shield_pos": Vector2.ZERO, "muzzle": Vector2.ZERO,
+	},
+}
 
 var kind: int = Kind.TURRET
 var lane: int = 0
@@ -27,9 +65,11 @@ var shot_speed: float = 135.0
 var patrol: float = 0.0
 var base_scale: float = 1.0
 var active: bool = true
+var skin: String = ""
 
 var _fire_t: float = 1.0
 var _charge_t: float = 0.0
+var _charge_full: float = 0.45
 var _anchor: Vector2
 var _t: float = 0.0
 var _shove: Vector2 = Vector2.ZERO
@@ -59,6 +99,7 @@ static func create(p_kind: int, pos: Vector2, p_lane: int = 0, opts: Dictionary 
 	e.patrol = float(opts.get("patrol", 0.0))
 	if opts.has("interval"):
 		e.fire_interval = float(opts["interval"])
+	e.skin = String(opts.get("skin", ""))
 	return e
 
 
@@ -84,11 +125,10 @@ func _ready() -> void:
 	var rect := RectangleShape2D.new()
 	rect.size = _hurt_size()
 	cs.shape = rect
-	match kind:
-		Kind.TURRET, Kind.WING, Kind.SNIPER:
-			cs.position = Vector2(0, -10)
-		Kind.ENFORCER, Kind.HEAVY:
-			cs.position = Vector2(0, -3) * base_scale
+	if skin != "":
+		cs.position = SKINS[skin]["hurt_pos"]
+	elif kind in [Kind.TURRET, Kind.WING]:
+		cs.position = Vector2(0, -10)
 	_hurtbox.add_child(cs)
 	add_child(_hurtbox)
 	_laser = Line2D.new()
@@ -101,11 +141,13 @@ func _ready() -> void:
 	_overlay.z_index = 2
 	_overlay.draw.connect(_draw_overlay)
 	add_child(_overlay)
-	_fire_t = fire_interval * randf_range(0.5, 1.0)
+	_fire_t = fire_interval * randf_range(0.5, 1.0) * Director.fire_interval_mult()
 	_apply_lane_visual()
 
 
 func _configure() -> void:
+	if skin == "":
+		skin = String({Kind.ENFORCER: "marine", Kind.HEAVY: "mech", Kind.SNIPER: "tank", Kind.DEFLECTOR: "wasp"}.get(kind, ""))
 	match kind:
 		Kind.TURRET:
 			hp = 1
@@ -150,30 +192,29 @@ func _configure() -> void:
 
 
 func _build_sprite() -> void:
+	if skin != "":
+		_sprite.sprite_frames = _skin_frames(SKINS[skin])
+		_sprite.position = SKINS[skin]["pos"]
+		_sprite.play("default" if _sprite.sprite_frames.has_animation("default") else "idle")
+		## The new art is drawn at its own size; base_scale still sizes the logic (Heavy).
+		_body.scale = Vector2.ONE
+		return
 	match kind:
 		Kind.TURRET, Kind.WING:
 			_sprite.sprite_frames = FxLib.frames("turret")
 			_sprite.position = Vector2(0, -11)
 			if kind == Kind.WING:
 				_sprite.modulate = Color(1.3, 0.6, 1.2)
-		Kind.SNIPER:
-			_sprite.sprite_frames = FxLib.frames("turret")
-			_sprite.position = Vector2(0, -11)
-			_sprite.modulate = Color(1.4, 0.45, 0.45)
-		Kind.DRONE:
+		_:
+			## Drones. Every other kind has a skin and returned above.
 			_sprite.sprite_frames = FxLib.frames("drone")
-		Kind.DEFLECTOR:
-			_sprite.sprite_frames = FxLib.frames("drone")
-			_sprite.modulate = Color(1.5, 1.2, 0.45)
-		Kind.ENFORCER, Kind.HEAVY:
-			_sprite.sprite_frames = _humanoid_frames()
-			_sprite.position = Vector2(0, -13.5)
-			_sprite.modulate = Color(1.25, 0.42, 0.55) if kind == Kind.ENFORCER else Color(0.95, 0.55, 1.35)
 	_sprite.play("default" if _sprite.sprite_frames.has_animation("default") else "idle")
 	_body.scale = Vector2.ONE * base_scale
 
 
 func _hurt_size() -> Vector2:
+	if skin != "":
+		return SKINS[skin]["hurt"]
 	match kind:
 		Kind.DRONE, Kind.DEFLECTOR:
 			return Vector2(30, 22)
@@ -203,17 +244,34 @@ func _physics_process(delta: float) -> void:
 	match kind:
 		Kind.DRONE, Kind.DEFLECTOR:
 			position = position.lerp(_anchor + Vector2(sin(_t * 0.9) * patrol, sin(_t * 2.1) * 6.0), clampf(delta * 4.0, 0.0, 1.0))
-			_sprite.flip_h = player != null and player.global_position.x > global_position.x
+			_face(player)
 		Kind.ENFORCER, Kind.HEAVY:
 			_walk(delta, player)
 		Kind.TURRET, Kind.WING, Kind.SNIPER:
-			if player:
-				_sprite.flip_h = player.global_position.x > global_position.x
+			_face(player)
 	if kind == Kind.SNIPER:
 		_sniper_logic(delta, player)
 	elif active:
 		_fire_logic(delta, player)
+	if skin != "":
+		## Keep the body, not the frame, centred on the node when the art turns around.
+		_sprite.position.x = float(SKINS[skin]["pos"].x) * (-1.0 if _sprite.flip_h else 1.0)
 	_overlay.queue_redraw()
+
+
+func _face(player: Player) -> void:
+	## Turn toward the player. Warped City turrets and drones are drawn looking left.
+	if player == null:
+		return
+	var player_right: bool = player.global_position.x > global_position.x
+	var art_faces: int = int(SKINS[skin]["faces"]) if skin != "" else -1
+	_sprite.flip_h = player_right if art_faces < 0 else not player_right
+
+
+func _facing_sign() -> float:
+	## 1 when the enemy currently looks right, -1 when it looks left.
+	var art_faces: float = float(SKINS[skin]["faces"]) if skin != "" else -1.0
+	return -art_faces if _sprite.flip_h else art_faces
 
 
 func _walk(delta: float, player: Player) -> void:
@@ -222,8 +280,10 @@ func _walk(delta: float, player: Player) -> void:
 	var dx: float = player.global_position.x - global_position.x
 	_sprite.flip_h = dx < 0.0
 	if patrol <= 0.0 or _stun > 0.0 or _charge_t > 0.0:
-		if _sprite.animation != "idle":
-			_sprite.play("idle")
+		## While charging a shot the firing pose stays up: it is the tell that a shot is coming.
+		var pose: String = "shoot" if _charge_t > 0.0 and _sprite.sprite_frames.has_animation("shoot") else "idle"
+		if _sprite.animation != pose:
+			_sprite.play(pose)
 		return
 	var want: float = 0.0
 	if absf(dx) > 150.0:
@@ -243,6 +303,13 @@ func _fire_logic(delta: float, player: Player) -> void:
 		_charge_t = 0.0
 		return
 	var can_see: bool = _can_target(player)
+	if can_see and player.in_blackout and Director.claim_mercy():
+		## Blackout runs at quarter speed, so a normal shot never arrives inside the window.
+		## One enemy fires a fast shot at once: there is always something to rebound off.
+		_charge_t = 0.0
+		_fire(player, true)
+		_fire_t = fire_interval * Director.fire_interval_mult()
+		return
 	if _charge_t > 0.0:
 		_charge_t -= delta
 		if int(_charge_t * 20.0) % 2 == 0:
@@ -250,11 +317,12 @@ func _fire_logic(delta: float, player: Player) -> void:
 		if _charge_t <= 0.0:
 			if can_see:
 				_fire(player)
-			_fire_t = fire_interval * randf_range(0.85, 1.15)
+			_fire_t = fire_interval * randf_range(0.85, 1.15) * Director.fire_interval_mult()
 		return
 	_fire_t -= delta
-	if _fire_t <= 0.0 and can_see:
-		_charge_t = 0.45
+	if _fire_t <= 0.0 and can_see and Director.may_fire():
+		_charge_t = Director.charge_time()
+		_charge_full = _charge_t
 		if kind in [Kind.ENFORCER, Kind.HEAVY] and _sprite.sprite_frames.has_animation("shoot"):
 			_sprite.play("shoot")
 
@@ -273,6 +341,9 @@ func _can_target(player: Player) -> bool:
 
 
 func _muzzle() -> Vector2:
+	if skin != "":
+		var m: Vector2 = SKINS[skin]["muzzle"]
+		return global_position + Vector2(m.x * _facing_sign(), m.y) * _lane_scale()
 	match kind:
 		Kind.TURRET, Kind.WING, Kind.SNIPER:
 			return global_position + Vector2(0, -14) * _lane_scale()
@@ -281,16 +352,27 @@ func _muzzle() -> Vector2:
 	return global_position
 
 
-func _fire(player: Player) -> void:
+func _fire(player: Player, mercy: bool = false) -> void:
 	var from: Vector2 = _muzzle()
-	var dir: Vector2 = (player.chest() - from).normalized()
-	var heavy: bool = kind in [Kind.ENFORCER, Kind.HEAVY]
+	var speed: float = shot_speed
+	var aim: Vector2 = Director.aim_point(player, from, shot_speed * Director.shot_speed_mult())
+	if mercy:
+		var dist: float = from.distance_to(player.chest())
+		speed = Director.mercy_speed(dist)
+		aim = player.chest() + player.velocity * (dist / speed) * 0.6
+	var dir: Vector2 = (aim - from).normalized()
+	var heavy: bool = kind in [Kind.ENFORCER, Kind.HEAVY] and not mercy
 	var spread: Array = [0.0]
-	if kind == Kind.HEAVY:
+	if kind == Kind.HEAVY and not mercy:
 		spread = [-0.12, 0.12]
 	for s: float in spread:
-		var p := Projectile.make(from + dir * 8.0, dir.rotated(s) * shot_speed, Projectile.Team.ENEMY, lane,
-				{"heavy": heavy, "shooter": self})
+		var opts: Dictionary = {"heavy": heavy, "shooter": self}
+		if mercy:
+			## The rebound shot tracks the player, so the knock-back cannot carry them out of its path.
+			opts["homing"] = player
+		var p := Projectile.make(from + dir * 8.0, dir.rotated(s) * speed, Projectile.Team.ENEMY, lane, opts)
+		if mercy:
+			p.set_meta("mercy", true)
 		StageBase.spawn(p)
 	AudioManager.play_sfx("heavy_shot" if heavy else "shot", randf_range(0.9, 1.1))
 	JuiceManager.fx("star", "magenta", from, 0.0, 0.8)
@@ -304,7 +386,7 @@ func _sniper_logic(delta: float, player: Player) -> void:
 			if _sniper_t <= 0.0 and player != null and not player.dead and _stun <= 0.0 \
 					and global_position.distance_to(player.global_position) < fire_range:
 				_sniper_state = 1
-				_sniper_t = 1.1
+				_sniper_t = 1.1 * Director.charge_time() / 0.45
 				AudioManager.play_sfx("laser_lock")
 				sniper_locked.emit()
 				if GameState.has_mod("chrono_sight"):
@@ -320,7 +402,7 @@ func _sniper_logic(delta: float, player: Player) -> void:
 			_laser_line(1.0, 2.0)
 			if _sniper_t <= 0.0:
 				_sniper_state = 0
-				_sniper_t = 2.2
+				_sniper_t = 2.2 * Director.fire_interval_mult()
 				_laser.default_color.a = 0.0
 				if player and not player.dead:
 					var from: Vector2 = _muzzle()
@@ -439,6 +521,9 @@ func _draw_overlay() -> void:
 	if shielded and alive:
 		var r: float = (18.0 if kind != Kind.HEAVY else 30.0) * (1.0 if kind != Kind.DEFLECTOR else 1.1)
 		var c: Vector2 = Vector2(0, -6 * base_scale) if kind in [Kind.ENFORCER, Kind.HEAVY] else Vector2.ZERO
+		if skin != "" and float(SKINS[skin]["shield"]) > 0.0:
+			r = SKINS[skin]["shield"]
+			c = SKINS[skin]["shield_pos"]
 		var a: float = 0.35 + 0.15 * sin(_t * 5.0) + (0.6 if _shield_flash > 0.0 else 0.0)
 		var col := SHIELD_COLOR
 		if kind == Kind.DEFLECTOR:
@@ -451,25 +536,29 @@ func _draw_overlay() -> void:
 	if _charge_t > 0.0 and alive and kind != Kind.SNIPER:
 		var player: Player = _player()
 		var m: Vector2 = _muzzle() - global_position
-		var k: float = 1.0 - _charge_t / 0.45
+		var k: float = 1.0 - _charge_t / maxf(_charge_full, 0.01)
 		_overlay.draw_circle(m / scale, 2.0 + 4.0 * k, Color(1, 0.2, 0.8, 0.5 + 0.5 * k))
 		if player and GameState.telegraph_sights():
 			var to: Vector2 = (player.chest() - global_position) / scale
 			_overlay.draw_dashed_line(m / scale, to, Color(1, 0.1, 0.3, 0.35 + 0.4 * k), 1.0, 4.0)
 
 
-func _humanoid_frames() -> SpriteFrames:
+func _skin_frames(def: Dictionary) -> SpriteFrames:
 	var sf := SpriteFrames.new()
 	sf.remove_animation("default")
-	var defs: Array = [["idle", "idle", 4, 7.0], ["walk", "run", 8, 8.0], ["shoot", "shoot", 1, 1.0]]
-	for d: Array in defs:
-		var tex: Texture2D = load("res://assets/warped_city/player/%s.png" % d[1])
-		sf.add_animation(d[0])
-		sf.set_animation_speed(d[0], d[3])
-		sf.set_animation_loop(d[0], true)
-		for i: int in int(d[2]):
-			var at := AtlasTexture.new()
-			at.atlas = tex
-			at.region = Rect2(i * 71, 0, 71, 67)
-			sf.add_frame(d[0], at)
+	for a: Array in def["anims"]:
+		var anim: String = a[0]
+		var file: String = a[1]
+		var count: int = a[4]
+		sf.add_animation(anim)
+		sf.set_animation_speed(anim, a[5])
+		sf.set_animation_loop(anim, true)
+		for i: int in count:
+			if file.contains("%d"):
+				sf.add_frame(anim, load(SV + (file % (i + 1))))
+			else:
+				var at := AtlasTexture.new()
+				at.atlas = load(SV + file)
+				at.region = Rect2(i * int(a[2]) + int(a[6]), 0, int(a[7]), int(a[3]))
+				sf.add_frame(anim, at)
 	return sf

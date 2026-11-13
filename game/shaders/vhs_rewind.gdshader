@@ -1,19 +1,19 @@
 shader_type canvas_item;
 // Tape rewind for the 0.3s death rewind and the stage-load cut. Everything moves in whole art
-// pixels (3 screen px at 1152x648), so the effect tears the pixel art instead of smearing it:
+// pixels, so the effect tears the pixel art instead of smearing it:
 // band tears, a crisp RGB offset, a rolling seam, and sparse white dropout streaks. No grain.
 
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;
 uniform float intensity : hint_range(0.0, 1.0) = 0.0;
 uniform vec2 screen_size = vec2(1152.0, 648.0);
-const float ART_PX = 3.0;
+uniform float art_px = 3.0;  // screen pixels per art pixel (Display.art)
 
 float hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
 
 void fragment() {
-	vec2 art = screen_size / ART_PX;                 // 384 x 216 art pixels
+	vec2 art = screen_size / art_px;                 // the view in art pixels
 	vec2 ap = floor(SCREEN_UV * art);                // which art pixel we are in
 	float t = floor(TIME * 24.0);
 

@@ -20,8 +20,9 @@ func _init() -> void:
 
 
 func build() -> void:
-	wall(0, 3, -116, 24)
-	wall(27, 30, -116, 24)
+	## The outer walls run 12 tiles past the shaft so a wide screen never shows their far edge.
+	wall(-12, 3, -116, 24)
+	wall(27, 42, -116, 24)
 	building(4, 26, 18)
 
 	# Platform ladder: [c0, c1, row, room]. Spacing 4-5 rows = jump + dash, or pogo off fire.
@@ -67,7 +68,7 @@ func build() -> void:
 	catwalk(4, 26, TOP_ROW, 0, false)
 	for c: int in range(4, 27):
 		_cell(0, c, TOP_ROW + 1, Vector2i(4, 4))
-	enemy(K.ENFORCER, 21, TOP_ROW, 0, 5, {"module": true, "patrol": 36.0})
+	enemy(K.ENFORCER, 21, TOP_ROW, 0, 5, {"module": true, "patrol": 36.0, "skin": "bipedal"})
 	enemy(K.DEFLECTOR, 9, TOP_ROW - 5, 0, 5, {"patrol": 30.0})
 
 	for i: int in 10:

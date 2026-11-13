@@ -16,6 +16,7 @@ const SYNC_PER_AIR_CHAIN: float = 25.0
 const SYNC_REBOUND: float = 50.0
 const SYNC_DECAY_PER_SEC: float = 7.0
 const SYNC_DECAY_DELAY: float = 2.5
+const SAVE_VERSION: int = 1
 
 ## Physics layer bits (see project.godot [layer_names]).
 const BIT_WORLD_FG: int = 1
@@ -52,12 +53,16 @@ var best_rally: int = 0
 var rebounds: int = 0
 var flags: Dictionary = {}
 var current_lane: int = 0
+## Progress saving. Off for tests, captures and debug starts (see is_dev_run).
+var persist: bool = true
+var save_path: String = "user://save.json"
 
 var _since_last_sync_gain: float = 0.0
 
 
 func _enter_tree() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	persist = not is_dev_run()
 	_register_inputs()
 
 
@@ -145,19 +150,19 @@ func ending_id() -> String:
 # ---------------------------------------------------------------- tuning read by entities
 
 func parry_window() -> float:
-	return 0.18 + 0.03 * float(stabilize_count)
+	return 0.18 + 0.03 * float(stabilize_count) + Director.parry_window_bonus()
 
 
 func parry_arc_degrees() -> float:
 	var arc: float = 150.0
 	if tier >= Tier.OVERCLOCKED:
 		arc *= 1.25
-	return arc
+	return minf(arc * Director.parry_arc_mult(), 300.0)
 
 
 func blackout_duration() -> float:
 	var base: float = 2.2 if has_mod("chrono_sight") else 1.5
-	return base + 0.1 * float(stabilize_count)
+	return base + 0.1 * float(stabilize_count) + Director.blackout_bonus()
 
 
 func dash_cooldown() -> float:
@@ -173,7 +178,7 @@ func rally_accel() -> float:
 
 
 func telegraph_sights() -> bool:
-	return stabilize_count > 0
+	return stabilize_count > 0 or Director.show_sights()
 
 
 # ---------------------------------------------------------------- run lifecycle
@@ -228,6 +233,84 @@ func format_time(seconds: float) -> String:
 	var m: int = int(seconds) / 60
 	var s: float = fmod(seconds, 60.0)
 	return "%02d:%05.2f" % [m, s]
+
+
+# ---------------------------------------------------------------- progress saving
+
+static func is_dev_run() -> bool:
+	## Tests, frame captures and the `--stage=N` debug start must never touch the player's files.
+	if DisplayServer.get_name() == "headless":
+		return true
+	for a: String in OS.get_cmdline_args():
+		if a.begins_with("--write-movie"):
+			return true
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with("--stage="):
+			return true
+	return false
+
+
+func save_run(room: int) -> void:
+	## Called at every stage start, checkpoint and death. One small JSON file.
+	if not persist:
+		return
+	var f: FileAccess = FileAccess.open(save_path, FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_string(JSON.stringify({
+		"v": SAVE_VERSION, "stage": current_stage, "room": room, "choices": Array(choices),
+		"loop_deaths": loop_deaths, "run_time": run_time, "parries": parries, "kills": kills,
+		"best_rally": best_rally, "rebounds": rebounds, "flags": flags.keys(),
+	}))
+	f.close()
+
+
+func saved_run() -> Dictionary:
+	## The saved run, or an empty dictionary when there is none or the file is unusable.
+	if not FileAccess.file_exists(save_path):
+		return {}
+	var f: FileAccess = FileAccess.open(save_path, FileAccess.READ)
+	if f == null:
+		return {}
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	if not (parsed is Dictionary):
+		return {}
+	var d: Dictionary = parsed
+	var stage: int = int(d.get("stage", 0))
+	var picked: Variant = d.get("choices", [])
+	if int(d.get("v", 0)) != SAVE_VERSION or stage < 1 or stage > 4 or not (picked is Array):
+		return {}
+	## A stage can only be reached with one module choice per earlier stage.
+	if (picked as Array).size() != stage - 1:
+		return {}
+	for c: Variant in picked:
+		if not (c is String) or not (c in ["Q", "E"]):
+			return {}
+	return d
+
+
+func apply_save(d: Dictionary) -> void:
+	## Restore a saved run. Call after reset_run().
+	var picked: Array = d.get("choices", [])
+	for i: int in picked.size():
+		choose_module(i + 1, String(picked[i]))
+	current_stage = int(d.get("stage", 1))
+	loop_deaths = int(d.get("loop_deaths", 0))
+	run_time = float(d.get("run_time", 0.0))
+	parries = int(d.get("parries", 0))
+	kills = int(d.get("kills", 0))
+	best_rally = int(d.get("best_rally", 0))
+	rebounds = int(d.get("rebounds", 0))
+	for k: Variant in d.get("flags", []):
+		flags[String(k)] = true
+	set_sync(sync_floor())
+	stats_changed.emit()
+
+
+func clear_save() -> void:
+	if persist and FileAccess.file_exists(save_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
 
 
 # ---------------------------------------------------------------- input
