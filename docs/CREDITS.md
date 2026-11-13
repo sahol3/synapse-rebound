@@ -1,3 +1,3 @@
 # Credits
 
-Third-party assets used in shipped builds. One line each: asset, author, license, source URL.
+The game's credits and licence notes live in `game/CREDITS.md`, which ships with the repository.

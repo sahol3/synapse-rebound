@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/Stage04RooftopBoss.gd" id="1_i80k4"]
+
+[node name="Stage04_RooftopBoss" type="Node2D" unique_id=454419212]
+script = ExtResource("1_i80k4")

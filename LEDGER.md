@@ -8,15 +8,33 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 | # | Item | Owner | Status |
 |---|---|---|---|
-| 1 | Game concept, genre and scope for Haven Dhaka (`docs/DESIGN.md`) | operator | open |
-| 2 | Choose track: Godot game, Ren'Py visual novel, or both | operator | open |
+| 1 | Game concept and scope: SYNAPSE // REBOUND, spec in `docs/DESIGN.md` | operator | done 2026-11-13 |
+| 2 | Track: Godot game (Ren'Py not started) | operator | done 2026-11-13 |
 | 3 | `butler login` once on this machine (opens a browser; operator only) | operator | open |
 | 4 | Create itch.io project page and note its `<user>/<game>` slug here | operator | open |
 | 6 | Click the itch shortcut once to confirm the app starts from D: (not verifiable from Claude's tools) | operator | open |
 | 7 | Uninstall Tiled from Settings > Apps (the 66 MB C: copy; the project uses `tools\tiled`) | operator | open |
+| 8 | Hand playtest of all four stages in a visible browser and on Windows (feel, difficulty, frame rate, audio) | operator | open |
+| 9 | Create the public GitHub repo and push (outward-facing, needs the operator's yes) | operator, then agent | open |
+| 10 | Upload `exports/web` and `exports/windows` to itch.io with butler (needs items 3 and 4) | operator, then agent | open |
 | 5 | Inkscape 1.4.4 not installed: Windows Installer needs 171,620 KB free on C: and only 109,488 KB was free (log `tools\_ink\admin.log`). Free ~300 MB on C:, then run `scripts\install_inkscape_portable.ps1` (MSI already downloaded) | operator, then agent | blocked on C: space |
 
 ## Entries
+
+### 2026-11-13 · SYNAPSE // REBOUND build (Claude Code, Opus 5.5)
+- Built the game from the operator's spec (now `docs/DESIGN.md`) with the Warped City assets: four stages (Alley, Highway
+  with two depth lanes, vertical Shaft, Rooftop boss), 360 degree deflection with hit-stop, air recoil and dash refill,
+  ping-pong rallies (x1.32 speed, x1.15 scale, rail on the third bounce), Z-lane switching, wall-slam, 1.5 s Blackout
+  Rebound, 0.3 s VHS rewind on death, Neural Sync 0 to 400% with tiers, three Q/E module choices, a three-phase gunship
+  boss and three endings. Sara and Echo dialogue, shader stack (CRT, Blackout, VHS, shockwave, hit flash, glitch text),
+  and runtime-synthesized SFX.
+- Verified: `MECHTEST passed=26 failed=0` (headless, real input actions); all four stages load headless with no SCRIPT
+  ERROR; movie-writer frames of menu, every stage, parry, rally, Blackout and rewind were inspected; Web export served
+  locally booted on WebGL 2 with no console errors, and the title screen and Stage 1 rendered and took input.
+- Not verified: game feel, difficulty and frame rate in a visible browser or on Windows (the Browser pane was hidden and
+  throttled); the Windows exe was exported but not launched; runs on Godot 4.3 (spec version) untested.
+- Licence: BDragon1727 sheets gitignored (no redistribution). README and CREDITS written for the public repo.
+- Next: operator playtest (item 8), then GitHub repo (item 9) and itch.io upload (item 10) on the operator's go-ahead.
 
 ### 2026-11-13 · move to D: (Claude Code, Opus 5.5)
 - Operator asked for everything off C:. C: went from 1,523 MB free (start of this pass) to 2,689 MB.

@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/Stage01Alley.gd" id="1_5h2fx"]
+
+[node name="Stage01_Alley" type="Node2D" unique_id=1330306842]
+script = ExtResource("1_5h2fx")

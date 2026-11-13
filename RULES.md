@@ -103,8 +103,10 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 ## 5. Project settings that stay fixed
 
 - Renderer: GL Compatibility (desktop and mobile). It is the only renderer that exports to the web for itch.io.
-- Base viewport 1280x720, stretch mode `canvas_items`, default texture filter Nearest (pixel art).
-- Main scene `res://scenes/main.tscn`.
+- Base viewport 1152x648 (camera zoom 3, so the world view is 384x216 with 16 px tiles), stretch mode `canvas_items`,
+  aspect `keep`, default texture filter Nearest (pixel art). Physics runs at 120 ticks per second.
+- Main scene `res://scenes/Main.tscn` (capital M; the old `main.tscn`/`main.gd` were removed).
+- Autoloads, in this order: GameState, AudioManager, JuiceManager, DialogueData.
 - Changing any of these is a decision: write it in `docs/DECISIONS.md` and the ledger.
 
 ## 6. Assets
@@ -112,6 +114,13 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 - Every third-party asset gets a license file in `assets/licenses/<pack>.txt` before it is imported into `game/`.
   Allowed without asking: CC0 and CC-BY (credit goes in `docs/CREDITS.md`). Anything else (NC, ND, "personal use",
   unclear) stays in `assets/raw/` and is flagged in the ledger.
+- One recorded exception, for SYNAPSE // REBOUND: the BDragon1727 "Free Effect and Bullet 16x16" sheets
+  (`game/assets/vfx/*.png`) are free for non-commercial games but may not be redistributed. They are used in the
+  build and are gitignored, so they never reach the public repo. A fresh clone must re-download them (see `game/README.md`).
+  Never commit them and never sell a build that contains them.
+- The game's credits file is `game/CREDITS.md` (it ships with the repo), not `docs/CREDITS.md`.
+- Jam rule: no AI-generated images, sprites, music or voice, and no script that writes PNG or SVG files. Sound effects
+  synthesized in code at runtime (AudioManager) are allowed and are listed in CREDITS.
 - Free sources: kenney.nl (CC0), opengameart.org (check each), itch.io game assets (check each page),
   Google Fonts (OFL). Paid itch.io packs need the operator's purchase; never buy.
 - Pixel art: LibreSprite, export PNG sheets to `game/assets/sprites/`. Keep `.ase` sources in `assets/source/`.
@@ -133,9 +142,10 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 - Export presets live in `game/export_presets.cfg` (in git): "Web" (no threads, so itch.io needs no SharedArrayBuffer) and
   "Windows Desktop" (x86_64, embedded pck). Both use `custom_template/*` paths into `tools\export_templates`, and both
   exclude `addons/godot_mcp/*` so the editor-only MCP addon never ships. Credentials never go there; `export_credentials.cfg` is ignored.
-  Both exports were built and the Windows exe printed "Haven Dhaka boot OK" on 2026-11-13.
+  Both exports were rebuilt for SYNAPSE // REBOUND on 2026-11-13; the Windows exe exits 0 on `--headless --quit-after 240`.
 - Web export: `tools\bin\godot.cmd --headless --path game --export-release "Web" ..\exports\web\index.html`.
-  Windows export: `--export-release "Windows Desktop" ..\exports\windows\HavenDhaka.exe`.
+  Windows export: `--export-release "Windows Desktop" ..\exports\windows\SynapseRebound.exe`.
+  Both presets also exclude `tests/*`.
 - itch.io upload with butler: `tools\bin\butler.exe push exports\web <user>/<game>:html5` and `...:windows`.
   `butler login` is done by the operator once (it opens a browser). Agents never type the itch.io password or API key.
   If `BUTLER_API_KEY` is needed it comes from an environment variable, never from a file in this repo.
@@ -172,3 +182,25 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
   (silent uninstall returned 1603), so it is the operator's to remove from Settings > Apps. Nothing here uses it.
 - The original setup notes named `PatrickJS/awesome-cursorrules` and `GDQuest/GDScript-guidelines`. The first has no
   Godot rules file, and the second does not exist; the GDQuest guide is the GitBook page saved in `refs/`. Section 4 replaces both.
+
+## 11. SYNAPSE // REBOUND (the game in `game/`)
+
+- Spec: `docs/DESIGN.md` (operator's master spec and game design document). Player-facing summary: `game/README.md`.
+- Scenes are generated, never hand-edited: `tools\bin\godot.cmd --headless --path game --script ..\scripts\build_scenes.gd`
+  rewrites Main, ui/MainMenu, ui/HUD, entities/*, levels/Stage01..04 and tests/MechTest. Behaviour lives in scripts;
+  a scene is a root node plus its script. In `--script` mode autoloads do not exist, so the builder attaches a stub
+  script that `take_over_path`s the real path; the saved `.tscn` points at the real script.
+- Code layout: `scripts/autoload/` (GameState: sync, tiers, modules, endings, input map registered at runtime;
+  AudioManager: buses, cue map, synthesized SFX; JuiceManager: hit-stop, shake, flash, ghosts; DialogueData: every line),
+  `scripts/entities/` (Player, Projectile, EnemyBase, BossGunship), `scripts/world/` (StageBase builds stages in code
+  from `tileset.png`), `scripts/levels/`, `scripts/ui/` (HudController, PostFX shader chain, MainMenu), `shaders/`.
+- Time: `Engine.time_scale` belongs to JuiceManager only (`set_base_time_scale`, `hitstop`, `reset_time`). Anything that
+  must run during hit-stop or Blackout uses real time: `create_timer(t, true, false, true)` and `Tween.set_ignore_time_scale(true)`.
+- Physics layers: 1 world_fg, 2 world_bg, 4 player_hurt, 8 enemy_hurt, 32 triggers. Lane 1 (background) uses layer 2.
+- Test gate: `tools\bin\godot.cmd --headless --path game res://tests/MechTest.tscn` must print `MECHTEST passed=26 failed=0`
+  (or more passes, never a failure) before any commit that touches gameplay. Input in tests goes through
+  `Input.parse_input_event(InputEventAction)`; `Input.action_press` does not register as `just_pressed`.
+- Debug start: `godot.cmd --path game -- --stage=N` skips the menu (modules for earlier stages are auto-picked).
+- Visual checks without a window: `--write-movie <dir>\f.png --fixed-fps 30 --quit-after N`, then read the PNGs.
+- Web check: launch config `synapse-web` in `D:\CLAUDE-CODE\.claude\launch.json` serves `exports/web` on port 4180.
+  A hidden Browser pane throttles the page, so judge feel and frame rate in a visible browser, not from the pane.

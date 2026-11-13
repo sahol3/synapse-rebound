@@ -12,7 +12,7 @@ Check 'godot'            { & "$root\tools\bin\godot.cmd" --version } '4\.7\.2\.s
 Check 'godot on D:'       { if ((Test-Path "$root\tools\godot\._sc_") -and (Test-Path "$root\tools\godot\Godot_v4.7.2-stable_win64.exe")) { 'self-contained Godot present on D:' } else { 'missing' } } 'present'
 Check 'export templates' { Get-Content "$root\tools\godot\editor_data\export_templates\4.7.2.stable\version.txt" } '4\.7\.2\.stable'
 Check 'web export'       { & "$root\tools\bin\godot.cmd" --headless --path "$root\game" --export-release "Web" "$root\exports\web\index.html" | Out-Null; if (Test-Path "$root\exports\web\index.wasm") { 'exports/web/index.wasm present' } else { 'missing' } } 'present'
-Check 'game boots'       { & "$root\tools\bin\godot.cmd" --headless --path "$root\game" --quit-after 5 } 'Haven Dhaka boot OK'
+Check 'game boots'       { $o = (& "$root\tools\bin\godot.cmd" --headless --path "$root\game" --quit-after 60 2>&1 | Out-String); if ($o -match 'SCRIPT ERROR|Parse Error') { ($o -split "`n" | Select-String 'ERROR' | Select-Object -First 1) } else { 'boot clean, no SCRIPT ERROR' } } 'boot clean'
 Check 'renpy lint'       { $r = "$env:TEMP\hd_renpy_lint.txt"; Remove-Item $r -ErrorAction SilentlyContinue; Start-Process "$root\tools\renpy\renpy.exe" -ArgumentList 'the_question','lint',$r -WorkingDirectory "$root\tools\renpy" -Wait -WindowStyle Hidden; Get-Content $r -TotalCount 1 } 'Ren.Py 8\.5\.3'
 Check 'butler'           { & "$root\tools\bin\butler.exe" -V } 'v15\.'
 Check 'gdlint'           { & "$root\tools\bin\gdlint.cmd" --version } 'gdlint 4\.'

@@ -22,3 +22,8 @@ export_credentials.cfg
 tools/_uvcache/
 tools/_uvpython/
 tools/_npmcache/
+
+# BDragon1727 sheets: licence forbids redistribution, keep local only (see game/CREDITS.md)
+game/assets/vfx/*.png
+# session checkpoints
+game/.claude/

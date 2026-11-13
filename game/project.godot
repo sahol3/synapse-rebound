@@ -1,36 +1,58 @@
 ; Engine configuration file.
-; Haven Dhaka. Godot 4.7.2 standard (GDScript). Renderer: GL Compatibility (web export for itch.io).
+; SYNAPSE // REBOUND. Godot 4.7.2 standard (GDScript), GL Compatibility for the itch.io web build.
 
 config_version=5
 
 [application]
 
-config/name="Haven Dhaka"
-run/main_scene="res://scenes/main.tscn"
+config/name="SYNAPSE // REBOUND"
+config/description="Hack Club Haven Dhaka 2026. Theme: Bounce Back."
+run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
+
+[autoload]
+
+GameState="*res://scripts/autoload/GameState.gd"
+AudioManager="*res://scripts/autoload/AudioManager.gd"
+JuiceManager="*res://scripts/autoload/JuiceManager.gd"
+DialogueData="*res://scripts/autoload/DialogueData.gd"
 
 [debug]
 
 file_logging/enable_file_logging.pc=false
-
 gdscript/warnings/untyped_declaration=1
 gdscript/warnings/inferred_declaration=0
-gdscript/warnings/unsafe_property_access=1
-gdscript/warnings/unsafe_method_access=1
-gdscript/warnings/unsafe_call_argument=1
+gdscript/warnings/unsafe_property_access=0
+gdscript/warnings/unsafe_method_access=0
+gdscript/warnings/unsafe_call_argument=0
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=1152
+window/size/viewport_height=648
 window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
 
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
+
+[layer_names]
+
+2d_physics/layer_1="world_fg"
+2d_physics/layer_2="world_bg"
+2d_physics/layer_3="player_hurt"
+2d_physics/layer_4="enemy_hurt"
+2d_physics/layer_6="triggers"
+
+[physics]
+
+common/physics_ticks_per_second=120
+common/max_physics_steps_per_frame=12
 
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/canvas_textures/default_texture_filter=0
+environment/defaults/default_clear_color=Color(0.03, 0.02, 0.08, 1)

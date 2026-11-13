@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/levels/Stage03Shaft.gd" id="1_pqvyq"]
+
+[node name="Stage03_Shaft" type="Node2D" unique_id=1259780618]
+script = ExtResource("1_pqvyq")
