@@ -15,7 +15,7 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 | 6 | Click the itch shortcut once to confirm the app starts from D: (not verifiable from Claude's tools) | operator | open |
 | 7 | Uninstall Tiled from Settings > Apps (the 66 MB C: copy; the project uses `tools\tiled`) | operator | open |
 | 8 | Hand playtest of all four stages in a visible browser and on Windows (feel, difficulty, frame rate, audio) | operator | open |
-| 9 | Create the public GitHub repo and push (outward-facing, needs the operator's yes) | operator, then agent | open |
+| 9 | Public GitHub repo: https://github.com/sahol3/synapse-rebound (created and pushed 2026-11-13 on the operator's yes) | agent | done 2026-11-13 |
 | 10 | Upload `exports/web` and `exports/windows` to itch.io with butler (needs items 3 and 4) | operator, then agent | open |
 | 5 | Inkscape 1.4.4 not installed: Windows Installer needs 171,620 KB free on C: and only 109,488 KB was free (log `tools\_ink\admin.log`). Free ~300 MB on C:, then run `scripts\install_inkscape_portable.ps1` (MSI already downloaded) | operator, then agent | blocked on C: space |
 

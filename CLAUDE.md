@@ -6,3 +6,5 @@ Read in this order: `RULES.md` (tools, paths, versions, GDScript rules, build + 
 Toolchain check: `powershell -ExecutionPolicy Bypass -File scripts\verify_toolchain.ps1` (expects `VERDICT: ALL PASS`).
 MCP servers: `.mcp.json` here (godot, godot-editor, filesystem, git). Details and probe results in RULES.md section 3.
 Deploy: there is no web deploy; itch.io pushes go through butler and only when the operator asks (RULES.md section 8).
+
+Repo: https://github.com/sahol3/synapse-rebound (public, branch `main`). The BDragon vfx PNGs are gitignored and must never be pushed.
