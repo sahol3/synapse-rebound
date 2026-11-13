@@ -16,11 +16,16 @@ The bullets, parry slashes, sparks, impact rings, Z-rings, the boss core and the
 author allows free use in non-commercial games and modification, and does not allow the asset to be resold or
 redistributed. For that reason the sheets are not committed to this repository; the README explains how to add them.
 
-## Sound synthesized in code
+## Sound effects
 
-The comms beeps, rally pings, heartbeat, flatline whine, tape rewind, glitch bursts, whooshes and alarm are generated
-at startup in `scripts/autoload/AudioManager.gd` from sine waves and noise. No recorded samples and no AI audio tools
-were used for them.
+Every sound effect is a recorded sample from a human-made pack. Nothing is synthesized and no AI audio tools were used.
+
+**Sci-Fi Sounds, Impact Sounds, Interface Sounds, Digital Audio and UI Audio** by Kenney, https://kenney.nl
+
+The deflection clangs, rally bells, lasers, force fields, explosions, the Blackout heartbeat and engine hum, the tape
+scratches of the rewind, The Echo's glitches, Sara's comms tone, footsteps, power-ups and menu sounds come from these
+packs, which are released under Creative Commons Zero (CC0). The licence is in `assets/audio/sfx/kenney/License.txt`.
+Two long recordings (a thruster and a computer hum) were trimmed to short clips with ffmpeg.
 
 ## Typeface
 

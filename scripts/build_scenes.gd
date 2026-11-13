@@ -15,6 +15,7 @@ const SCENES: Array = [
 	["res://scenes/levels/Stage03_Shaft.tscn", "Node2D", "res://scripts/levels/Stage03Shaft.gd", "Stage03_Shaft"],
 	["res://scenes/levels/Stage04_RooftopBoss.tscn", "Node2D", "res://scripts/levels/Stage04RooftopBoss.gd", "Stage04_RooftopBoss"],
 	["res://tests/MechTest.tscn", "Node", "res://tests/MechTest.gd", "MechTest"],
+	["res://tests/SfxProbe.tscn", "Node", "res://tests/SfxProbe.gd", "SfxProbe"],
 ]
 
 

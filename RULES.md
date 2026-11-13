@@ -120,8 +120,10 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
   build and are gitignored, so they never reach the public repo. A fresh clone must re-download them (see `game/README.md`).
   Never commit them and never sell a build that contains them.
 - The game's credits file is `game/CREDITS.md` (it ships with the repo), not `docs/CREDITS.md`.
-- Jam rule: no AI-generated images, sprites, music or voice, and no script that writes PNG or SVG files. Sound effects
-  synthesized in code at runtime (AudioManager) are allowed and are listed in CREDITS.
+- Jam rule: no AI-generated images, sprites, music or voice, and no script that writes PNG or SVG files.
+  Sound must be recorded samples from a downloaded asset pack: synthesizing sound in code is NOT allowed
+  (operator, 2026-11-13). Raw packs go in `assets/raw/sfx/<pack>/` (gitignored); `scripts/import_sfx.py` copies
+  the chosen files into `game/assets/audio/sfx/kenney/`. Trimming or pitch-shifting a recorded sample is fine.
 - Free sources: kenney.nl (CC0), opengameart.org (check each), itch.io game assets (check each page),
   Google Fonts (OFL). Paid itch.io packs need the operator's purchase; never buy.
 - Pixel art: LibreSprite, export PNG sheets to `game/assets/sprites/`. Keep `.ase` sources in `assets/source/`.
@@ -192,15 +194,19 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
   a scene is a root node plus its script. In `--script` mode autoloads do not exist, so the builder attaches a stub
   script that `take_over_path`s the real path; the saved `.tscn` points at the real script.
 - Code layout: `scripts/autoload/` (GameState: sync, tiers, modules, endings, input map registered at runtime;
-  AudioManager: buses, cue map, synthesized SFX; JuiceManager: hit-stop, shake, flash, ghosts; DialogueData: every line),
+  AudioManager: buses, cue map of recorded samples; JuiceManager: hit-stop, shake, flash, ghosts; DialogueData: every line),
   `scripts/entities/` (Player, Projectile, EnemyBase, BossGunship), `scripts/world/` (StageBase builds stages in code
   from `tileset.png`), `scripts/levels/`, `scripts/ui/` (HudController, PostFX shader chain, MainMenu), `shaders/`.
 - Time: `Engine.time_scale` belongs to JuiceManager only (`set_base_time_scale`, `hitstop`, `reset_time`). Anything that
   must run during hit-stop or Blackout uses real time: `create_timer(t, true, false, true)` and `Tween.set_ignore_time_scale(true)`.
 - Physics layers: 1 world_fg, 2 world_bg, 4 player_hurt, 8 enemy_hurt, 32 triggers. Lane 1 (background) uses layer 2.
-- Test gate: `tools\bin\godot.cmd --headless --path game res://tests/MechTest.tscn` must print `MECHTEST passed=26 failed=0`
+- Test gate: `tools\bin\godot.cmd --headless --path game res://tests/MechTest.tscn` must print `MECHTEST passed=27 failed=0`
   (or more passes, never a failure) before any commit that touches gameplay. Input in tests goes through
   `Input.parse_input_event(InputEventAction)`; `Input.action_press` does not register as `just_pressed`.
+  The first run right after an import of new assets can fail the landing check on a cold cache; run it again.
+- Sound gate (any change to `AudioManager.gd` or the samples): record `res://tests/SfxProbe.tscn` with
+  `--write-movie <ABS>\f.png --fixed-fps 30 --quit-after 640`, then `py -I scripts\sfx_probe_check.py <f.wav> <slots>`
+  (slots = the `SFXPROBE slots=` line it prints) must end `VERDICT: N of N`.
 - Debug start: `godot.cmd --path game -- --stage=N` skips the menu (modules for earlier stages are auto-picked).
 - Visual checks without a window: `--write-movie <ABSOLUTE dir>\f.png --fixed-fps 30 --quit-after N` (a relative path
   fails silently), then read the PNGs. `scripts\capture_frames.ps1 -Tag <name>` records menu, stages 1-4 and the MechTest

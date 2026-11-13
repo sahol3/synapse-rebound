@@ -1,52 +1,82 @@
 extends Node
 ## 8-voice SFX pool, music player, and the Music-bus filter chain
 ## (low-pass for Blackout, distortion + high-pass for Berserk Overdrive).
-## Samples come from the Ansimuz Warped City pack. Every other cue is synthesized
-## here from oscillators and noise at startup (deterministic code, no samples, no AI).
+## Every sound is a recorded sample from a human-made pack: Warped City (Ansimuz, CC0) and the
+## Kenney Sci-Fi, Impact, Interface, Digital Audio and UI Audio packs (CC0). Nothing is synthesized.
+## A cue is a list of layers; each layer picks a random variant of its sample, so repeats differ.
 
-const MIX_RATE: int = 22050
-const POOL_SIZE: int = 8
+const POOL_SIZE: int = 10
 const LOWPASS_OPEN: float = 20500.0
 const LOWPASS_BLACKOUT: float = 650.0
+const K: String = "res://assets/audio/sfx/kenney/"
 
 const MUSIC: Dictionary = {
 	"stage": "res://assets/audio/bgm/cyber_runner.ogg",
 	"boss": "res://assets/audio/bgm/sci_fi_platformer02.ogg",
 }
+
+## sample id -> variant files (one is picked at random per play)
 const SAMPLES: Dictionary = {
-	"beam": "res://assets/audio/sfx/beam.ogg",
-	"explosion": "res://assets/audio/sfx/explosion.ogg",
-	"hurt": "res://assets/audio/sfx/hurt.ogg",
+	"beam": ["res://assets/audio/sfx/beam.ogg"],
+	"explosion": ["res://assets/audio/sfx/explosion.ogg"],
+	"hurt": ["res://assets/audio/sfx/hurt.ogg"],
+	"metal": [K + "impactMetal_000.ogg", K + "impactMetal_001.ogg", K + "impactMetal_002.ogg", K + "impactMetal_003.ogg", K + "impactMetal_004.ogg"],
+	"laser_small": [K + "laserSmall_000.ogg", K + "laserSmall_001.ogg", K + "laserSmall_002.ogg", K + "laserSmall_003.ogg", K + "laserSmall_004.ogg"],
+	"laser_large": [K + "laserLarge_000.ogg", K + "laserLarge_001.ogg", K + "laserLarge_002.ogg", K + "laserLarge_003.ogg", K + "laserLarge_004.ogg"],
+	"laser_retro": [K + "laserRetro_000.ogg", K + "laserRetro_001.ogg", K + "laserRetro_002.ogg", K + "laserRetro_003.ogg", K + "laserRetro_004.ogg"],
+	"force_field": [K + "forceField_000.ogg", K + "forceField_001.ogg", K + "forceField_002.ogg", K + "forceField_003.ogg", K + "forceField_004.ogg"],
+	"crunch": [K + "explosionCrunch_000.ogg", K + "explosionCrunch_001.ogg", K + "explosionCrunch_002.ogg", K + "explosionCrunch_003.ogg", K + "explosionCrunch_004.ogg"],
+	"low_boom": [K + "lowFrequency_explosion_000.ogg", K + "lowFrequency_explosion_001.ogg"],
+	"drone": [K + "spaceEngineLow_000.ogg"],
+	"thruster": [K + "thrusterBurst_000.ogg", K + "thrusterBurst_001.ogg"],
+	"computer": [K + "computerNoiseShort_000.ogg"],
+	"bell": [K + "impactBell_heavy_000.ogg", K + "impactBell_heavy_001.ogg", K + "impactBell_heavy_002.ogg", K + "impactBell_heavy_003.ogg", K + "impactBell_heavy_004.ogg"],
+	"thump": [K + "impactSoft_heavy_000.ogg", K + "impactSoft_heavy_001.ogg", K + "impactSoft_heavy_002.ogg", K + "impactSoft_heavy_003.ogg", K + "impactSoft_heavy_004.ogg"],
+	"soft": [K + "impactSoft_medium_000.ogg", K + "impactSoft_medium_001.ogg", K + "impactSoft_medium_002.ogg", K + "impactSoft_medium_003.ogg", K + "impactSoft_medium_004.ogg"],
+	"step": [K + "footstep_concrete_000.ogg", K + "footstep_concrete_001.ogg", K + "footstep_concrete_002.ogg", K + "footstep_concrete_003.ogg", K + "footstep_concrete_004.ogg"],
+	"punch": [K + "impactPunch_medium_000.ogg", K + "impactPunch_medium_001.ogg", K + "impactPunch_medium_002.ogg", K + "impactPunch_medium_003.ogg", K + "impactPunch_medium_004.ogg"],
+	"tap": [K + "impactGeneric_light_000.ogg", K + "impactGeneric_light_001.ogg", K + "impactGeneric_light_002.ogg", K + "impactGeneric_light_003.ogg", K + "impactGeneric_light_004.ogg"],
+	"scratch": [K + "scratch_001.ogg", K + "scratch_002.ogg", K + "scratch_003.ogg", K + "scratch_004.ogg", K + "scratch_005.ogg"],
+	"glitch": [K + "glitch_001.ogg", K + "glitch_002.ogg", K + "glitch_003.ogg", K + "glitch_004.ogg"],
+	"bong": [K + "bong_001.ogg"],
+	"confirm": [K + "confirmation_001.ogg", K + "confirmation_002.ogg", K + "confirmation_003.ogg", K + "confirmation_004.ogg"],
+	"error": [K + "error_005.ogg", K + "error_006.ogg"],
+	"glass": [K + "glass_001.ogg", K + "glass_002.ogg", K + "glass_003.ogg"],
+	"phase_jump": [K + "phaseJump1.ogg", K + "phaseJump2.ogg", K + "phaseJump3.ogg", K + "phaseJump4.ogg", K + "phaseJump5.ogg"],
+	"phaser_down": [K + "phaserDown1.ogg", K + "phaserDown2.ogg", K + "phaserDown3.ogg"],
+	"power_up": [K + "powerUp1.ogg", K + "powerUp2.ogg", K + "powerUp3.ogg", K + "powerUp4.ogg", K + "powerUp5.ogg", K + "powerUp6.ogg"],
+	"lock_on": [K + "zapThreeToneUp.ogg"],
+	"rollover": [K + "rollover1.ogg", K + "rollover2.ogg", K + "rollover3.ogg", K + "rollover4.ogg", K + "rollover5.ogg", K + "rollover6.ogg"],
 }
 
-## key -> list of layers [stream_id, volume_db, pitch_multiplier]
+## key -> list of layers [sample_id, volume_db, pitch_multiplier, delay_seconds (optional)]
 const CUES: Dictionary = {
-	"parry_hit": [["ting", -4.0, 1.0], ["beam", -12.0, 1.8]],
-	"rally_ping": [["bell", -3.0, 1.0], ["ting", -10.0, 1.0]],
-	"z_lane_whoosh": [["whoosh", -4.0, 1.0]],
-	"blackout_heartbeat": [["heartbeat", 0.0, 1.0]],
-	"blackout_rebound": [["impact", -1.0, 1.0], ["explosion", -6.0, 0.7]],
-	"vhs_rewind": [["rewind", -2.0, 1.0]],
-	"sara_comms": [["beep2", -9.0, 1.2]],
-	"echo_glitch": [["glitch", -6.0, 0.75]],
+	"parry_hit": [["metal", -4.0, 1.15], ["laser_small", -13.0, 1.4]],
+	"rally_ping": [["bell", -6.0, 1.0], ["glass", -10.0, 1.0]],
+	"z_lane_whoosh": [["phase_jump", -6.0, 1.0], ["thruster", -12.0, 1.1]],
+	"blackout_heartbeat": [["thump", -1.0, 0.7], ["thump", -4.0, 0.62, 0.2]],
+	"blackout_rebound": [["low_boom", -6.0, 1.0], ["force_field", -7.0, 0.8], ["explosion", -11.0, 0.7]],
+	"vhs_rewind": [["scratch", -3.0, 0.8], ["scratch", -5.0, 0.7, 0.09], ["phaser_down", -10.0, 1.3]],
+	"sara_comms": [["bong", -9.0, 1.2]],
+	"echo_glitch": [["glitch", -3.0, 0.75], ["glitch", -5.0, 0.6, 0.05], ["glitch", -4.0, 0.9, 0.11], ["computer", -15.0, 0.75]],
 	"shot": [["beam", -11.0, 1.0]],
-	"heavy_shot": [["beam", -6.0, 0.55]],
-	"explosion": [["explosion", -3.0, 1.0]],
-	"hurt": [["hurt", -2.0, 1.0]],
-	"dash": [["whoosh_short", -6.0, 1.0]],
-	"jump": [["blip", -14.0, 1.0]],
-	"land": [["thud", -10.0, 1.0]],
-	"shield": [["bell", -6.0, 0.62], ["glitch", -14.0, 1.3]],
-	"rail": [["rail", -2.0, 1.0], ["beam", -6.0, 0.45]],
-	"ui_move": [["beep1", -14.0, 1.0]],
-	"ui_select": [["beep2", -8.0, 0.9]],
-	"module": [["arp", -4.0, 1.0]],
-	"laser_lock": [["lock", -10.0, 1.0]],
-	"boss_alarm": [["alarm", -8.0, 1.0]],
-	"swing": [["swish", -12.0, 1.0]],
+	"heavy_shot": [["laser_large", -8.0, 0.8]],
+	"explosion": [["crunch", -4.0, 1.0], ["explosion", -7.0, 1.0]],
+	"hurt": [["hurt", -2.0, 1.0], ["punch", -8.0, 1.0]],
+	"dash": [["thruster", -7.0, 1.0]],
+	"jump": [["step", -13.0, 1.25]],
+	"land": [["soft", -9.0, 0.9], ["step", -12.0, 0.8]],
+	"shield": [["force_field", -7.0, 1.15]],
+	"rail": [["laser_retro", -7.0, 0.7], ["laser_large", -9.0, 0.6], ["low_boom", -18.0, 1.2]],
+	"ui_move": [["rollover", -10.0, 1.0]],
+	"ui_select": [["confirm", -7.0, 1.0]],
+	"module": [["power_up", -5.0, 1.0]],
+	"laser_lock": [["lock_on", -11.0, 1.0]],
+	"boss_alarm": [["error", -9.0, 0.85], ["error", -10.0, 0.85, 0.32]],
+	"swing": [["tap", -15.0, 1.6]],
 }
 
-var _streams: Dictionary = {}
+var _streams: Dictionary = {}  ## sample id -> Array of AudioStream
 var _pool: Array[AudioStreamPlayer] = []
 var _pool_index: int = 0
 var _music: AudioStreamPlayer
@@ -67,8 +97,10 @@ func _ready() -> void:
 	_rng.seed = 909
 	_setup_buses()
 	for k: String in SAMPLES:
-		_streams[k] = load(SAMPLES[k])
-	_synthesize_all()
+		var list: Array = []
+		for path: String in SAMPLES[k]:
+			list.append(load(path))
+		_streams[k] = list
 	for i: int in POOL_SIZE:
 		var p := AudioStreamPlayer.new()
 		p.bus = "SFX"
@@ -78,10 +110,14 @@ func _ready() -> void:
 	_music.bus = "Music"
 	_music.volume_db = -6.0
 	add_child(_music)
+	## Blackout bed: a recorded low engine hum, looped and pitched down, under the heartbeat.
 	_whine = AudioStreamPlayer.new()
 	_whine.bus = "SFX"
-	_whine.stream = _streams["whine"]
-	_whine.volume_db = -22.0
+	var drone: AudioStreamOggVorbis = (_streams["drone"][0] as AudioStreamOggVorbis).duplicate()
+	drone.loop = true
+	_whine.stream = drone
+	_whine.volume_db = -14.0
+	_whine.pitch_scale = 0.8
 	add_child(_whine)
 	GameState.tier_changed.connect(_on_tier_changed)
 
@@ -92,15 +128,27 @@ func play_sfx(key: String, pitch: float = 1.0, volume_db: float = 0.0) -> void:
 	if not CUES.has(key):
 		return
 	for layer: Array in CUES[key]:
-		var stream: AudioStream = _streams.get(layer[0])
-		if stream == null:
+		var variants: Array = _streams.get(layer[0], [])
+		if variants.is_empty():
 			continue
-		var p: AudioStreamPlayer = _pool[_pool_index]
-		_pool_index = (_pool_index + 1) % POOL_SIZE
-		p.stream = stream
-		p.volume_db = float(layer[1]) + volume_db
-		p.pitch_scale = clampf(pitch * float(layer[2]), 0.05, 4.0)
-		p.play()
+		var stream: AudioStream = variants[_rng.randi() % variants.size()]
+		var vol: float = float(layer[1]) + volume_db
+		var pit: float = clampf(pitch * float(layer[2]), 0.05, 4.0)
+		var delay: float = float(layer[3]) if layer.size() > 3 else 0.0
+		if delay <= 0.0:
+			_voice(stream, vol, pit)
+		else:
+			## Real-time delay so hit-stop or the Blackout slow-down does not stretch the rhythm.
+			get_tree().create_timer(delay, true, false, true).timeout.connect(func() -> void: _voice(stream, vol, pit))
+
+
+## True when every sample listed in SAMPLES loaded. Used by tests.
+func all_samples_loaded() -> bool:
+	for k: String in _streams:
+		for s: Variant in _streams[k]:
+			if s == null:
+				return false
+	return _streams.size() == SAMPLES.size()
 
 
 func play_parry(bounce_count: int) -> void:
@@ -148,7 +196,16 @@ func set_menu_muffle(active: bool) -> void:
 	_apply_filters(0.4)
 
 
-# ---------------------------------------------------------------- filters
+# ---------------------------------------------------------------- private
+
+func _voice(stream: AudioStream, vol: float, pit: float) -> void:
+	var p: AudioStreamPlayer = _pool[_pool_index]
+	_pool_index = (_pool_index + 1) % POOL_SIZE
+	p.stream = stream
+	p.volume_db = vol
+	p.pitch_scale = pit
+	p.play()
+
 
 func _setup_buses() -> void:
 	_music_bus = AudioServer.get_bus_index("Music")
@@ -197,124 +254,3 @@ func _apply_filters(time: float) -> void:
 	var tw := create_tween()
 	tw.set_ignore_time_scale(true)
 	tw.tween_property(_lowpass, "cutoff_hz", target, time)
-
-
-# ---------------------------------------------------------------- synthesis
-
-func _synthesize_all() -> void:
-	_streams["ting"] = _make(0.22, func(t: float) -> float:
-		var e: float = exp(-t * 22.0)
-		var n: float = _noise() * exp(-t * 400.0) * 0.6
-		return (sin(TAU * 1760.0 * t) * 0.5 + sin(TAU * 2637.0 * t) * 0.3 + sin(TAU * 3951.0 * t) * 0.2) * e + n)
-	_streams["bell"] = _make(0.5, func(t: float) -> float:
-		var e: float = exp(-t * 7.0)
-		var fm: float = sin(TAU * 3.0 * 880.0 * t) * 0.8 * exp(-t * 12.0)
-		return (sin(TAU * 880.0 * t + fm) * 0.55 + sin(TAU * 1760.0 * t) * 0.25 + sin(TAU * 2640.0 * t) * 0.12) * e)
-	_streams["whoosh"] = _make_noise_sweep(0.3, 300.0, 4200.0, 0.55)
-	_streams["whoosh_short"] = _make_noise_sweep(0.16, 900.0, 5200.0, 0.45)
-	_streams["swish"] = _make_noise_sweep(0.09, 1800.0, 7000.0, 0.35)
-	_streams["heartbeat"] = _make(0.62, func(t: float) -> float:
-		var a: float = _thump(t, 0.0)
-		var b: float = _thump(t, 0.2) * 0.75
-		return a + b)
-	var whine_fn: Callable = func(t: float) -> float:
-		return sin(TAU * 987.0 * t) * 0.18
-	_streams["whine"] = _make(1.0, whine_fn, true)
-	_streams["impact"] = _make(0.75, func(t: float) -> float:
-		var sub_f: float = lerpf(90.0, 28.0, minf(t / 0.6, 1.0))
-		var sub: float = sin(TAU * sub_f * t) * exp(-t * 4.0) * 0.9
-		var n: float = _noise() * exp(-t * 18.0) * 0.5
-		var chord: float = (sin(TAU * 440.0 * t) + sin(TAU * 554.4 * t) + sin(TAU * 659.3 * t)) * 0.12 * exp(-t * 5.0)
-		return sub + n + chord)
-	_streams["rewind"] = _make(0.38, func(t: float) -> float:
-		var f: float = 300.0 + 900.0 * absf(sin(t * 22.0)) + 400.0 * sin(t * 140.0)
-		var chop: float = 1.0 if fmod(t * 38.0, 1.0) > 0.25 else 0.25
-		return (sin(TAU * f * t) * 0.45 + _noise() * 0.35) * chop * (1.0 - t / 0.38))
-	_streams["beep1"] = _make_beeps([1320.0], 0.05, 0.0)
-	_streams["beep2"] = _make_beeps([1320.0, 1760.0], 0.05, 0.035)
-	_streams["glitch"] = _make_glitch(0.3)
-	_streams["blip"] = _make(0.07, func(t: float) -> float:
-		var f: float = lerpf(520.0, 980.0, t / 0.07)
-		return signf(sin(TAU * f * t)) * 0.25 * (1.0 - t / 0.07))
-	_streams["thud"] = _make(0.08, func(t: float) -> float:
-		return sin(TAU * lerpf(120.0, 50.0, t / 0.08) * t) * (1.0 - t / 0.08) * 0.7)
-	_streams["rail"] = _make(0.55, func(t: float) -> float:
-		var crackle: float = _noise() * (0.5 + 0.5 * sin(t * 900.0)) * exp(-t * 5.0)
-		var tone: float = sin(TAU * lerpf(1600.0, 200.0, t / 0.55) * t) * 0.35 * exp(-t * 3.0)
-		return crackle * 0.6 + tone)
-	_streams["arp"] = _make(0.7, func(t: float) -> float:
-		var notes: Array[float] = [523.25, 659.25, 783.99, 1046.5]
-		var idx: int = mini(int(t / 0.09), 3)
-		var lt: float = t - float(idx) * 0.09
-		return sin(TAU * notes[idx] * t) * exp(-lt * 6.0) * 0.4)
-	_streams["lock"] = _make(0.9, func(t: float) -> float:
-		var f: float = lerpf(400.0, 1400.0, t / 0.9)
-		var gate: float = 1.0 if fmod(t * 14.0, 1.0) < 0.6 else 0.0
-		return sin(TAU * f * t) * 0.3 * gate)
-	_streams["alarm"] = _make(0.9, func(t: float) -> float:
-		var f: float = 880.0 if fmod(t, 0.3) < 0.15 else 660.0
-		return signf(sin(TAU * f * t)) * 0.18 * (1.0 - t / 0.9))
-
-
-func _make(length: float, fn: Callable, loop: bool = false) -> AudioStreamWAV:
-	var n: int = int(length * MIX_RATE)
-	var data := PackedByteArray()
-	data.resize(n * 2)
-	for i: int in n:
-		var t: float = float(i) / MIX_RATE
-		var v: float = clampf(float(fn.call(t)), -1.0, 1.0)
-		var fade: float = minf(1.0, float(n - i) / 64.0) if not loop else 1.0
-		data.encode_s16(i * 2, int(v * fade * 32000.0))
-	var w := AudioStreamWAV.new()
-	w.format = AudioStreamWAV.FORMAT_16_BITS
-	w.mix_rate = MIX_RATE
-	w.stereo = false
-	w.data = data
-	if loop:
-		w.loop_mode = AudioStreamWAV.LOOP_FORWARD
-		w.loop_begin = 0
-		w.loop_end = n
-	return w
-
-
-func _make_noise_sweep(length: float, f0: float, f1: float, gain: float) -> AudioStreamWAV:
-	var state: Array[float] = [0.0]
-	return _make(length, func(t: float) -> float:
-		var k: float = t / length
-		var cutoff: float = lerpf(f0, f1, sin(k * PI))
-		var alpha: float = clampf(TAU * cutoff / MIX_RATE, 0.0, 1.0)
-		state[0] += alpha * (_noise() - state[0])
-		return state[0] * gain * 2.2 * sin(k * PI))
-
-
-func _make_beeps(freqs: Array, each: float, gap: float) -> AudioStreamWAV:
-	var total: float = (each + gap) * freqs.size()
-	return _make(total, func(t: float) -> float:
-		var idx: int = int(t / (each + gap))
-		var lt: float = t - float(idx) * (each + gap)
-		if idx >= freqs.size() or lt > each:
-			return 0.0
-		var env: float = minf(1.0, lt * 400.0) * minf(1.0, (each - lt) * 400.0)
-		return (sin(TAU * float(freqs[idx]) * t) * 0.6 + signf(sin(TAU * float(freqs[idx]) * t)) * 0.08) * env)
-
-
-func _make_glitch(length: float) -> AudioStreamWAV:
-	var held: Array[float] = [0.0, 0.0]
-	return _make(length, func(t: float) -> float:
-		held[1] -= 1.0
-		if held[1] <= 0.0:
-			held[0] = _noise()
-			held[1] = float(_rng.randi_range(2, 40))
-		var sq: float = signf(sin(TAU * 70.0 * t)) * 0.3 if fmod(t * 9.0, 1.0) < 0.4 else 0.0
-		return (held[0] * 0.5 + sq) * (1.0 - t / length))
-
-
-func _thump(t: float, at: float) -> float:
-	var lt: float = t - at
-	if lt < 0.0 or lt > 0.18:
-		return 0.0
-	return sin(TAU * lerpf(62.0, 38.0, lt / 0.18) * lt) * exp(-lt * 16.0) * 0.95
-
-
-func _noise() -> float:
-	return _rng.randf_range(-1.0, 1.0)

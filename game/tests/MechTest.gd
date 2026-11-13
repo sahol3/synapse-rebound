@@ -230,6 +230,7 @@ func _run() -> void:
 	_check("T7 rally reached bounce 5", GameState.best_rally >= 5)
 	await _wait(3.5)
 	_check("T8 ending screen shown", main.hud._ending_open, "ending=%s" % GameState.ending_id())
+	_check("T9 every recorded SFX sample loaded", AudioManager.all_samples_loaded(), "%d sample ids" % AudioManager.SAMPLES.size())
 
 	print("MECHTEST passed=%d failed=%d" % [passed, failed])
 	get_tree().quit(1 if failed > 0 else 0)

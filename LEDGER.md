@@ -21,6 +21,23 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-13 · Recorded SFX replace synthesized sound (Claude Code, Opus 5.5)
+- Operator: synthesized sound is not allowed; SFX must come from downloaded asset packs. The first build synthesized
+  18 cues and RULES/CREDITS wrongly said that was allowed. Corrected in RULES section 6, CREDITS, the menu credits,
+  DECISIONS and memory `feedback_no_synthesized_audio`.
+- The spec's itch.io packs (Hove Audio, Helton Yan, Shapeforms) could not be fetched: itch.io answered 522 (main
+  site, Ansimuz page) and 429 (BDragon page) from this machine, in curl and in the browser pane. Used Kenney CC0 packs
+  instead (Sci-Fi Sounds, named in the spec, plus Impact Sounds, Interface Sounds, Digital Audio, UI Audio).
+  Raw packs in `assets/raw/sfx/kenney_*` (gitignored); `scripts/import_sfx.py` copies 103 samples and trims 3 into
+  `game/assets/audio/sfx/kenney/` with the CC0 licence file.
+- `AudioManager.gd`: all synthesis removed; cues are layers of recorded samples with random variants and real-time
+  delays (heartbeat = two recorded thumps 0.2 s apart; Blackout bed = looped engine hum).
+- Verified: `tests/SfxProbe.tscn` recorded with the movie writer and measured by `scripts/sfx_probe_check.py`:
+  24 of 24 slots as expected (every cue audible, silent control at -120 dBFS, no clipping); MechTest 27/27 with the
+  new T9 "every recorded SFX sample loaded". Web export rebuilt.
+- Not verified: how the new sounds feel in play. Windows export waits until the running SynapseRebound.exe closes.
+- Next: swap Hove/Helton Yan samples in per cue when itch.io is reachable, if the operator wants the spec's packs.
+
 ### 2026-11-13 · UI de-AI pass (Claude Code, Opus 5.5), approved
 - Operator: "many things look and feel ai". Pass 1 (pixel font at 3x, boxed panels, tag blocks, bold display type,
   landing-page menu) was rejected mid-turn: "It looks more AI now". Logged in the design-orchestrator taste ledger.

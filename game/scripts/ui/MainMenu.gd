@@ -23,7 +23,7 @@ const CONTROLS: Array = [
 const CREDITS: Array = [
 	["Art and music", "Warped City by Ansimuz (CC0)"],
 	["Effects", "Free Effect and Bullet 16x16 by BDragon1727"],
-	["Sound effects", "Synthesized in code at runtime"],
+	["Sound effects", "Kenney sound packs (CC0)"],
 	["Typeface", "5x7 pixel font drawn for this game"],
 	["Engine", "Godot 4.7"],
 	["", "No AI-generated art, music or voice."],
