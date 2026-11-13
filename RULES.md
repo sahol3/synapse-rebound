@@ -8,13 +8,14 @@ If you change a tool, a path or a version, update this file and add a ledger lin
 
 | Path | What lives there | In git |
 |---|---|---|
+| `README.md` | Public, player-facing readme for the GitHub repo | yes |
 | `game/` | The Godot 4.7.2 project (`project.godot`, `scenes/`, `scripts/`, `assets/`, `addons/godot_mcp`) | yes |
 | `assets/source/` | Editable source files (`.ase`, `.svg`, `.tmx`, `.aup3`) | yes |
 | `assets/raw/` | Downloaded packs before import (itch.io, Kenney, OpenGameArt) | no |
 | `assets/licenses/` | One `.txt` per third-party asset pack: source URL, author, license, date | yes |
 | `vn/` | Ren'Py project, if the visual-novel track starts (create with the Ren'Py launcher) | yes |
 | `tools/` | Every tool install: godot (self-contained), godot-mcp, ee0pdt-godot-mcp, butler, renpy, libresprite, tiled, itch-app, pyenv, `bin/` shims, `_uvcache`/`_npmcache` | no |
-| `refs/` | Offline references: `godot-docs/` (4.7 branch, .rst only), `gdquest-gdscript-guidelines.md` | docs no, guide yes |
+| `refs/` | Offline references: `godot-docs/` (4.7 branch, .rst only), `gdquest-gdscript-guidelines.md` | no (third-party copies stay local) |
 | `exports/` | Build output for itch.io (`web/`, `windows/`) | no |
 | `scripts/` | Install scripts, `mcp_probe.mjs`, `verify_toolchain.ps1` | yes |
 | `docs/` | Design docs, story bible, decisions | yes |

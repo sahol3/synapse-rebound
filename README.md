@@ -10,8 +10,8 @@ who pulled the trigger.
 
 ## Play
 
-The web build runs in the browser on itch.io. To run from source, open the `game/` folder in Godot 4.7 (standard
-edition, GDScript) and press Play.
+To run from source, open the `game/` folder in Godot 4.7 (standard edition, GDScript) and press Play. The Web export
+below produces the build for itch.io.
 
 | Input | Action |
 |---|---|
@@ -75,12 +75,13 @@ godot --headless --path game res://tests/MechTest.tscn
 
 | Path | Contents |
 |---|---|
-| `scripts/autoload/` | GameState (sync, modules, stats, input map), AudioManager, JuiceManager, DialogueData |
-| `scripts/entities/` | Player, Projectile, EnemyBase, BossGunship |
-| `scripts/world/` | StageBase (stage builder), camera, rain, Z-rings, module pickup |
-| `scripts/levels/` | The four stages |
-| `scripts/ui/` | HUD, post-processing stack, main menu, Echo world text |
-| `shaders/` | CRT, Blackout crimson, VHS rewind, shockwave, hit flash, glitch text |
-| `scenes/` | Scene files, generated with `../scripts/build_scenes.gd` |
+| `game/scripts/autoload/` | GameState (sync, modules, stats, input map), AudioManager, JuiceManager, DialogueData |
+| `game/scripts/entities/` | Player, Projectile, EnemyBase, BossGunship |
+| `game/scripts/world/` | StageBase (stage builder), camera, rain, Z-rings, module pickup |
+| `game/scripts/levels/` | The four stages |
+| `game/scripts/ui/` | HUD, pixel font, post-processing stack, main menu, Echo world text |
+| `game/shaders/` | CRT, Blackout crimson, VHS rewind, shockwave, hit flash, glitch text |
+| `game/scenes/` | Scene files, generated with `scripts/build_scenes.gd` |
+| `docs/` | The design document, decisions log |
 
-Credits and licences are in [CREDITS.md](CREDITS.md).
+Credits and licences are in [game/CREDITS.md](game/CREDITS.md).

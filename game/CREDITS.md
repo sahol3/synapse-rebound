@@ -22,10 +22,15 @@ The comms beeps, rally pings, heartbeat, flatline whine, tape rewind, glitch bur
 at startup in `scripts/autoload/AudioManager.gd` from sine waves and noise. No recorded samples and no AI audio tools
 were used for them.
 
-## Text and fonts
+## Typeface
 
-The interface uses the system monospace font when one is available and falls back to Godot's built-in font. The game
-ships no font files.
+The interface typeface is a 5x7 pixel font drawn for this game. Its glyphs are written out in
+`scripts/ui/PixelFont.gd` and built into a font in memory when the game starts, so the game ships no font files.
+
+## Editor plugin
+
+`addons/godot_mcp` is the Godot MCP editor plugin from https://github.com/ee0pdt/Godot-MCP, used during development and
+excluded from exported builds. It is MIT licensed; the licence is in `addons/godot_mcp/LICENSE`.
 
 ## Engine
 

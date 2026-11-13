@@ -27,3 +27,5 @@ tools/_npmcache/
 game/assets/vfx/*.png
 # session checkpoints
 game/.claude/
+# Third-party docs copy (GDQuest GitBook): kept local, not republished
+refs/gdquest-gdscript-guidelines.md
