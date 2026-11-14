@@ -7,6 +7,7 @@ signal sync_changed(value: float, tier: int)
 signal tier_changed(tier: int)
 signal module_chosen(stage: int, choice: String)
 signal stats_changed
+signal memory_unlocked(id: String)
 
 enum Tier { DEGRADED, SYNCHRONIZED, OVERCLOCKED, BERSERK }
 
@@ -314,6 +315,103 @@ func apply_save(d: Dictionary) -> void:
 func clear_save() -> void:
 	if persist and FileAccess.file_exists(save_path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
+
+
+# ---------------------------------------------------------------- lifetime progress (across runs)
+
+var _meta: Dictionary = {}
+var _meta_from: String = ""
+
+
+func meta_path() -> String:
+	## Sits beside the run save, so a test or dev run that redirects the save redirects this too.
+	return save_path.get_basename() + "_meta.json"
+
+
+func meta() -> Dictionary:
+	## Recovered memories, endings seen and personal bests. Read from disk once per path, and only
+	## when saving is on, so a dev run never shows or changes the player's own progress.
+	var path: String = meta_path() + ("" if persist else "?off")
+	if _meta_from == path:
+		return _meta
+	_meta_from = path
+	_meta = {"memories": [], "endings": [], "best_time": 0.0, "best_rally": 0, "finished": 0}
+	if not persist or not FileAccess.file_exists(meta_path()):
+		return _meta
+	var f: FileAccess = FileAccess.open(meta_path(), FileAccess.READ)
+	if f == null:
+		return _meta
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	if not (parsed is Dictionary):
+		return _meta
+	for key: String in ["memories", "endings"]:
+		var list: Variant = (parsed as Dictionary).get(key, [])
+		if list is Array:
+			for v: Variant in list:
+				if v is String and not (v in _meta[key]):
+					_meta[key].append(v)
+	_meta["best_time"] = maxf(float((parsed as Dictionary).get("best_time", 0.0)), 0.0)
+	_meta["best_rally"] = maxi(int((parsed as Dictionary).get("best_rally", 0)), 0)
+	_meta["finished"] = maxi(int((parsed as Dictionary).get("finished", 0)), 0)
+	return _meta
+
+
+func _save_meta() -> void:
+	if not persist:
+		return
+	var f: FileAccess = FileAccess.open(meta_path(), FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_string(JSON.stringify(_meta))
+	f.close()
+
+
+func has_memory(id: String) -> bool:
+	return not DialogueData.memory(id).has("how") or id in meta()["memories"]
+
+
+func memory_count() -> int:
+	var n: int = 0
+	for m: Dictionary in DialogueData.MEMORIES:
+		if has_memory(m["id"]):
+			n += 1
+	return n
+
+
+func unlock_memory(id: String) -> bool:
+	## True the first time. Recovered memories stay recovered across runs.
+	if has_memory(id) or DialogueData.memory(id).is_empty():
+		return false
+	meta()["memories"].append(id)
+	_save_meta()
+	memory_unlocked.emit(id)
+	return true
+
+
+func note_rally(bounces: int) -> bool:
+	## True when this is the longest rally the player has ever held.
+	if bounces <= int(meta()["best_rally"]):
+		return false
+	meta()["best_rally"] = bounces
+	_save_meta()
+	return true
+
+
+func record_ending(id: String) -> Dictionary:
+	## Called once when the boss falls. Says what was new about this finish.
+	var m: Dictionary = meta()
+	var out: Dictionary = {"new_ending": not (id in m["endings"]), "best_time": false}
+	if out["new_ending"]:
+		m["endings"].append(id)
+	if float(m["best_time"]) <= 0.0 or run_time < float(m["best_time"]):
+		out["best_time"] = int(m["finished"]) > 0
+		m["best_time"] = run_time
+	m["finished"] = int(m["finished"]) + 1
+	_save_meta()
+	unlock_memory("sara")
+	unlock_memory("end_" + id)
+	return out
 
 
 # ---------------------------------------------------------------- input

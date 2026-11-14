@@ -202,6 +202,20 @@ func _run() -> void:
 	_check("R4 rooms before the checkpoint are cleared, the room ahead is not",
 			main.stage.enemies_alive_in_room(0) == 0 and main.stage.enemies_alive_in_room(1) == 0 and main.stage.enemies_alive_in_room(2) > 0,
 			"room0=%d room1=%d room2=%d" % [main.stage.enemies_alive_in_room(0), main.stage.enemies_alive_in_room(1), main.stage.enemies_alive_in_room(2)])
+	# The way past a room that is offered after repeated deaths.
+	var room_before: int = main.stage.current_room
+	var has_next: bool = room_before < main.stage.checkpoint_count()
+	main._skip_room()
+	await _wait(0.3)
+	_check("K1 the skip does nothing until it has been offered", main.stage.current_room == room_before, "room=%d" % main.stage.current_room)
+	main._skip_key = "%d:%d" % [GameState.current_stage, room_before]
+	main._skip_room()
+	await _wait(0.3)
+	_check("K2 once offered, it moves the player to the next checkpoint alive",
+			has_next and main.stage.current_room == room_before + 1 and not _p().dead
+			and _p().global_position.distance_to(main.stage.checkpoint_pos) < 40.0,
+			"room %d -> %d of %d" % [room_before, main.stage.current_room, main.stage.checkpoint_count()])
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(GameState.meta_path()))
 	GameState.clear_save()
 	GameState.persist = false
 	main._begin_run(3)
@@ -223,6 +237,12 @@ func _run() -> void:
 	await _wait(1.5)
 	_check("F2 a second death during the rewind is not lost", not fp.dead and not main._busy,
 			"dead=%s busy=%s" % [str(fp.dead), str(main._busy)])
+	var stuck_key: String = "%d:%d" % [GameState.current_stage, main.stage.current_room]
+	main._room_deaths[stuck_key] = main.SKIP_AFTER - 1
+	fp.die("hit")
+	await _wait(1.5)
+	_check("K3 the sixth death in one room offers the way past", main._skip_key == stuck_key and not fp.dead,
+			"armed=%s deaths=%s" % [main._skip_key, str(main._room_deaths)])
 	var last: int = PLATS.size() - 1
 	## Control: the same bot with plain jumps only. It must fail, or this test proves nothing.
 	var plain: Dictionary = await _climb(false, 12.0, true)

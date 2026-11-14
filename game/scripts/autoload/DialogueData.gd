@@ -180,6 +180,45 @@ const ECHO_FRAGMENTS: PackedStringArray = [
 	"BOUNCE BACK",
 ]
 
+## Shown once before a new game, one line at a time. Any key skips it.
+const PROLOGUE: PackedStringArray = [
+	"23:59. The roof of Tower 09, Neo-Dhaka.",
+	"Someone you trusted takes your gun, wipes your memory and shoots you off the edge.",
+	"One second before the street, the implant in your spine throws you back sixty seconds.",
+	"You have a wrist-guard that sends shots back, and a tower to climb.",
+]
+
+## The Lore tab. Entries without "how" are readable from the start; the rest are recovered by
+## playing, and a locked entry shows its title and what recovers it.
+const MEMORIES: Array[Dictionary] = [
+	{"id": "vincent", "title": "VINCENT-09",
+		"text": "You are a courier in Neo-Dhaka. You carry sealed cases between towers and you do not open them. At midnight someone took your modules, locked your weapons, wiped your memory and shot you off the roof of Tower 09."},
+	{"id": "lazarus", "title": "THE LAZARUS IMPLANT",
+		"text": "Hardware in your spine. A moment before you hit the street it threw you back sixty seconds, onto the scaffolding below the roof. It still fires every time you die, a few seconds at a time."},
+	{"id": "voices", "title": "TWO VOICES",
+		"text": "Sara is your handler, live on the comms. The Echo is a recording you left for yourself before the wipe. Sara says a rival syndicate shot you. The Echo says to check who was standing behind you."},
+	{"id": "guard", "title": "THE WRIST-GUARD", "how": "Send 25 shots back.",
+		"text": "They locked your sidearm and left the kinetic guard on your wrist, because a guard cannot fire. It returns whatever it is given, and it returns it faster."},
+	{"id": "blackout", "title": "BLACKOUT", "how": "Come back from a Blackout.",
+		"text": "The implant's last second before a rewind. Send one shot back inside it and the rewind is cancelled. You stay on your feet."},
+	{"id": "third", "title": "THE THIRD BOUNCE", "how": "Hold a rally for 5 bounces.",
+		"text": "A shot gains speed each time it is sent back. Enforcers carry shields that return your deflection. By the third return the shot is fast enough to go through the shield."},
+	{"id": "holster", "title": "THE HOLSTER", "how": "Reach the Overpass.",
+		"text": "Your sidearm was locked at 23:58, two minutes before the fall. Two people held the key. You were one of them."},
+	{"id": "2359", "title": "23:59:42", "how": "Reach the Ascent Shaft.",
+		"text": "Eighteen seconds before midnight a voice on the command channel said it was sorry. The Echo kept the recording. You know the voice."},
+	{"id": "files", "title": "THE LAZARUS FILES", "how": "Reach Rooftop 09.",
+		"text": "The case you opened. The company fits its couriers with implants and uses them as weapons, and the file says what happens to a courier who reads it."},
+	{"id": "sara", "title": "SARA", "how": "Finish the game.",
+		"text": "There was no syndicate on the roof. Sara took the order, locked your holster and flew the gunship herself. She spent the whole climb asking you to stay weak."},
+	{"id": "end_A", "title": "CLEAN REBOOT", "how": "Finish with every module stabilized.",
+		"text": "You walk away as yourself. The tracker is purged and nobody else has read the files."},
+	{"id": "end_B", "title": "TOTAL OVERCLOCK", "how": "Finish with every module overclocked.",
+		"text": "The Echo takes the body back, and the whole city receives the files."},
+	{"id": "end_C", "title": "EQUILIBRIUM", "how": "Finish with a mix of both.",
+		"text": "You keep both voices and leave the roof with the case."},
+]
+
 ## Shown under the title on the menu: the premise and the jam theme in one line.
 const TAGLINE: String = "Shot off Tower 09 at midnight. Sixty seconds to bounce back."
 
@@ -243,6 +282,13 @@ const ENDINGS: Dictionary = {
 
 func lines(id: String) -> Array:
 	return LINES.get(id, [])
+
+
+func memory(id: String) -> Dictionary:
+	for m: Dictionary in MEMORIES:
+		if m["id"] == id:
+			return m
+	return {}
 
 
 ## The line a voice says when the player has died `n` times this run, or "" for most counts.

@@ -254,6 +254,74 @@ func _run() -> void:
 	GameState.save_run(1)
 	_check("S6 with saving off nothing is written", not FileAccess.file_exists(GameState.save_path))
 
+	# ------------------------------------------------------------ lifetime progress (Lore, endings, bests)
+	GameState.save_path = "user://save_test.json"
+	GameState.persist = true
+	var meta_file: String = ProjectSettings.globalize_path(GameState.meta_path())
+	if FileAccess.file_exists(GameState.meta_path()):
+		DirAccess.remove_absolute(meta_file)
+	GameState._meta_from = ""
+	_check("X1 three Lore entries are readable before anything is recovered", GameState.memory_count() == 3,
+			"count=%d path=%s" % [GameState.memory_count(), GameState.meta_path()])
+	var first_unlock: bool = GameState.unlock_memory("blackout")
+	var second_unlock: bool = GameState.unlock_memory("blackout")
+	GameState._meta_from = ""
+	_check("X2 a recovered memory is saved once and read back from the file",
+			first_unlock and not second_unlock and GameState.has_memory("blackout") and GameState.memory_count() == 4,
+			"first=%s second=%s count=%d" % [str(first_unlock), str(second_unlock), GameState.memory_count()])
+	GameState.run_time = 200.0
+	var end1: Dictionary = GameState.record_ending("A")
+	GameState.run_time = 150.0
+	var end2: Dictionary = GameState.record_ending("A")
+	GameState._meta_from = ""
+	var mt: Dictionary = GameState.meta()
+	_check("X3 endings seen, finishes and the best time are kept across runs",
+			end1["new_ending"] and not end1["best_time"] and not end2["new_ending"] and end2["best_time"]
+			and (mt["endings"] as Array).size() == 1 and int(mt["finished"]) == 2
+			and is_equal_approx(float(mt["best_time"]), 150.0) and GameState.has_memory("sara") and GameState.has_memory("end_A"),
+			str(mt))
+	DirAccess.remove_absolute(meta_file)
+	GameState.persist = false
+	GameState._meta_from = ""
+	GameState.unlock_memory("guard")
+	_check("X4 with saving off a recovery lasts for the session and no file is written",
+			GameState.memory_count() == 4 and not FileAccess.file_exists(GameState.meta_path()),
+			"count=%d file=%s" % [GameState.memory_count(), str(FileAccess.file_exists(GameState.meta_path()))])
+	GameState._meta_from = ""
+	GameState.run_time = 0.0
+
+	# ------------------------------------------------------------ model 9: personal bests
+	Director.enabled = true
+	Director.reset_profile()
+	_check("M10a no bar and no praise before three samples",
+			is_inf(Director.pb_threshold("streak")) and not Director.pb_check("streak", 50.0), "")
+	for v: float in [4.0, 6.0, 5.0, 5.0]:
+		Director.pb_close("streak", v)
+	var bar: float = Director.pb_threshold("streak")
+	_check("M10b the bar sits just above the player's usual streak", bar >= 5.0 and bar < 8.0, "bar=%.2f" % bar)
+	var below: bool = Director.pb_check("streak", bar - 0.5)
+	var hit1: bool = Director.pb_check("streak", bar + 1.0)
+	var hit2: bool = Director.pb_check("streak", bar + 2.0)
+	_check("M10c passing the bar praises once per streak", not below and hit1 and not hit2,
+			"below=%s first=%s second=%s" % [str(below), str(hit1), str(hit2)])
+	Director.pb_close("streak", bar + 2.0)
+	_check("M10d a second praise waits for the cooldown", not Director.pb_check("streak", 40.0), "")
+	var saved_pb: Dictionary = Director.to_dict()
+	Director.reset_profile()
+	for v: float in [20.0, 24.0, 22.0, 26.0]:
+		Director.pb_close("streak", v)
+	var bar_expert: float = Director.pb_threshold("streak")
+	_check("M10e the bar follows the player: an expert's is higher", bar_expert > bar + 10.0,
+			"beginner=%.1f expert=%.1f" % [bar, bar_expert])
+	Director.enabled = false
+	Director._last_praise = -1000.0
+	var off_praise: bool = Director.pb_check("streak", 999.0)
+	Director.enabled = true
+	Director.from_dict(saved_pb)
+	_check("M10f with the director off there is no praise, and the bar survives save and load",
+			not off_praise and int(Director.pb_n.get("streak", 0)) == 5 and Director.pb_threshold("streak") >= 5.0,
+			"off=%s n=%d bar=%.2f" % [str(off_praise), int(Director.pb_n.get("streak", 0)), Director.pb_threshold("streak")])
+
 	# ------------------------------------------------------------ model 4: timing
 	Director.enabled = true
 	Director.reset_profile()

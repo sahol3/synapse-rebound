@@ -47,6 +47,8 @@ extends Node
 signal assist_changed(kind: String)
 ## The player looks stuck: the game shows the stage's one-line hint again.
 signal stuck
+## Model 9 saw the player beat their own usual result. `text` is ready to show.
+signal praise(text: String)
 
 const SAVE_PATH: String = "user://director.json"
 const VERSION: int = 1
@@ -140,6 +142,17 @@ var _near_tick: int = 0
 var _last_ms: int = 0
 var _last_hint: float = 0.0
 var _last_save: float = 0.0
+## Model 9, personal bests. Saved: mean, variance and sample count per metric.
+const PB_FLOOR: Dictionary = {"streak": 5.0, "life": 25.0}
+const PB_MIN_SAMPLES: int = 3
+const PB_ALPHA: float = 0.2
+const PB_COOLDOWN: float = 20.0
+var pb_mean: Dictionary = {}
+var pb_var: Dictionary = {}
+var pb_n: Dictionary = {}
+var _cur_streak: int = 0
+var _pb_fired: Dictionary = {}
+var _last_praise: float = -1000.0
 var save_path: String = SAVE_PATH
 
 
@@ -162,6 +175,12 @@ func _ready() -> void:
 
 
 func _reset_models() -> void:
+	pb_mean = {}
+	pb_var = {}
+	pb_n = {}
+	_cur_streak = 0
+	_pb_fired.clear()
+	_last_praise = -1000.0
 	hit_w = PackedFloat32Array(HIT_PRIOR)
 	hit_n = 0
 	quit_w = PackedFloat32Array(QUIT_PRIOR)
@@ -423,6 +442,9 @@ func shot_deflected(p: Projectile, in_blackout: bool) -> void:
 	if not in_blackout:
 		_life_used["parry"] = true
 		no_react = lerpf(no_react, 0.0, 0.08)
+		_cur_streak += 1
+		if pb_check("streak", float(_cur_streak)):
+			praise.emit("%d IN A ROW" % _cur_streak)
 	if x.is_empty() or in_blackout:
 		return
 	hit_learn(x, false)
@@ -431,6 +453,8 @@ func shot_deflected(p: Projectile, in_blackout: bool) -> void:
 func player_hit(p: Projectile, in_blackout: bool) -> void:
 	var x: PackedFloat32Array = _take_sample(p)
 	bump(0.5)
+	pb_close("streak", float(_cur_streak))
+	_cur_streak = 0
 	if not in_blackout:
 		## Did the player swing at all in the half second before the hit?
 		var swung: bool = Time.get_ticks_msec() - _last_press_ms < 500
@@ -450,6 +474,45 @@ func shot_ended(p: Projectile) -> void:
 	if near and not x.is_empty() and pl != null and not pl.in_blackout and not pl.dead:
 		bump(0.12)
 		hit_learn(x, false)
+
+
+# ================================================================= model 9: personal bests
+## Keeps a running mean and spread of two things the player does (deflections in a row without
+## being hit, and seconds alive) and predicts the value they would have to pass for it to be
+## unusual for them: mean + 1 standard deviation, never below a fixed floor. Passing it fires one
+## line of praise. The bar is the player's own, so a beginner and an expert hear it equally often.
+
+func pb_threshold(metric: String) -> float:
+	if int(pb_n.get(metric, 0)) < PB_MIN_SAMPLES:
+		return INF
+	return maxf(float(PB_FLOOR[metric]), float(pb_mean[metric]) + sqrt(maxf(float(pb_var[metric]), 0.0)))
+
+
+func pb_check(metric: String, value: float) -> bool:
+	## True once per streak or life, and at most once every PB_COOLDOWN seconds overall.
+	if not enabled or _pb_fired.has(metric) or value <= pb_threshold(metric):
+		return false
+	if _now() - _last_praise < PB_COOLDOWN:
+		return false
+	_pb_fired[metric] = true
+	_last_praise = _now()
+	return true
+
+
+func pb_close(metric: String, value: float) -> void:
+	## A streak or a life ended at `value`: learn from it. Empty ones teach nothing.
+	_pb_fired.erase(metric)
+	if value <= 0.0:
+		return
+	var n: int = int(pb_n.get(metric, 0))
+	if n == 0:
+		pb_mean[metric] = value
+		pb_var[metric] = 0.0
+	else:
+		var d: float = value - float(pb_mean[metric])
+		pb_mean[metric] = float(pb_mean[metric]) + PB_ALPHA * d
+		pb_var[metric] = (1.0 - PB_ALPHA) * (float(pb_var[metric]) + PB_ALPHA * d * d)
+	pb_n[metric] = n + 1
 
 
 # ================================================================= model 2: quit model
@@ -488,6 +551,10 @@ func player_died(cause: String, _pos: Vector2 = Vector2.ZERO) -> void:
 	if cause != "restart":
 		room_result(false)
 		skills_close(life)
+		pb_close("life", life)
+		pb_close("streak", float(_cur_streak))
+	_cur_streak = 0
+	_pb_fired.clear()
 	if arm >= 0:
 		arm_score(arm, life > life_ema * 1.15)
 	life_ema = lerpf(life_ema, clampf(life, 1.0, 120.0), 0.2)
@@ -902,6 +969,9 @@ func run_started() -> void:
 	_life_used.clear()
 	_life_blackout = false
 	_hint_flip = false
+	_cur_streak = 0
+	_pb_fired.clear()
+	_last_praise = -1000.0
 
 
 func stage_loaded(index: int) -> void:
@@ -951,6 +1021,8 @@ func _process(_delta: float) -> void:
 	tilt *= pow(0.5, dt / 45.0)
 	decay(dt)
 	var now: float = _now()
+	if _in_run and not _idle_flagged and pb_check("life", now - _life_start):
+		praise.emit("YOUR LONGEST LIFE YET")
 	if _in_run and now - _last_save > 20.0:
 		## What the models learned is written during play too, not only at deaths and checkpoints.
 		_save()
@@ -1000,7 +1072,13 @@ func debug_lines() -> PackedStringArray:
 				LEVER_NAMES[arm] if arm >= 0 else "none", int(round(arm_n[0])), int(round(arm_n[1])),
 				int(round(arm_n[2])), "relax" if _relax_left > 0.0 else "build", pace_mult(), intensity],
 		"skills  %s" % _skills_text(),
+		"bests  streak %d, bar %s  life bar %s" % [_cur_streak, _bar_text("streak"), _bar_text("life")],
 	])
+
+
+func _bar_text(metric: String) -> String:
+	var t: float = pb_threshold(metric)
+	return "none yet" if is_inf(t) else "%.0f" % t
 
 
 func _skills_text() -> String:
@@ -1023,6 +1101,7 @@ func to_dict() -> Dictionary:
 		"time_mean": time_mean, "time_var": time_var, "time_n": time_n, "no_react": no_react,
 		"player_r": player_r, "room_r": room_r, "arm_n": Array(arm_n), "arm_r": Array(arm_r),
 		"life_ema": life_ema, "skill_p": skill_p, "skill_lives": skill_lives,
+		"pb_mean": pb_mean, "pb_var": pb_var, "pb_n": pb_n,
 	}
 
 
@@ -1080,6 +1159,18 @@ func from_dict(d: Dictionary) -> bool:
 			if SKILLS.has(str(k)):
 				skill_p[str(k)] = clampf(float(skills[k]), 0.01, 0.99)
 	skill_lives = int(d.get("skill_lives", 0))
+	pb_mean = {}
+	pb_var = {}
+	pb_n = {}
+	var pm: Variant = d.get("pb_mean", {})
+	var pv: Variant = d.get("pb_var", {})
+	var pn: Variant = d.get("pb_n", {})
+	if pm is Dictionary and pv is Dictionary and pn is Dictionary:
+		for k: String in PB_FLOOR:
+			if pm.has(k) and pv.has(k) and pn.has(k):
+				pb_mean[k] = clampf(float(pm[k]), 0.0, 100000.0)
+				pb_var[k] = clampf(float(pv[k]), 0.0, 1.0e9)
+				pb_n[k] = maxi(int(pn[k]), 0)
 	return true
 
 

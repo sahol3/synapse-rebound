@@ -4,7 +4,7 @@ extends Node2D
 ## Display.ui, so positions are interface pixels (576x324 at the design size, more on other
 ## windows; the block stays centred vertically) and all text is PixelFont.
 ## W/S or the arrow keys move, Space, Enter or a click selects; the mouse also hovers items.
-## Esc or Space leaves the Controls and Credits lists.
+## Esc or Space leaves the Controls, Lore and Credits lists; in Lore, W/S pick an entry.
 
 signal start_requested
 signal continue_requested
@@ -15,6 +15,7 @@ const AMBER: Color = Color("#FF9900")
 const TEXT: Color = Color("#E9EEF7")
 const DIM: Color = Color("#7F8AA6")
 const INK: Color = Color("#0A0814")
+const LOCKED: Color = Color("#4A5370")
 
 const CONTROLS: Array = [
 	["A  D", "Move"], ["Space", "Jump, hold for height. Again in the air: dash up"], ["Mouse", "Aim"],
@@ -35,7 +36,8 @@ const CREDITS: Array = [
 var _cam: Camera2D
 var _ui: Control
 var _layer: CanvasLayer
-var _items: PackedStringArray = ["Start", "Controls", "Credits"]
+var _items: PackedStringArray = ["Start", "Controls", "Lore", "Credits"]
+var _lore_sel: int = 0
 var _sel: int = 0
 var _panel: String = ""
 var _t: float = 0.0
@@ -78,7 +80,7 @@ func _ready() -> void:
 	var saved: Dictionary = GameState.saved_run()
 	if not saved.is_empty():
 		_saved_stage = int(saved["stage"])
-		_items = PackedStringArray(["Continue", "New game", "Controls", "Credits"])
+		_items = PackedStringArray(["Continue", "New game", "Controls", "Lore", "Credits"])
 	if OS.get_name() != "Web":
 		_items.append("Quit")
 	var layer := CanvasLayer.new()
@@ -124,6 +126,12 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _started or _t < 0.6:
 		return
+	if _panel == "lore" and (event.is_action_pressed("lane_back") or event.is_action_pressed("ui_up")
+			or event.is_action_pressed("lane_front") or event.is_action_pressed("ui_down")):
+		var step: int = -1 if (event.is_action_pressed("lane_back") or event.is_action_pressed("ui_up")) else 1
+		_lore_sel = (_lore_sel + step + DialogueData.MEMORIES.size()) % DialogueData.MEMORIES.size()
+		AudioManager.play_sfx("ui_move")
+		return
 	if _panel != "":
 		if event.is_action_pressed("pause") or event.is_action_pressed("jump") or event.is_action_pressed("parry") \
 				or event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel"):
@@ -153,6 +161,8 @@ func _choose(item: String) -> void:
 			continue_requested.emit()
 		"Controls":
 			_panel = "controls"
+		"Lore":
+			_panel = "lore"
 		"Credits":
 			_panel = "credits"
 		"Quit":
@@ -184,9 +194,49 @@ func _draw_ui() -> void:
 			if _items[i] == "Continue":
 				var stage_name: String = String(DialogueData.STAGES[_saved_stage - 1]["name"]).split(" // ")[0]
 				_txt(Vector2(x + 12 + PixelFont.width("Continue   "), y), "%d  %s" % [_saved_stage, stage_name], 1, DIM)
+	elif _panel == "lore":
+		_draw_lore()
 	else:
 		_draw_panel(CONTROLS if _panel == "controls" else CREDITS)
 	_txt(Vector2(x, _ui.size.y - 20.0), "Hack Club Haven Dhaka 2026", 1, DIM)
+	## What the player has built up across runs, once there is something to show.
+	var meta: Dictionary = GameState.meta()
+	if _panel == "" and (int(meta["finished"]) > 0 or not (meta["memories"] as Array).is_empty()):
+		var bits: PackedStringArray = ["Memories %d of %d" % [GameState.memory_count(), DialogueData.MEMORIES.size()]]
+		if int(meta["finished"]) > 0:
+			bits.append("Endings %d of 3" % (meta["endings"] as Array).size())
+			bits.append("Best %s" % GameState.format_time(float(meta["best_time"])))
+		_txt(Vector2(_ui.size.x - x, _ui.size.y - 20.0), "    ".join(bits), 1, DIM, 1)
+
+
+func hide_interface() -> void:
+	## The prologue plays over the drifting skyline with the title and menu out of the way.
+	_started = true
+	_layer.visible = false
+
+
+func _draw_lore() -> void:
+	## Titles on the left, the picked entry on the right. A locked entry keeps its title and
+	## says what recovers it.
+	var x: float = 48
+	var y0: float = 148 + _oy()
+	var all: Array[Dictionary] = DialogueData.MEMORIES
+	for i: int in all.size():
+		var y: float = y0 + i * 11
+		var open: bool = GameState.has_memory(all[i]["id"])
+		if i == _lore_sel:
+			_txt(Vector2(x, y), ">", 1, AMBER)
+		_txt(Vector2(x + 12, y), all[i]["title"], 1, (TEXT if open else DIM) if i == _lore_sel else (DIM if open else LOCKED))
+	var m: Dictionary = all[_lore_sel]
+	var rx: float = x + 150
+	var wrap_w: int = int(clampf(_ui.size.x - rx - 32.0, 160.0, 330.0))
+	var unlocked: bool = GameState.has_memory(m["id"])
+	_txt(Vector2(rx, y0), m["title"], 1, AMBER)
+	var body: String = m["text"] if unlocked else "Not recovered yet. " + String(m["how"])
+	var lines: PackedStringArray = PixelFont.wrap(body, wrap_w)
+	for i: int in lines.size():
+		_txt(Vector2(rx, y0 + 16 + i * 11), lines[i], 1, TEXT if unlocked else DIM)
+	_txt(Vector2(rx, y0 + 16 + lines.size() * 11 + 10), "%d of %d recovered" % [GameState.memory_count(), all.size()], 1, DIM)
 
 
 func _draw_panel(rows: Array) -> void:

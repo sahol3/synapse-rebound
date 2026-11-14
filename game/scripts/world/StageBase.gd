@@ -420,6 +420,10 @@ func _enter_room(idx: int) -> void:
 	checkpoint_reached.emit()
 
 
+func checkpoint_count() -> int:
+	return _checkpoints.size()
+
+
 func resume_at(room: int) -> void:
 	## Continue from a saved checkpoint: the rewind point moves there and earlier rooms count as cleared.
 	var r: int = clampi(room, 0, _checkpoints.size())

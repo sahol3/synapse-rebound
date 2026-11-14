@@ -17,6 +17,13 @@ at the third, fifth, eighth and twelfth loop, and what Sara says changes once sh
 Stage 3. Coming back from Blackout flashes BOUNCED BACK, and The Echo marks the first, third and seventh time and your
 first three-bounce rally. The ending screen counts the shots you sent back and the times you got up.
 
+A new game opens with the premise in four lines, which any key skips. The title screen has a Lore tab with thirteen
+entries. Three are readable from the start and explain who you are, what the implant does and who the two voices
+are. The other ten are recovered by playing: sending 25 shots back, coming back from a Blackout, holding a
+five-bounce rally, reaching each stage, finishing, and seeing each of the three endings. A locked entry shows its
+title and what recovers it. Recovered entries, endings seen, the best time and the longest rally are kept across
+runs in `user://save_meta.json`, and the title screen shows the totals.
+
 ## Play
 
 To run from source, open the `game/` folder in Godot 4.7 (standard edition, GDScript) and press Play. The Web export
@@ -57,7 +64,7 @@ below produces the build for itch.io.
 
 ## Adaptive difficulty
 
-The game adjusts itself to the person playing. Eight small models run on the player's own machine and learn only from
+The game adjusts itself to the person playing. Nine small models run on the player's own machine and learn only from
 that player. Nothing is uploaded. The profile is one JSON file in Godot's user data folder (`user://director.json`), and
 deleting it returns the game to its starting difficulty.
 
@@ -71,6 +78,7 @@ deleting it returns the game to its starting difficulty.
 | Lever bandit | UCB1 over three kinds of help: timing, pace and density | Which kind of help makes your next life go better | Whether the life after a boost was longer than your usual one or reached a checkpoint |
 | Pacing wave | Intensity meter with a six-second half-life | When a fight has peaked and needs a release | Hits, deflects and near misses |
 | Skill tracing | Bayesian knowledge tracing, one value per mechanic (deflect, dash, air dash, rebound, lane change) | The chance that you know each mechanic | Once per life, whether you used a mechanic you had the chance to use |
+| Personal bests | Running mean and spread of your deflections in a row and of how long you stay alive | The result that would be unusual for you: the mean plus one standard deviation | Every streak and every life when it ends |
 
 A director turns those predictions into one number from 0 to 1, the challenge level. It solves the hit model for the
 level at which about 26% of threatening shots would hit you, lowers that target toward 10% as the quit risk rises, and
@@ -84,12 +92,16 @@ often take a hit without swinging. The room model lowers the level by up to 0.18
 from the moment you enter it. On a death streak the lever bandit gives one kind of help an extra boost for the next
 life and keeps score of which kind works for you. The pacing wave makes enemies fire slower for five seconds after a
 peak and slightly faster in a long calm at a high level. When the game sees you stuck, every second hint is about the
-mechanic the skill model says you have not shown yet.
+mechanic the skill model says you have not shown yet. The personal-bests model does not change difficulty. When you
+pass your own bar it says so in one line ("12 IN A ROW"), at most once every 20 seconds, so a beginner and an expert
+hear it about as often.
 
 During Blackout one enemy that can see you fires a fast tracking shot, at every challenge level, because at quarter
 speed an ordinary shot does not arrive before the timer ends. That shot is the one to rebound off. After two deaths
 by falling in the same room, the player has a second air-dash and a longer ledge grace until the next checkpoint. Repeated deaths, or 50 seconds without
-progress, bring the stage's one-line hint back on screen.
+progress, bring the stage's one-line hint back on screen. A death that came further into the room than any before it
+says so under the loop count. After six deaths in one room the game offers a way past it: F carries you to the next
+checkpoint. The last room of a stage and the boss cannot be skipped.
 
 The pause screen shows the current level, and F3 shows the models' numbers during play.
 
@@ -146,7 +158,7 @@ Four headless tests drive the real game.
 | Scene | Checks |
 |---|---|
 | `res://tests/MechTest.tscn` | The fixed mechanics with the director off: deflection, the Enforcer rally and railgun kill, Blackout and Rebound, death and rewind, the module choice, lane switching, all three boss phases and the ending screen |
-| `res://tests/DirectorTest.tscn` | The eight models against simulated players (struggling, middling, expert), the profile save and load, the display scale rule across 1,317 window sizes, and the progress save file |
+| `res://tests/DirectorTest.tscn` | The nine models against simulated players (struggling, middling, expert), the profile save and load, the display scale rule across 1,317 window sizes, and the progress save file |
 | `res://tests/DirectorLive.tscn` | The director inside Stage 1 with a weak bot and a strong bot in front of a real turret |
 | `res://tests/ClimbTest.tscn` | Continue resumes a saved run at its checkpoint. A keyboard-only bot climbs the Ascent Shaft from the floor to the roof deck, and a control run with plain jumps shows that it cannot |
 

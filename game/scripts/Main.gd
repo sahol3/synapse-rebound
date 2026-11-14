@@ -24,6 +24,12 @@ var menu: Node
 var _state: String = "menu"
 var _busy: bool = false
 var _death_pending: bool = false
+## Deaths in a room before the way past it is offered.
+const SKIP_AFTER: int = 6
+const CYAN: Color = Color("#00F0FF")
+var _room_deaths: Dictionary = {}
+var _room_far: Dictionary = {}
+var _skip_key: String = ""
 
 
 func _ready() -> void:
@@ -51,9 +57,13 @@ func _ready() -> void:
 	Director.assist_changed.connect(func(kind: String) -> void:
 		if _state == "play":
 			hud.say("assist_" + kind))
-	GameState.stats_changed.connect(func() -> void:
-		if _state == "play" and GameState.best_rally >= 3 and hud.comms_idle() and GameState.once("rally_3"):
-			hud.say("rally_3"))
+	GameState.stats_changed.connect(_on_stats_changed)
+	GameState.memory_unlocked.connect(func(id: String) -> void:
+		if _state == "play" or _state == "choice":
+			hud.memory_toast(DialogueData.memory(id)["title"]))
+	Director.praise.connect(func(text: String) -> void:
+		if _state == "play" and not _busy:
+			hud.flash(text, CYAN))
 	var start_stage: int = 0
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--stage="):
@@ -78,8 +88,33 @@ func show_menu() -> void:
 	Director.run_ended()
 	menu = load(MENU_SCENE).instantiate()
 	world.add_child(menu)
-	menu.start_requested.connect(func() -> void: _begin_run(1))
+	menu.start_requested.connect(_start_new_game)
 	menu.continue_requested.connect(_continue_run)
+
+
+func _start_new_game() -> void:
+	## The premise in four lines over the title backdrop, then Stage 1. Any key skips it.
+	_state = "prologue"
+	if menu and is_instance_valid(menu):
+		menu.hide_interface()
+	hud.play_prologue()
+	await hud.prologue_done
+	if _state == "prologue":
+		_begin_run(1)
+
+
+func _on_stats_changed() -> void:
+	if _state != "play":
+		return
+	if GameState.parries >= 25:
+		GameState.unlock_memory("guard")
+	if GameState.best_rally >= 5:
+		GameState.unlock_memory("third")
+	if GameState.best_rally >= 3:
+		if GameState.note_rally(GameState.best_rally):
+			hud.flash("YOUR BEST RALLY  x%d" % GameState.best_rally, CYAN)
+		if hud.comms_idle() and GameState.once("rally_3"):
+			hud.say("rally_3")
 
 
 func _begin_run(first_stage: int) -> void:
@@ -126,6 +161,11 @@ func load_stage(index: int, room: int = 0) -> void:
 	_state = "play"
 	GameState.current_stage = index
 	Director.stage_loaded(index)
+	_room_deaths.clear()
+	_room_far.clear()
+	_skip_key = ""
+	if index >= 2:
+		GameState.unlock_memory(["holster", "2359", "files"][index - 2])
 	stage = load(STAGE_SCENES[index - 1]).instantiate()
 	world.add_child(stage)
 	JuiceManager.fx_root = stage.fx
@@ -186,6 +226,16 @@ func _on_player_died() -> void:
 		return
 	_busy = true
 	_death_pending = false
+	## What the player sees under the loop count: honest progress, when there is some.
+	var room_key: String = "%d:%d" % [GameState.current_stage, stage.current_room]
+	var note: String = ""
+	if player.death_cause != "restart":
+		_room_deaths[room_key] = int(_room_deaths.get(room_key, 0)) + 1
+		if player.death_cause == "hit" or player.death_cause == "timeout":
+			var far: float = player.global_position.distance_to(stage.checkpoint_pos)
+			if _room_far.has(room_key) and far > float(_room_far[room_key]) + 32.0:
+				note = "Further than last time."
+			_room_far[room_key] = maxf(far, float(_room_far.get(room_key, 0.0)))
 	GameState.register_death()
 	Director.player_died(player.death_cause, player.global_position)
 	GameState.save_run(stage.current_room)
@@ -205,7 +255,12 @@ func _on_player_died() -> void:
 	await get_tree().create_timer(0.15, true, false, true).timeout
 	post.vhs_hold(false)
 	post.vhs(0.15)
-	hud.loop_flash(GameState.loop_deaths)
+	hud.loop_flash(GameState.loop_deaths, note)
+	## Nobody should be stopped for good by one room: after six deaths in it, offer a way past.
+	var tries: int = int(_room_deaths.get(room_key, 0))
+	if tries >= SKIP_AFTER and tries % 3 == 0 and stage.current_room < stage.checkpoint_count():
+		_skip_key = room_key
+		hud.system("Stuck here? Press F and the implant carries you to the next checkpoint.", 8.0)
 	## Every death is a Lazarus rewind in the story, so the two voices keep count with the player.
 	if GameState.current_stage == 1 and GameState.loop_deaths == 1:
 		if GameState.once("first_death_s1"):
@@ -232,6 +287,7 @@ func _on_blackout_ended(rebounded: bool) -> void:
 	if not rebounded:
 		return
 	hud.back_flash()
+	GameState.unlock_memory("blackout")
 	if GameState.once("first_rebound"):
 		hud.say("first_rebound")
 	elif GameState.rebounds in [3, 7] and hud.comms_idle() and GameState.once("rebound_%d" % GameState.rebounds):
@@ -280,6 +336,14 @@ func _on_boss_defeated() -> void:
 	GameState.timer_running = false
 	hud.say("s4_win")
 	var id: String = GameState.ending_id()
+	var fresh: Dictionary = GameState.record_ending(id)
+	var seen: int = (GameState.meta()["endings"] as Array).size()
+	var end_note: String = "Ending %d of 3 found." % seen
+	if seen < 3:
+		end_note += " The modules decide the others."
+	if fresh["best_time"]:
+		end_note = "Your best time. " + end_note
+	hud.set_ending_note(end_note)
 	var e: Dictionary = DialogueData.ENDINGS[id]
 	stage.burn_text(String(e["title"]).split(" // ")[0])
 	await get_tree().create_timer(2.5, true, false, true).timeout
@@ -297,6 +361,26 @@ func _unhandled_input(event: InputEvent) -> void:
 		_set_paused(not get_tree().paused)
 	elif event.is_action_pressed("restart") and not get_tree().paused and player and not player.dead:
 		player.die("restart")
+	elif event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_F:
+		_skip_room()
+
+
+func _skip_room() -> void:
+	## Offered after repeated deaths in one room. Moves the player to the next checkpoint.
+	if _busy or get_tree().paused or stage == null or player == null or player.dead or player.in_blackout:
+		return
+	if _skip_key == "" or _skip_key != "%d:%d" % [GameState.current_stage, stage.current_room]:
+		return
+	if stage.current_room >= stage.checkpoint_count():
+		return
+	_skip_key = ""
+	AudioManager.play_sfx("vhs_rewind")
+	post.vhs(0.4)
+	stage.resume_at(stage.current_room + 1)
+	player.respawn(stage.checkpoint_pos, stage.checkpoint_lane)
+	camera.snap_to_target()
+	GameState.save_run(stage.current_room)
+	hud.flash("CARRIED FORWARD", CYAN)
 
 
 func _notification(what: int) -> void:

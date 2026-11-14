@@ -10,6 +10,7 @@ extends CanvasLayer
 signal module_choice(choice: String)
 signal pause_action(action: String)
 signal ending_closed
+signal prologue_done
 
 var U: int = 2  ## screen pixels per interface pixel (Display.ui)
 var W: int = 576  ## interface size; follows the window (Display.ui_size)
@@ -44,7 +45,14 @@ var _card_t: float = -1.0
 var _card_index: int = 0
 var _loop_t: float = -1.0
 var _loop_n: int = 0
-var _back_t: float = -1.0
+var _flash_t: float = -1.0
+var _flash_s: String = ""
+var _flash_col: Color = AMBER
+var _loop_note: String = ""
+var _mem_t: float = -1.0
+var _mem_s: String = ""
+var _pro_t: float = -1.0
+var _end_note: String = ""
 var _saved_t: float = -1.0
 var _module_open: bool = false
 var _module_stage: int = 0
@@ -109,10 +117,18 @@ func _process(_delta: float) -> void:
 		_loop_t += dt
 		if _loop_t > 0.9:
 			_loop_t = -1.0
-	if _back_t >= 0.0:
-		_back_t += dt
-		if _back_t > 1.1:
-			_back_t = -1.0
+	if _flash_t >= 0.0:
+		_flash_t += dt
+		if _flash_t > 1.3:
+			_flash_t = -1.0
+	if _mem_t >= 0.0:
+		_mem_t += dt
+		if _mem_t > 4.0:
+			_mem_t = -1.0
+	if _pro_t >= 0.0:
+		_pro_t += dt
+		if _pro_t > PRO_STEP * (DialogueData.PROLOGUE.size() + 1) + 2.2:
+			_end_prologue()
 	if _saved_t >= 0.0:
 		_saved_t += dt
 		if _saved_t > 1.8:
@@ -185,14 +201,47 @@ func saved_flash() -> void:
 	_saved_t = 0.0
 
 
-func loop_flash(deaths: int) -> void:
+func loop_flash(deaths: int, note: String = "") -> void:
 	_loop_n = deaths
 	_loop_t = 0.0
+	_loop_note = note
+
+
+func flash(text: String, col: Color = AMBER) -> void:
+	## One short line in the middle of the screen: a rebound, a personal best.
+	_flash_s = text
+	_flash_col = col
+	_flash_t = 0.0
 
 
 func back_flash() -> void:
 	## The player deflected a shot during Blackout and is back on their feet.
-	_back_t = 0.0
+	flash("BOUNCED BACK")
+
+
+func memory_toast(title: String) -> void:
+	## A Lore entry was recovered.
+	_mem_s = title
+	_mem_t = 0.0
+
+
+const PRO_STEP: float = 1.9
+
+
+func play_prologue() -> void:
+	## The premise, one line at a time, before a new game. Emits prologue_done at the end or on a key.
+	_pro_t = 0.0
+
+
+func _end_prologue() -> void:
+	if _pro_t < 0.0:
+		return
+	_pro_t = -1.0
+	prologue_done.emit()
+
+
+func set_ending_note(text: String) -> void:
+	_end_note = text
 
 
 func comms_idle() -> bool:
@@ -225,6 +274,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.is_action_pressed("choose_overclock"):
 			_close_module("E")
 		return
+	if _pro_t > 0.5 and (event.is_action_pressed("jump") or event.is_action_pressed("parry")
+			or event.is_action_pressed("pause") or event.is_action_pressed("ui_accept")):
+		get_viewport().set_input_as_handled()
+		_end_prologue()
+		return
 	if _ending_open and event.is_action_pressed("restart"):
 		_ending_open = false
 		ending_closed.emit()
@@ -256,7 +310,30 @@ func _dim(alpha: float) -> void:
 
 # ================================================================= drawing
 
+func _draw_prologue() -> void:
+	_dim(clampf(_pro_t / 0.5, 0.0, 1.0) * 0.9)
+	var x0: float = _ox()
+	var wrap_w: int = int(minf(470.0, W - x0 * 2.0))
+	var y: float = maxf(70.0 + _oy(), 16.0)
+	var lines: PackedStringArray = DialogueData.PROLOGUE
+	for i: int in lines.size():
+		var age: float = _pro_t - (0.4 + i * PRO_STEP)
+		if age < 0.0:
+			break
+		var newest: bool = age < PRO_STEP
+		for part: String in PixelFont.wrap(lines[i], wrap_w):
+			_t(Vector2(x0, y), part.substr(0, int(age * 70.0)), 1, TEXT if newest else DIM)
+			y += LH
+		y += 9.0
+	if _pro_t > 0.4 + lines.size() * PRO_STEP:
+		_t(Vector2(x0, y + 8.0), "BOUNCE BACK.", 3, CYAN)
+	_t(Vector2(x0, H - 20.0), "Space to skip", 1, DIM)
+
+
 func _draw_overlay() -> void:
+	if _pro_t >= 0.0:
+		_draw_prologue()
+		return
 	if _ending_open:
 		_draw_ending()
 		return
@@ -275,8 +352,11 @@ func _draw_overlay() -> void:
 		_draw_card()
 	if _loop_t >= 0.0:
 		_draw_loop()
-	if _back_t >= 0.0 and not (_back_t < 0.3 and int(_back_t * 20.0) % 3 == 2):
-		_t(Vector2(W * 0.5, 120 + _oy()), "BOUNCED BACK", 2, AMBER, 2)
+	if _flash_t >= 0.0 and _loop_t < 0.0 and not (_flash_t < 0.3 and int(_flash_t * 20.0) % 3 == 2):
+		_t(Vector2(W * 0.5, 120 + _oy()), _flash_s, 2, _flash_col, 2)
+	if _mem_t >= 0.0 and not _module_open and not _paused:
+		_t(Vector2(W - 12.0, 62), "memory recovered", 1, DIM, 1)
+		_t(Vector2(W - 12.0, 73), _mem_s, 1, AMBER, 1)
 	if player and is_instance_valid(player):
 		if player.in_blackout:
 			_draw_blackout()
@@ -373,6 +453,8 @@ func _draw_loop() -> void:
 		return
 	var col: Color = MAGENTA if _loop_n % 2 == 0 else CYAN
 	_t(Vector2(W * 0.5, 120 + _oy()), "LOOP %02d" % _loop_n, 2, col, 2)
+	if _loop_note != "":
+		_t(Vector2(W * 0.5, 142 + _oy()), _loop_note, 1, TEXT, 2)
 
 
 func _draw_blackout() -> void:
@@ -508,6 +590,8 @@ func _draw_ending() -> void:
 	y += 48.0 + (8.0 if tight else 18.0)
 	_t(Vector2(x0, y), "R", 1, col)
 	_t(Vector2(x0 + 14.0, y), "Bounce back again", 1, TEXT)
+	if _end_note != "":
+		_t(Vector2(x0 + 150.0, y), _end_note, 1, DIM)
 	var foot: PackedStringArray = PixelFont.wrap(
 			"Hack Club Haven Dhaka 2026. Art and music by Ansimuz, effects by BDragon1727.", int(W - x0 * 2.0))
 	for i: int in foot.size():

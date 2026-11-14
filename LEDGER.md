@@ -24,6 +24,23 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-14 · Engagement pass: Lore tab, prologue, lifetime progress, model 9, room skip (Claude Code, Fable 5.2)
+- Operator: "run more engaging of the user through psychological things and make sure the retention is even better
+  (include more models if you need to)... Make sure any player can actually understand the story and indulge in it
+  very quickly... make it more appealing to everyone, cause I'll need a lot of votes... on the home page, make another
+  tab named lore just before credits".
+- Lore tab (before Credits): 13 entries in `DialogueData.MEMORIES`, 3 open, 10 recovered by play; locked entries show
+  title and condition. Lifetime progress in `user://save_meta.json` (`GameState.meta()`), shown on the title screen.
+- Prologue: four lines before a new game from the menu, skippable. `_begin_run` is unchanged, so tests skip it.
+- Model 9 (personal bests) in `Director.gd`: bar = mean + 1 sd of the player's own streaks and lives, floor 5 and 25,
+  one praise per streak or life, 20 s cooldown. It changes no difficulty knob.
+- Death feedback: "Further than last time." under the loop count when true. After six deaths in one room, F moves the
+  player to the next checkpoint (not the last room of a stage, not the boss).
+- Ending: says how many of the three endings are found and when the time is a personal best.
+- Verified: see the test line in the commit; captures in `tools/_frames/engage/`.
+- Not verified: no person has played it. Whether any of this raises retention or votes is unknown; there is no play
+  data. The praise and "further" lines were not seen firing in a real run (model checks are on simulated values).
+
 ### 2026-11-14 · Story weave, Bounce Back in front, own icon (Claude Code, Fable 5.2)
 - Operator: "do a better weaving of the story with the game, and bring the overall understanding of the theme, 'bounce
   back' into the spotlight. And then combine the fonts, the character and the background, make a icon and remove the
