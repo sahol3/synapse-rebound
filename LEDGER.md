@@ -24,6 +24,23 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-14 · Web build lag: back to Sample playback, with the real cause of its silence fixed (Claude Code, Fable 5.2)
+- Operator: "the whole game and sounds are so laggy in the latest web version".
+- Cause of the lag: the earlier switch to Stream playback. A web build without threads mixes Stream audio (music
+  decoding, every voice, every bus effect) on the game's own thread.
+- Cause of the original silence, found with a logger on the browser's audio graph: the buses were added at runtime
+  with `AudioServer.add_bus()`. In Sample mode that left the Master bus output connected to another bus and not to
+  the audio destination, so every sample started and nothing reached the speakers.
+- Fix: buses are now defined in `game/default_bus_layout.tres` (Music, SFX, Radio, Echo); `AudioManager._bus()` only
+  adds one if it is missing; web playback type is Sample again. Sample mode skips bus effects, so the web build
+  loads radio-filtered copies of Saif's 34 lines from `voice/saif_web/` (ffmpeg: same cutoffs, soft clip,
+  compressor), made by `py -I scripts/import_voice.py --bake`. Desktop still filters live.
+- Verified in a browser on the Sample build: Master stays connected to the destination; title music RMS 0.03 to
+  0.17, menu move peak 0.48, Stage 2 with a Saif line 0.05 to 0.26; no console errors.
+- Not verified: frame rate. Both browsers available to the agent throttle a background window to about one frame a
+  second, so no timing number from them means anything. The operator has to confirm the lag is gone on itch.io.
+- Known difference on web: the music low-pass (pause, Blackout) and the Berserk distortion do not apply there.
+
 ### 2026-11-14 · Web build was silent: playback type set to Stream; death ads removed (Claude Code, Fable 5.2)
 - Operator: "remove the ads, also, the sounds are not playing in the itch.io web publish".
 - Cause: Godot's default web playback type is Sample. In that mode this game's sounds started but the output was

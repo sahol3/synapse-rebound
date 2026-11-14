@@ -46,7 +46,29 @@ def read_sheet() -> dict[str, tuple[str, str]]:
     return names
 
 
+def bake() -> int:
+    """Writes voice/saif_web/: each Saif line with the radio filter already applied, for the web build,
+    where the browser's sample playback skips bus effects."""
+    src_dir, dst_dir = OUT / "saif", OUT / "saif_web"
+    dst_dir.mkdir(parents=True, exist_ok=True)
+    chain = ("highpass=f=340,lowpass=f=3100,volume=4dB,asoftclip=type=atan,"
+             "acompressor=threshold=-18dB:ratio=4:attack=5:release=120:makeup=2.3,alimiter=limit=0.9")
+    n = 0
+    for f in sorted(src_dir.glob("*.ogg")):
+        r = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(f), "-af", chain,
+                            "-ac", "1", "-ar", "44100", "-c:a", "libvorbis", "-q:a", "4", str(dst_dir / f.name)],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            print("FAILED", f.name, r.stderr.strip()[:200])
+            continue
+        n += 1
+    print("baked %d radio copies into %s" % (n, dst_dir))
+    return 0
+
+
 def main() -> int:
+    if len(sys.argv) == 2 and sys.argv[1] == "--bake":
+        return bake()
     if len(sys.argv) != 2:
         print(__doc__)
         return 2

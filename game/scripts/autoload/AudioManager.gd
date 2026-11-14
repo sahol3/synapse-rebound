@@ -93,6 +93,8 @@ var _rng := RandomNumberGenerator.new()
 const VOICE_DIR: String = "res://assets/audio/voice/"
 var _meme: AudioStreamPlayer
 var voice_enabled: bool = true
+const BAKED: String = "_web"
+var _baked: bool = OS.has_feature("web")
 const VOICE_FOLDER: Dictionary = {"SAIF": "saif", "LOG": "saif", "ECHO": "echo"}
 const STATIC_BED: String = K + "computerNoise_002.ogg"
 const BED_DB: float = -21.0
@@ -209,14 +211,16 @@ func set_menu_muffle(active: bool) -> void:
 
 
 func voice_stream(who: String, key: String) -> AudioStream:
-	var id: String = String(VOICE_FOLDER.get(who, who.to_lower())) + "/" + key
+	var folder: String = String(VOICE_FOLDER.get(who, who.to_lower()))
+	var id: String = folder + "/" + key
 	if not _voice_cache.has(id):
 		var found: AudioStream = null
-		for ext: String in ["ogg", "wav", "mp3"]:
-			var path: String = VOICE_DIR + id + "." + ext
-			if ResourceLoader.exists(path):
-				found = load(path) as AudioStream
-				break
+		var folders: Array = [folder + BAKED, folder] if _baked else [folder]
+		for dir: String in folders:
+			for ext: String in ["ogg", "wav", "mp3"]:
+				var path: String = VOICE_DIR + dir + "/" + key + "." + ext
+				if found == null and ResourceLoader.exists(path):
+					found = load(path) as AudioStream
 		_voice_cache[id] = found
 	return _voice_cache[id]
 
@@ -348,13 +352,19 @@ func _voice(stream: AudioStream, vol: float, pit: float) -> void:
 	p.play()
 
 
-func _setup_buses() -> void:
-	_music_bus = AudioServer.get_bus_index("Music")
-	if _music_bus == -1:
+func _bus(bus_name: String) -> int:
+	var idx: int = AudioServer.get_bus_index(bus_name)
+	if idx == -1:
 		AudioServer.add_bus()
-		_music_bus = AudioServer.bus_count - 1
-		AudioServer.set_bus_name(_music_bus, "Music")
-		AudioServer.set_bus_send(_music_bus, "Master")
+		idx = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(idx, bus_name)
+		AudioServer.set_bus_send(idx, "Master")
+	return idx
+
+
+func _setup_buses() -> void:
+	_music_bus = _bus("Music")
+	if AudioServer.get_bus_effect_count(_music_bus) == 0:
 		_lowpass = AudioEffectLowPassFilter.new()
 		_lowpass.cutoff_hz = LOWPASS_OPEN
 		_distortion = AudioEffectDistortion.new()
@@ -368,18 +378,13 @@ func _setup_buses() -> void:
 		AudioServer.add_bus_effect(_music_bus, _highpass, 2)
 		AudioServer.set_bus_effect_enabled(_music_bus, 1, false)
 		AudioServer.set_bus_effect_enabled(_music_bus, 2, false)
-	_sfx_bus = AudioServer.get_bus_index("SFX")
-	if _sfx_bus == -1:
-		AudioServer.add_bus()
-		_sfx_bus = AudioServer.bus_count - 1
-		AudioServer.set_bus_name(_sfx_bus, "SFX")
-		AudioServer.set_bus_send(_sfx_bus, "Master")
-	_radio_bus = AudioServer.get_bus_index("Radio")
-	if _radio_bus == -1:
-		AudioServer.add_bus()
-		_radio_bus = AudioServer.bus_count - 1
-		AudioServer.set_bus_name(_radio_bus, "Radio")
-		AudioServer.set_bus_send(_radio_bus, "Master")
+	else:
+		_lowpass = AudioServer.get_bus_effect(_music_bus, 0) as AudioEffectLowPassFilter
+		_distortion = AudioServer.get_bus_effect(_music_bus, 1) as AudioEffectDistortion
+		_highpass = AudioServer.get_bus_effect(_music_bus, 2) as AudioEffectHighPassFilter
+	_sfx_bus = _bus("SFX")
+	_radio_bus = _bus("Radio")
+	if AudioServer.get_bus_effect_count(_radio_bus) == 0:
 		var hp := AudioEffectHighPassFilter.new()
 		hp.cutoff_hz = 340.0
 		var lp := AudioEffectLowPassFilter.new()
@@ -396,12 +401,8 @@ func _setup_buses() -> void:
 		AudioServer.add_bus_effect(_radio_bus, lp, 1)
 		AudioServer.add_bus_effect(_radio_bus, drive, 2)
 		AudioServer.add_bus_effect(_radio_bus, comp, 3)
-	_echo_bus = AudioServer.get_bus_index("Echo")
-	if _echo_bus == -1:
-		AudioServer.add_bus()
-		_echo_bus = AudioServer.bus_count - 1
-		AudioServer.set_bus_name(_echo_bus, "Echo")
-		AudioServer.set_bus_send(_echo_bus, "Master")
+	_echo_bus = _bus("Echo")
+	if AudioServer.get_bus_effect_count(_echo_bus) == 0:
 		var shift := AudioEffectPitchShift.new()
 		shift.pitch_scale = 0.84
 		var lofi := AudioEffectDistortion.new()
