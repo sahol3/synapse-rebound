@@ -24,6 +24,19 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-14 · Web build was silent: playback type set to Stream; death ads removed (Claude Code, Fable 5.2)
+- Operator: "remove the ads, also, the sounds are not playing in the itch.io web publish".
+- Cause: Godot's default web playback type is Sample. In that mode this game's sounds started but the output was
+  zero, and bus effects (radio filter, Blackout low-pass) are not applied at all. Measured on the web export in a
+  browser with an analyser on the output: title screen RMS 0.0000 across 8 readings and 0 on menu moves, while the
+  count of started samples rose from 1 to 7.
+- Fix: `game/project.godot` `[audio] general/default_playback_type.web=0` (Stream). After the fix, same measurement:
+  title music RMS 0.02 to 0.15, a menu move peaks at 0.32, and Stage 1 with Saif's first line reads 0.03 to 0.15.
+- Death ads removed (`HudController.show_ads` and its call in Main).
+- `exports/SynapseRebound-web.zip` rebuilt 15:35 (19.6 MB, 9 files). All four suites pass (32, 74, 17, 9).
+- Not verified: the itch.io page itself, which the operator uploads. The Windows exe was not rebuilt (it never
+  had the ads and is not affected by the web setting).
+
 ### 2026-11-14 · Submission push: death ads, comments stripped, GitHub pushed, itch page pending (Claude Code, Fable 5.2)
 - Operator, with ten minutes to the deadline: add brainrot ads on death, push to itch and GitHub, write the
   description with the humanizer skill, remove all comments from the code.

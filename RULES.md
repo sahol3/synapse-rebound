@@ -121,6 +121,8 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
   build and are gitignored, so they never reach the public repo. A fresh clone must re-download them (see `game/README.md`).
   Never commit them and never sell a build that contains them.
 - The game's credits file is `game/CREDITS.md` (it ships with the repo), not `docs/CREDITS.md`.
+- Web audio: keep `audio/general/default_playback_type.web=0` (Stream) in `project.godot`. With the default
+  (Sample) the web build is silent and bus effects are ignored (measured 2026-11-14).
 - Jam rule: no AI-generated images, sprites, music or voice, and no script that writes PNG or SVG files.
   Sound must be recorded samples from a downloaded asset pack: synthesizing sound in code is NOT allowed
   (operator, 2026-11-13). Raw packs go in `assets/raw/sfx/<pack>/` (gitignored); `scripts/import_sfx.py` copies
