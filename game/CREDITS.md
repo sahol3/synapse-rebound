@@ -48,8 +48,8 @@ The low thud that plays on a very fast death is a layer of three Kenney samples 
 
 ## Voice
 
-Spoken lines are recorded by a person for this game and played through a radio filter built from Godot's audio
-effects. The static under the voice is `computerNoise_002` from the Kenney Sci-Fi Sounds pack (CC0). No voice in
+Sara's 34 lines are one recording made by the game's author for this game, cut into lines and played through a
+radio filter built from Godot's audio effects. The Echo's lines have no recording yet and stay text. The static under the voice is `computerNoise_002` from the Kenney Sci-Fi Sounds pack (CC0). No voice in
 the game is generated.
 
 ## Icon

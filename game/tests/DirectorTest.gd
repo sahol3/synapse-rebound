@@ -394,6 +394,14 @@ func _run() -> void:
 		if entries.size() < 4 or not ("VINCENT" in names and "SARA" in names and "THE ECHO" in names):
 			epilogue_ok = false
 	_check("V9 every ending has an epilogue that covers Vincent, Sara and The Echo", epilogue_ok, "")
+	AudioManager.register_voice("SARA", "test_line_1", AudioManager._streams["drone"][0])
+	GameState.set_voice(false)
+	var muted: float = AudioManager.play_voice("SARA", "test_line_1")
+	var silent: bool = not AudioManager.voice_playing() and not GameState.voice_on()
+	GameState.set_voice(true)
+	_check("V10 with the voice turned off a recorded line plays nothing; turned on again it plays",
+			is_zero_approx(muted) and silent and AudioManager.play_voice("SARA", "test_line_1") > 0.5 and GameState.voice_on(), "")
+	AudioManager.stop_voice()
 
 	# ------------------------------------------------------------ model 9: personal bests
 	Director.enabled = true

@@ -335,7 +335,7 @@ func meta() -> Dictionary:
 	if _meta_from == path:
 		return _meta
 	_meta_from = path
-	_meta = {"memories": [], "endings": [], "best_time": 0.0, "best_rally": 0, "finished": 0}
+	_meta = {"memories": [], "endings": [], "best_time": 0.0, "best_rally": 0, "finished": 0, "voice": true}
 	if not persist or not FileAccess.file_exists(meta_path()):
 		return _meta
 	var f: FileAccess = FileAccess.open(meta_path(), FileAccess.READ)
@@ -354,7 +354,21 @@ func meta() -> Dictionary:
 	_meta["best_time"] = maxf(float((parsed as Dictionary).get("best_time", 0.0)), 0.0)
 	_meta["best_rally"] = maxi(int((parsed as Dictionary).get("best_rally", 0)), 0)
 	_meta["finished"] = maxi(int((parsed as Dictionary).get("finished", 0)), 0)
+	_meta["voice"] = bool((parsed as Dictionary).get("voice", true))
 	return _meta
+
+
+func voice_on() -> bool:
+	## The player's choice to hear the recorded lines. Off leaves every line as text with its blip.
+	return bool(meta().get("voice", true))
+
+
+func set_voice(on: bool) -> void:
+	meta()["voice"] = on
+	_save_meta()
+	AudioManager.voice_enabled = on
+	if not on:
+		AudioManager.stop_voice()
 
 
 func _save_meta() -> void:

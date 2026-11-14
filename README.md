@@ -37,10 +37,19 @@ still blinking, in another it never lands.
 
 Any spoken line can have a recording. The game looks for `game/assets/audio/voice/<speaker>/<line>.ogg` and plays it
 with the text, which then stays up for as long as the line is spoken. A line without a recording stays text only.
-Sara is heard through a radio: the bus removes everything below 420 Hz and above 2.9 kHz, overdrives it slightly and
+Sara is heard through a radio: the bus removes everything below 340 Hz and above 3.1 kHz, overdrives it slightly and
 compresses it, over a bed of recorded static, with a click when the radio keys on and off. The music drops 6 dB while
 she speaks. The recording sheet is `docs/VOICE_SCRIPT.md` and `scripts/import_voice.py` brings a folder of takes
 into the game. The static and the click are Kenney samples; nothing is synthesized.
+
+The voice can be turned off: the title menu has a Voice item when recordings exist, and V on the pause screen
+switches it during a run. The choice is remembered with the lifetime progress. With the voice off every line is
+text with its comms tone, as it was before any recording existed.
+
+A single long recording can be split into line files with `scripts/split_voice.py`. It matches each sheet line to
+the stretch of a word-timed transcript that reads most like it, then moves each cut to the quietest moment in the
+pause on either side, so no word is clipped. `scripts/import_voice.py` then lowers steady room noise, fades the
+ends and sets one loudness for every line.
 
 The Echo is Vincent's own voice from before the memory wipe, so a male recording belongs to the Echo lines. Two
 optional joke takes (`oh_hell_nah` and `hehe_boi`) go in `game/assets/audio/voice/meme/` and play without the radio

@@ -103,6 +103,8 @@ var _rng := RandomNumberGenerator.new()
 ## over a bed of recorded static. The static and the clicks are pack samples, not generated noise.
 const VOICE_DIR: String = "res://assets/audio/voice/"
 var _meme: AudioStreamPlayer
+## False when the player has turned the recorded voice off (GameState.set_voice).
+var voice_enabled: bool = true
 const VOICE_FOLDER: Dictionary = {"SARA": "sara", "LOG": "sara", "ECHO": "echo"}
 const STATIC_BED: String = K + "computerNoise_002.ogg"
 const BED_DB: float = -21.0
@@ -245,8 +247,9 @@ func register_voice(who: String, key: String, stream: AudioStream) -> void:
 
 
 func play_voice(who: String, key: String) -> float:
-	## Plays the recording for a line and returns its length in seconds, or 0.0 when there is none.
-	var stream: AudioStream = voice_stream(who, key)
+	## Plays the recording for a line and returns its length in seconds, or 0.0 when there is none
+	## or the player has turned the voice off.
+	var stream: AudioStream = voice_stream(who, key) if voice_enabled else null
 	if stream == null:
 		return 0.0
 	var tape: bool = who == "LOG"
@@ -270,7 +273,7 @@ func play_voice(who: String, key: String) -> float:
 func play_meme(key: String, fallback: String = "") -> bool:
 	## A joke take the operator recorded himself: assets/audio/voice/meme/<key>.ogg, played dry.
 	## With no recording, the fallback cue plays (or nothing) and this returns false.
-	var stream: AudioStream = voice_stream("MEME", key)
+	var stream: AudioStream = voice_stream("MEME", key) if voice_enabled else null
 	if stream == null:
 		if fallback != "":
 			play_sfx(fallback)
@@ -346,6 +349,7 @@ func _process(_delta: float) -> void:
 
 
 func _setup_voice() -> void:
+	voice_enabled = GameState.voice_on()
 	_vox = AudioStreamPlayer.new()
 	_vox.bus = "Radio"
 	add_child(_vox)
@@ -407,9 +411,9 @@ func _setup_buses() -> void:
 		AudioServer.set_bus_name(_radio_bus, "Radio")
 		AudioServer.set_bus_send(_radio_bus, "Master")
 		var hp := AudioEffectHighPassFilter.new()
-		hp.cutoff_hz = 420.0
+		hp.cutoff_hz = 340.0
 		var lp := AudioEffectLowPassFilter.new()
-		lp.cutoff_hz = 2900.0
+		lp.cutoff_hz = 3100.0
 		var drive := AudioEffectDistortion.new()
 		drive.mode = AudioEffectDistortion.MODE_OVERDRIVE
 		drive.drive = 0.28

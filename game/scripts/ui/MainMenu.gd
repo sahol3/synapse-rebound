@@ -82,6 +82,8 @@ func _ready() -> void:
 	if not saved.is_empty():
 		_saved_stage = int(saved["stage"])
 		_items = PackedStringArray(["Continue", "New game", "Controls", "Lore", "Credits"])
+	if AudioManager.voice_counts().x > 0:
+		_items.insert(_items.find("Controls") + 1, "Voice")
 	if OS.get_name() != "Web":
 		_items.append("Quit")
 	var layer := CanvasLayer.new()
@@ -162,6 +164,8 @@ func _choose(item: String) -> void:
 			continue_requested.emit()
 		"Controls":
 			_panel = "controls"
+		"Voice":
+			GameState.set_voice(not GameState.voice_on())
 		"Lore":
 			_panel = "lore"
 		"Credits":
@@ -192,6 +196,9 @@ func _draw_ui() -> void:
 			if on:
 				_txt(Vector2(x, y), ">", 1, AMBER)
 			_txt(Vector2(x + 12, y), _items[i], 1, TEXT if on else DIM)
+			if _items[i] == "Voice":
+				_txt(Vector2(x + 12 + PixelFont.width("Voice   "), y), "on" if GameState.voice_on() else "off", 1,
+						CYAN if GameState.voice_on() else DIM)
 			if _items[i] == "Continue":
 				var stage_name: String = String(DialogueData.STAGES[_saved_stage - 1]["name"]).split(" // ")[0]
 				_txt(Vector2(x + 12 + PixelFont.width("Continue   "), y), "%d  %s" % [_saved_stage, stage_name], 1, DIM)

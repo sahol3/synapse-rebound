@@ -24,6 +24,29 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-14 · Operator's voice recording split and imported, voice on/off option (Claude Code, Fable 5.2)
+- Operator sent `Downloads\haven dhaka.mp3` (4 min 19 s, his own voice): "split it up nicely, do the filters nicely
+  too - keep a option to turn of the voice in the game", "make sure to split the audio properly".
+- The recording holds all 34 Sara lines in sheet order, read by a man, with one aborted retake (175.26 to 182.50 s,
+  left out). No Echo lines and no joke takes were recorded.
+- Split: `scripts/split_voice.py match` (sheet line to transcript stretch; 34 of 34 matched) and `cut` (cut points
+  placed in the real pause nearest each line's first and last word; room noise measured at -32.2 dB). Transcript by
+  local openai-whisper `medium.en` (the model, 1.5 GB, was downloaded to `D:\Stuff_not_dl\Models\whisper`). Source,
+  transcript, cut list and the 34 wav takes are in `assets/raw/voice/take1/` (gitignored).
+- Import: `scripts/import_voice.py` now also removes rumble under 85 Hz, lowers steady noise by about 12 dB (afftdn)
+  and fades both ends before setting loudness. Output: `game/assets/audio/voice/sara/*.ogg`, 34 files.
+- Radio bus retuned for a deeper voice: high-pass 420 to 340 Hz, low-pass 2.9 to 3.1 kHz.
+- Voice option: `GameState.voice_on()` / `set_voice()`, stored as `voice` in the lifetime progress file; title menu
+  item "Voice on/off" (shown when recordings exist) and V on the pause screen; `AudioManager.voice_enabled`.
+- Verified: each of the 34 takes transcribed alone (whisper `small.en`, a different model from the one that made
+  the cuts) contains its whole line; the first version of the cutter had clipped "That's" from `s2_module_1`, which
+  this check caught and the pause-based cutter fixed. No take starts or ends above -24 dB. Through an ffmpeg
+  approximation of the Radio bus with the static bed, all 34 lines transcribe as well as the clean takes at both the
+  old and the new cutoffs. DIRECTORTEST V10 covers the on/off switch.
+- Not verified: nobody has listened to the result in the game. The radio simulation is ffmpeg, not Godot's bus.
+- Open question for the operator: Sara is a woman in the text ("her fire control", "That was her voice") and the
+  voice is a man's.
+
 ### 2026-11-14 · Fire control (the model made visible), phase 3 hand-over, meme moments (Claude Code, Fable 5.2)
 - Operator: "our game is pretty generic... We need something tuff", then "I like your angle for the uniqueness - but
   man, something unpredictable?", "the brainrots - dont overdo it, add the best ones... those are a little aged, can

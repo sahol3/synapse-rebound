@@ -71,8 +71,12 @@ def main() -> int:
         speaker, key = hit
         dest = OUT / speaker / (key + ".ogg")
         dest.parent.mkdir(parents=True, exist_ok=True)
-        chain = ("silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05,"
-                 "areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.12,areverse,"
+        ## Rumble out, steady room noise down by about 12 dB, leading and trailing silence off, a short fade
+        ## at each end so a cut never clicks, then one loudness for every line.
+        chain = ("highpass=f=85,afftdn=nr=12:nf=-34:tn=1,"
+                 "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05,"
+                 "areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.12,"
+                 "afade=t=in:d=0.06,areverse,afade=t=in:d=0.03,"
                  "loudnorm=I=-16:TP=-1.5:LRA=11")
         cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(f), "-vn", "-ac", "1",
                "-ar", "44100", "-af", chain, "-c:a", "libvorbis", "-q:a", "5", str(dest)]

@@ -374,6 +374,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		elif event is InputEventKey and event.pressed and (event as InputEventKey).physical_keycode == KEY_M:
 			pause_action.emit("menu")
+		elif event is InputEventKey and event.pressed and not event.echo \
+				and (event as InputEventKey).physical_keycode == KEY_V and AudioManager.voice_counts().x > 0:
+			GameState.set_voice(not GameState.voice_on())
+			AudioManager.play_sfx("ui_select")
+			get_viewport().set_input_as_handled()
 
 
 func _close_module(choice: String) -> void:
@@ -638,6 +643,8 @@ func _draw_pause() -> void:
 	var oy: float = _oy()
 	_t(Vector2(x, 92 + oy), "PAUSED", 2, TEXT)
 	var rows: Array = [["Esc", "Resume"], ["R", "Rewind to the last checkpoint"], ["M", "Quit to the title screen (progress is saved)"]]
+	if AudioManager.voice_counts().x > 0:
+		rows.append(["V", "Voice: " + ("on" if GameState.voice_on() else "off")])
 	for i: int in rows.size():
 		_t(Vector2(x, 124 + oy + i * 14), rows[i][0], 1, AMBER)
 		_t(Vector2(x + 32.0, 124 + oy + i * 14), rows[i][1], 1, TEXT)
