@@ -24,6 +24,19 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-14 · Submission push: death ads, comments stripped, GitHub pushed, itch page pending (Claude Code, Fable 5.2)
+- Operator, with ten minutes to the deadline: add brainrot ads on death, push to itch and GitHub, write the
+  description with the humanizer skill, remove all comments from the code.
+- Death ads: `HudController.show_ads()` draws six fake pop-up ads for 1.5 s on each death (`ADS` list).
+- Comments removed from 48 files (GDScript, shaders, Python tools; 749 lines) by a string-aware stripper; colour
+  strings counted before and after (67 and 67); all four suites pass after it (32, 74, 17, 9).
+- GitHub: pushed, `origin/main` = e8b8846 (verified with `git ls-remote`).
+- itch.io: NOT uploaded. `butler push` returned "invalid game" because no project page exists and butler does not
+  create one; the Chrome profile available to the agent is not signed in to itch. The butler key is scoped to
+  uploads only, so the account name could not be read. `exports/SynapseRebound-web.zip` (19.6 MB, built 14:36 with
+  the ads) is ready for a manual upload at https://itch.io/game/new. Submission text: `docs/SUBMISSION.md`.
+- Not verified: the ads have not been seen on screen by anyone; the Windows exe was not rebuilt after the ads.
+
 ### 2026-11-14 · Handler renamed: Sara becomes Saif, a man (Claude Code, Fable 5.2)
 - Operator chose "Make the handler male" after his own voice went onto the handler's lines.
 - Name and pronouns changed in every script, test, tool and in README, RULES and CREDITS (18 files): speaker key
