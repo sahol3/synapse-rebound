@@ -359,6 +359,7 @@ func _on_player_died() -> void:
 	post.vhs_hold(false)
 	post.vhs(0.15)
 	hud.loop_flash(GameState.loop_deaths, note)
+	hud.show_ads(GameState.loop_deaths)
 	## Nobody should be stopped for good by one room: after six deaths in it, offer a way past.
 	var tries: int = int(_room_deaths.get(room_key, 0))
 	if tries >= SKIP_AFTER and tries % 3 == 0 and stage.current_room < stage.checkpoint_count():

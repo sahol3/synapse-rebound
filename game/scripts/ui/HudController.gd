@@ -53,6 +53,16 @@ var _card_index: int = 0
 var _loop_t: float = -1.0
 var _loop_n: int = 0
 var _flash_t: float = -1.0
+var _ads_t: float = -1.0
+var _ads: Array = []
+const ADS: Array = [
+	["HOT COURIERS IN NEO-DHAKA", "3 km away"], ["YOU ARE LOOP NUMBER %d", "claim your prize"],
+	["LAZARUS PREMIUM", "die without ads"], ["DOWNLOAD MORE SYNC", "100% legit"],
+	["TUNG TUNG TUNG SAHUR", "now delivering"], ["67% OFF IMPLANTS", "six seven"],
+	["IS YOUR HANDLER LYING?", "couriers hate this trick"], ["TRALALERO SNEAKERS", "3 legs, 1 price"],
+	["FREE AURA +1000", "no scam"], ["BALLERINA CAPPUCCINA", "is typing..."],
+	["SKIP AD IN 3", "2... 1..."], ["LOW CORTISOL ROOFTOPS", "book now"],
+]
 var _flash_s: String = ""
 var _flash_col: Color = AMBER
 var _loop_note: String = ""
@@ -131,6 +141,10 @@ func _process(_delta: float) -> void:
 		_loop_t += dt
 		if _loop_t > 0.9:
 			_loop_t = -1.0
+	if _ads_t >= 0.0:
+		_ads_t += dt
+		if _ads_t > 1.5:
+			_ads_t = -1.0
 	if _flash_t >= 0.0:
 		_flash_t += dt
 		if _flash_t > 1.3:
@@ -245,6 +259,36 @@ func stage_card(index: int) -> void:
 func saved_flash() -> void:
 	## A checkpoint was reached and the run was written to disk.
 	_saved_t = 0.0
+
+
+func show_ads(deaths: int) -> void:
+	_ads.clear()
+	var picks: Array = ADS.duplicate()
+	picks.shuffle()
+	var cols: Array = [MAGENTA, CYAN, AMBER]
+	for i: int in 6:
+		var head: String = String(picks[i][0])
+		if "%d" in head:
+			head = head % deaths
+		var w: float = maxf(PixelFont.width(head), PixelFont.width(String(picks[i][1]))) + 26.0
+		_ads.append({"head": head, "sub": String(picks[i][1]), "w": w, "col": cols[i % 3],
+				"pos": Vector2(randf_range(8.0, maxf(W - w - 8.0, 9.0)), randf_range(48.0, H - 80.0))})
+	_ads_t = 0.0
+
+
+func _draw_ads() -> void:
+	for i: int in _ads.size():
+		if _ads_t < 0.07 * i:
+			continue
+		var a: Dictionary = _ads[i]
+		var p: Vector2 = a["pos"]
+		var r := Rect2(p, Vector2(float(a["w"]), 32.0))
+		_overlay.draw_rect(r, Color(INK.r, INK.g, INK.b, 0.94))
+		_overlay.draw_rect(r, a["col"], false, 1.0)
+		_t(p + Vector2(5, 4), "AD", 1, DIM)
+		_t(p + Vector2(float(a["w"]) - 6.0, 4), "x", 1, a["col"], 1)
+		_t(p + Vector2(20, 4), a["head"], 1, TEXT)
+		_t(p + Vector2(20, 17), a["sub"], 1, a["col"])
 
 
 func loop_flash(deaths: int, note: String = "") -> void:
@@ -443,6 +487,8 @@ func _draw_overlay() -> void:
 		_draw_card()
 	if _loop_t >= 0.0:
 		_draw_loop()
+	if _ads_t >= 0.0:
+		_draw_ads()
 	if _flash_t >= 0.0 and _loop_t < 0.0 and not (_flash_t < 0.3 and int(_flash_t * 20.0) % 3 == 2):
 		_t(Vector2(W * 0.5, 120 + _oy()), _flash_s, 2, _flash_col, 2)
 	if _mem_t >= 0.0 and not _module_open and not _paused:
