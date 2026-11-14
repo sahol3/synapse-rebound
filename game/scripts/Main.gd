@@ -30,6 +30,10 @@ const CYAN: Color = Color("#00F0FF")
 var _room_deaths: Dictionary = {}
 var _room_far: Dictionary = {}
 var _skip_key: String = ""
+var _epilogue: Epilogue
+## Slow time for a moment when one of the plot's reveals starts. Off in tests and dev runs, where
+## scripted bots depend on timing.
+var story_focus: bool = not GameState.is_dev_run()
 
 
 func _ready() -> void:
@@ -49,6 +53,7 @@ func _ready() -> void:
 	hud.module_choice.connect(func(_c: String) -> void: pass)
 	hud.pause_action.connect(_on_pause_action)
 	hud.ending_closed.connect(show_menu)
+	hud.epilogue_beat.connect(_on_epilogue_beat)
 	Director.stuck.connect(func() -> void:
 		if _state == "play" and not _busy:
 			var skill: String = Director.hint_skill()
@@ -58,6 +63,11 @@ func _ready() -> void:
 		if _state == "play":
 			hud.say("assist_" + kind))
 	GameState.stats_changed.connect(_on_stats_changed)
+	GameState.tier_changed.connect(func(tier: int) -> void:
+		## Sara wants the player weak, so a rising sync worries her before the player knows why.
+		if _state == "play" and tier >= GameState.Tier.OVERCLOCKED and GameState.current_stage <= 2 \
+				and hud.comms_idle() and GameState.once("sync_high"):
+			hud.say("sync_high"))
 	GameState.memory_unlocked.connect(func(id: String) -> void:
 		if _state == "play" or _state == "choice":
 			hud.memory_toast(DialogueData.memory(id)["title"]))
@@ -103,6 +113,21 @@ func _start_new_game() -> void:
 		_begin_run(1)
 
 
+func _on_stage_dialogue(id: String) -> void:
+	hud.say(id)
+	if story_focus and _state == "play" and id in DialogueData.FOCUS and player != null and not player.in_blackout:
+		JuiceManager.slowmo(0.4, 2.0)
+
+
+func _process(_delta: float) -> void:
+	## Sara notices when the player stops moving. Once per stage.
+	if _state != "play" or _busy or get_tree().paused or stage == null:
+		return
+	if Time.get_ticks_msec() - Director._last_input_ms > 12000 and hud.comms_idle() \
+			and GameState.once("idle_%d" % GameState.current_stage):
+		hud.say("idle_a" if GameState.current_stage <= 2 else "idle_b")
+
+
 func _on_stats_changed() -> void:
 	if _state != "play":
 		return
@@ -145,6 +170,7 @@ func _continue_run() -> void:
 	GameState.timer_running = true
 	AudioManager.set_menu_muffle(false)
 	load_stage(int(d["stage"]), int(d.get("room", 0)))
+	hud.say("resume_%d" % int(d["stage"]))
 
 
 func _clear_stage() -> void:
@@ -152,6 +178,30 @@ func _clear_stage() -> void:
 		stage.queue_free()
 	stage = null
 	player = null
+	if _epilogue and is_instance_valid(_epilogue):
+		_epilogue.queue_free()
+	_epilogue = null
+
+
+func _on_epilogue_beat(index: int) -> void:
+	## The after-story plays in the world, behind the caption: build its set on the first scene,
+	## then cut the camera from one scene to the next.
+	if _state != "ending":
+		return
+	if _epilogue == null or not is_instance_valid(_epilogue):
+		_clear_stage()
+		hud.player = null
+		hud.boss = null
+		post.set_blackout(false)
+		JuiceManager.reset_time()
+		_epilogue = Epilogue.new()
+		_epilogue.ending = GameState.ending_id()
+		world.add_child(_epilogue)
+		AudioManager.play_music("stage")
+		AudioManager.set_menu_muffle(true)
+	post.vhs(0.25)
+	AudioManager.play_sfx("vhs_rewind", 1.0, -8.0)
+	_epilogue.show_beat(index)
 
 
 func load_stage(index: int, room: int = 0) -> void:
@@ -188,7 +238,7 @@ func load_stage(index: int, room: int = 0) -> void:
 	camera.make_current()
 	camera.set_limits(Rect2(stage.bounds.position * StageBase.T, stage.bounds.size * StageBase.T))
 	camera.snap_to_target()
-	stage.dialogue.connect(hud.say)
+	stage.dialogue.connect(_on_stage_dialogue)
 	stage.module_collected.connect(_on_module_collected)
 	stage.checkpoint_reached.connect(func() -> void:
 		if GameState.persist:
@@ -208,6 +258,9 @@ func load_stage(index: int, room: int = 0) -> void:
 		player.respawn(stage.checkpoint_pos, stage.checkpoint_lane)
 		camera.snap_to_target()
 	GameState.save_run(stage.current_room)
+	## The two voices answer the module choice that brought the player here.
+	if index >= 2 and GameState.choices.size() >= index - 1 and GameState.once("after_%d" % (index - 1)):
+		hud.say("after_%s_%d" % [GameState.choices[index - 2], index - 1])
 	if stage.get("boss") != null:
 		hud.boss = stage.get("boss")
 	else:
@@ -392,6 +445,7 @@ func _notification(what: int) -> void:
 func _set_paused(on: bool) -> void:
 	get_tree().paused = on
 	hud.set_paused_panel(on)
+	AudioManager.pause_voice(on)
 	AudioManager.set_menu_muffle(on)
 
 

@@ -20,7 +20,7 @@ def rng(prefix: str, a: int, b: int, width: int = 3) -> list[str]:
 PICK: dict[str, list[str]] = {
     "kenney_sci-fi-sounds": rng("impactMetal_", 0, 4) + rng("laserSmall_", 0, 4) + rng("laserLarge_", 0, 4)
     + rng("laserRetro_", 0, 4) + rng("forceField_", 0, 4) + rng("explosionCrunch_", 0, 4)
-    + rng("lowFrequency_explosion_", 0, 1) + ["spaceEngineLow_000"],
+    + rng("lowFrequency_explosion_", 0, 1) + ["spaceEngineLow_000", "computerNoise_002"],
     "kenney_impact-sounds": rng("impactBell_heavy_", 0, 4) + rng("impactSoft_heavy_", 0, 4)
     + rng("impactSoft_medium_", 0, 4) + rng("footstep_concrete_", 0, 4) + rng("impactPunch_medium_", 0, 4)
     + rng("impactGeneric_light_", 0, 4),

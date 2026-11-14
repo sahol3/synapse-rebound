@@ -24,6 +24,24 @@ five-bounce rally, reaching each stage, finishing, and seeing each of the three 
 title and what recovers it. Recovered entries, endings seen, the best time and the longest rally are kept across
 runs in `user://save_meta.json`, and the title screen shows the totals.
 
+The two voices answer what you do. After each module choice Sara and The Echo each say what they make of it, Sara
+tells you to slow down the first time your sync passes 200%, and she notices when you stand still. Time slows for two
+seconds when one of the three reveals begins. Continue opens with one line from The Echo about where you were.
+
+Each ending is followed by an after-story that plays by itself, twelve seconds after the ending text. It is four short
+animated scenes built from the game's own art, one each for Vincent, Sara, The Echo and the city, with a caption under
+each. What happens in a scene depends on the ending: in one Sara's gunship lies smoking on the lower deck with a light
+still blinking, in another it never lands.
+
+## Voice
+
+Any spoken line can have a recording. The game looks for `game/assets/audio/voice/<speaker>/<line>.ogg` and plays it
+with the text, which then stays up for as long as the line is spoken. A line without a recording stays text only.
+Sara is heard through a radio: the bus removes everything below 420 Hz and above 2.9 kHz, overdrives it slightly and
+compresses it, over a bed of recorded static, with a click when the radio keys on and off. The music drops 6 dB while
+she speaks. The recording sheet is `docs/VOICE_SCRIPT.md` and `scripts/import_voice.py` brings a folder of takes
+into the game. The static and the click are Kenney samples; nothing is synthesized.
+
 ## Play
 
 To run from source, open the `game/` folder in Godot 4.7 (standard edition, GDScript) and press Play. The Web export

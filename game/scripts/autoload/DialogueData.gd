@@ -1,6 +1,7 @@
 extends Node
 ## Every line of the Stage 1-4 script, the module choices and the endings.
-## Speakers: SARA (cyan HUD comms, top-left), ECHO (crimson glitch toast),
+## Speakers: SARA (cyan HUD comms, top-left), ECHO (crimson glitch toast), LOG (a recording of
+## Sara's voice that the Echo plays back),
 ## WORLD (giant kinetic typography burned onto the buildings), SYS (HUD banner).
 
 const LINES: Dictionary = {
@@ -67,7 +68,9 @@ const LINES: Dictionary = {
 		{"who": "SYS", "text": "The floor is gone. Jump, then press Space again to dash upward. A deflection in the air gives the dash back."},
 	],
 	"s3_rally": [
-		{"who": "ECHO", "text": "Audio log recovered [23:59:42]: 'I'm sorry, Vincent. Command says if a courier reads the Lazarus files, we pull the plug.' ...That was her voice."},
+		{"who": "ECHO", "text": "Audio log recovered. 23:59:42, eighteen seconds before the fall."},
+		{"who": "LOG", "text": "I'm sorry, Vincent. Command says if a courier reads the Lazarus files, we pull the plug."},
+		{"who": "ECHO", "text": "That was her voice."},
 		{"who": "SARA", "text": "Shut it down, Vincent! You weren't supposed to survive a 90-story drop! Why won't you just stay down?!"},
 	],
 	"s3_module": [
@@ -142,6 +145,55 @@ const LINES: Dictionary = {
 	"rally_3": [
 		{"who": "ECHO", "text": "Third bounce. The shot comes back harder every time. So do we."},
 	],
+	# ------------------------------------------------------------ the two voices answer the module choice
+	"after_Q_1": [
+		{"who": "SARA", "text": "Good. You kept the relay stable. Keep trusting me and I will get you out of this."},
+		{"who": "ECHO", "text": "She sounded relieved. Ask yourself what a handler has to be relieved about."},
+	],
+	"after_E_1": [
+		{"who": "SARA", "text": "You overclocked it? Vincent, that relay will cook your memory. Do not do that again."},
+		{"who": "ECHO", "text": "One block gone. I can see rain on the roof, and someone standing behind us."},
+	],
+	"after_Q_2": [
+		{"who": "SARA", "text": "Optics stable. That is two for two. You are doing exactly what I need."},
+		{"who": "ECHO", "text": "Exactly what she needs. Listen to how she said that."},
+	],
+	"after_E_2": [
+		{"who": "SARA", "text": "Stop. You are reading tags you were never cleared to read."},
+		{"who": "ECHO", "text": "Her division. Her drones. Now you can read the tags yourself."},
+	],
+	"after_Q_3": [
+		{"who": "SARA", "text": "Core stable. It will not save you up here."},
+		{"who": "ECHO", "text": "Stable or not, we are standing where we fell. Finish it."},
+	],
+	"after_E_3": [
+		{"who": "SARA", "text": "Four hundred percent. You have burned out everything I left in you."},
+		{"who": "ECHO", "text": "Everything she left in us was a leash. Finish it."},
+	],
+	# ------------------------------------------------------------ Sara wants you slow
+	"sync_high": [
+		{"who": "SARA", "text": "Your sync is climbing too fast. Ease off, Vincent. Slow is how you stay alive."},
+		{"who": "ECHO", "text": "Slow is how she keeps us small."},
+	],
+	"idle_a": [
+		{"who": "SARA", "text": "Vincent? Your signal has gone flat. Keep moving."},
+	],
+	"idle_b": [
+		{"who": "SARA", "text": "Standing still, Courier? Good. Stay right there."},
+	],
+	# ------------------------------------------------------------ Continue: where we were
+	"resume_1": [
+		{"who": "ECHO", "text": "Back in the alley. Someone shot us off the roof, and Sara says it was a syndicate. Keep climbing."},
+	],
+	"resume_2": [
+		{"who": "ECHO", "text": "The overpass. Our holster was locked from the inside. Remember that when she talks."},
+	],
+	"resume_3": [
+		{"who": "ECHO", "text": "The shaft. We heard her voice on the recording. The roof is straight up."},
+	],
+	"resume_4": [
+		{"who": "ECHO", "text": "Rooftop 09. She is in the gunship. Send everything back."},
+	],
 	"berserk": [
 		{"who": "WORLD", "text": "BERSERK OVERDRIVE"},
 	],
@@ -179,6 +231,10 @@ const ECHO_FRAGMENTS: PackedStringArray = [
 	"HER DIVISION // HER DRONES",
 	"BOUNCE BACK",
 ]
+
+## The three reveals the plot turns on. Time slows for two seconds when one starts, so the player
+## can take it in.
+const FOCUS: PackedStringArray = ["s1_echo", "s2_first_lane", "s3_rally"]
 
 ## Shown once before a new game, one line at a time. Any key skips it.
 const PROLOGUE: PackedStringArray = [
@@ -277,6 +333,29 @@ const ENDINGS: Dictionary = {
 		"body": "You balance human control with cybernetic fury. The final shot goes straight through the Gunship's engine core. You walk up to the smoking wreckage, recover your original encrypted courier briefcase, and step off the roof, gliding into the neon night on a controlled recoil bounce.",
 		"color": Color("#FF9900"),
 	},
+}
+
+
+## The second page of each ending: where everyone is after the part the ending tells.
+const EPILOGUE: Dictionary = {
+	"A": [
+		{"who": "VINCENT", "text": "He took a room above a noodle bar in Sector 4, under a name that is on no courier list. He still wakes at midnight. He has not carried a sealed case since."},
+		{"who": "SARA", "text": "She climbed out of the wreck with a broken arm and a report to write. The report says the courier died in the fall. Command accepted it, and she has never corrected it."},
+		{"who": "THE ECHO", "text": "The recording stayed locked behind the stabilized blocks. Some nights it plays a few seconds of rain and then stops."},
+		{"who": "THE LAZARUS FILES", "text": "Nobody else has read them. The company still fits its couriers with implants."},
+	],
+	"B": [
+		{"who": "VINCENT", "text": "The man who carried the cases is gone. The one who walked down from Rooftop 09 remembers everything and answers to the name he had before the wipe."},
+		{"who": "SARA", "text": "She did not leave the gunship. Her last transmission was an order to fire, sent to turrets that were already down."},
+		{"who": "THE ECHO", "text": "It stopped being a recording when the last block broke. There is one voice now."},
+		{"who": "NEO-DHAKA", "text": "By morning every screen in the city carried the files. Forty couriers walked off shift that day, and the company's towers went dark one floor at a time."},
+	],
+	"C": [
+		{"who": "VINCENT", "text": "He kept the case and both voices. He sells nothing from it. He delivers it one page at a time to the people named inside."},
+		{"who": "SARA", "text": "She survived the crash and woke in a company clinic with a courier's implant in her own spine. Command does not waste trained staff."},
+		{"who": "THE ECHO", "text": "It still argues with him. He has stopped calling it a recording."},
+		{"who": "NEO-DHAKA", "text": "The couriers named in the file have started to leave, one tower at a time. Nobody at the company can work out who is telling them."},
+	],
 }
 
 

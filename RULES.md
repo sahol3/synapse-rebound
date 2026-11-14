@@ -228,7 +228,7 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
   `on_rewind`, in the same frame as the respawn.
 - Climb rule: a plain jump is 55 px. Any step taller than 48 px needs the air-dash (Space again in mid-air), and a
   stage that needs it must say so on screen. A new or changed climb gets a bot run like `tests/ClimbTest.gd`.
-- More test gates: `DirectorTest.tscn` (`DIRECTORTEST passed=57 failed=0`), `ClimbTest.tscn` (`CLIMBTEST passed=14
+- More test gates: `DirectorTest.tscn` (`DIRECTORTEST passed=63 failed=0`), `ClimbTest.tscn` (`CLIMBTEST passed=17
   failed=0`, about 90 s) and `DirectorLive.tscn` (`DIRECTORLIVE passed=8 failed=0`, about 100 s) after any change to
   the director, the player's movement or a stage layout.
 - Enemy art: `EnemyBase.SKINS` holds each character's sheet layout, feet offset, hurtbox, shield and muzzle. Look at
@@ -251,6 +251,15 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
   with `persist` off nothing is read or written. Lore entries are `DialogueData.MEMORIES`; unlock with
   `GameState.unlock_memory(id)`. Engagement features must tell the player something true about their own play
   (progress, personal bests); no timers, no fake scarcity, no punishment for leaving.
+- Voice: a spoken line's recording is `game/assets/audio/voice/<sara|echo>/<id>_<n>.ogg`, where `<id>_<n>` is the
+  line's key in `DialogueData.LINES` (n counts from 1). Recordings come from a person; never generate a voice.
+  After changing any spoken line, regenerate the sheet:
+  `godot.cmd --headless --path game --script res://tests/VoiceSheet.gd -- --out=<abs>\docs\VOICE_SCRIPT.md`.
+  Import takes with `py -I scripts\import_voice.py <folder>`, then run `--import`. On start the game prints
+  `voice: N of M spoken lines have a recording` when N is above zero. The radio and Echo buses are built in
+  `AudioManager._setup_buses`; the static bed and key click must stay pack samples.
+- Endings: the after-story must play without input and must show something moving in every scene; text alone was
+  rejected (operator, 2026-11-14). Its scenes use only shipped art (`scripts/world/Epilogue.gd`).
 - Story lines that react to play live in `DialogueData.LINES` and are triggered from `Main.gd` (loops, rebounds,
   rallies). A reactive line only plays when `hud.comms_idle()` and once per run (`GameState.once`).
 - UI type is m5x7 by Daniel Linssen (CC0), `game/assets/fonts/m5x7.ttf`, loaded by `scripts/ui/PixelFont.gd`.

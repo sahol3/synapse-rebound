@@ -36,6 +36,12 @@ scratches of the rewind, The Echo's glitches, Sara's comms tone, footsteps, powe
 packs, which are released under Creative Commons Zero (CC0). The licence is in `assets/audio/sfx/kenney/License.txt`.
 Two long recordings (a thruster and a computer hum) were trimmed to short clips with ffmpeg.
 
+## Voice
+
+Spoken lines are recorded by a person for this game and played through a radio filter built from Godot's audio
+effects. The static under the voice is `computerNoise_002` from the Kenney Sci-Fi Sounds pack (CC0). No voice in
+the game is generated.
+
 ## Icon
 
 `icon.png` is a layout of art that already ships with the game: the Warped City skyline, the player's sprite, one

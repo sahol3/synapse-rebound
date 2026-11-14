@@ -11,6 +11,13 @@ signal module_choice(choice: String)
 signal pause_action(action: String)
 signal ending_closed
 signal prologue_done
+## The after-story moved to its next scene (0 = Vincent, 1 = Sara, 2 = The Echo, 3 = the city).
+signal epilogue_beat(index: int)
+
+## Seconds the ending text and stats stay up before the after-story starts by itself.
+const EPI_AUTO: float = 12.0
+## Seconds each after-story scene is held.
+const EPI_BEAT: float = 7.5
 
 var U: int = 2  ## screen pixels per interface pixel (Display.ui)
 var W: int = 576  ## interface size; follows the window (Display.ui_size)
@@ -49,6 +56,9 @@ var _flash_t: float = -1.0
 var _flash_s: String = ""
 var _flash_col: Color = AMBER
 var _loop_note: String = ""
+var _line_speed: float = 55.0
+var _epi_t: float = -1.0
+var _epi_beat: int = -1
 var _mem_t: float = -1.0
 var _mem_s: String = ""
 var _pro_t: float = -1.0
@@ -137,6 +147,15 @@ func _process(_delta: float) -> void:
 		_module_t += dt
 	if _ending_open:
 		_ending_t += dt
+		if _epi_t < 0.0 and _ending_t > EPI_AUTO:
+			open_epilogue()
+		if _epi_t >= 0.0:
+			_epi_t += dt
+			var count: int = (DialogueData.EPILOGUE[_ending_id] as Array).size()
+			var now_beat: int = mini(int(_epi_t / EPI_BEAT), count - 1)
+			if now_beat != _epi_beat:
+				_epi_beat = now_beat
+				epilogue_beat.emit(now_beat)
 	_sync_display = lerpf(_sync_display, GameState.sync_rate, clampf(dt * 10.0, 0.0, 1.0))
 	var playing: bool = show_gameplay and not _module_open and not _ending_open
 	## Confined while playing: in a window, a click that lands outside it would take focus away
@@ -150,12 +169,15 @@ func _process(_delta: float) -> void:
 # ================================================================= dialogue
 
 func say(id: String) -> void:
-	for line: Dictionary in DialogueData.lines(id):
+	var all: Array = DialogueData.lines(id)
+	for i: int in all.size():
+		var line: Dictionary = all[i]
 		var who: String = line["who"]
 		var text: String = line["text"]
 		match who:
-			"SARA", "ECHO":
-				_queue.append({"who": who, "text": PixelFont.clean(text)})
+			"SARA", "ECHO", "LOG":
+				## The key names the recording for this line: <id>_<position in the list>.
+				_queue.append({"who": who, "text": PixelFont.clean(text), "key": "%s_%d" % [id, i + 1]})
 			"SYS":
 				system(text)
 			"WORLD":
@@ -171,7 +193,7 @@ func system(text: String, seconds: float = 5.0) -> void:
 func _tick_comms(dt: float) -> void:
 	if _line_t > 0.0:
 		_line_t -= dt
-		var speed: float = 40.0 if _line["who"] == "ECHO" else 55.0
+		var speed: float = _line_speed
 		_reveal = minf(_reveal + dt * speed, float(String(_line["text"]).length()))
 		if _line_t <= 0.0:
 			_line = {}
@@ -180,11 +202,20 @@ func _tick_comms(dt: float) -> void:
 		_wrapped = PixelFont.wrap(_line["text"], 278)
 		_reveal = 0.0
 		var n: float = float(String(_line["text"]).length())
-		_line_t = (1.6 + n * 0.045) if _line["who"] == "SARA" else (2.0 + n * 0.05)
-		AudioManager.play_sfx("sara_comms" if _line["who"] == "SARA" else "echo_glitch")
+		var who: String = _line["who"]
+		_line_t = (2.0 + n * 0.05) if who == "ECHO" else (1.6 + n * 0.045)
+		_line_speed = 40.0 if who == "ECHO" else 55.0
+		var spoken: float = AudioManager.play_voice(who, String(_line.get("key", "")))
+		if spoken > 0.0:
+			## A recorded line stays up for as long as it is spoken, and the text keeps pace with it.
+			_line_t = maxf(_line_t, spoken + 0.5)
+			_line_speed = clampf(n / maxf(spoken * 0.85, 0.4), 14.0, 80.0)
+		else:
+			AudioManager.play_sfx("echo_glitch" if who == "ECHO" else "sara_comms")
 
 
 func clear_dialogue() -> void:
+	AudioManager.stop_voice()
 	_queue.clear()
 	_line = {}
 	_line_t = 0.0
@@ -265,6 +296,16 @@ func show_ending(id: String) -> void:
 	_ending_open = true
 	_ending_id = id
 	_ending_t = 0.0
+	_epi_t = -1.0
+	_epi_beat = -1
+
+
+func open_epilogue() -> void:
+	## The after-story: one animated scene per character, each with a caption. It starts by
+	## itself; Space only brings it forward.
+	if _ending_open and _epi_t < 0.0:
+		_epi_t = 0.0
+		_epi_beat = -1
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -279,8 +320,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		_end_prologue()
 		return
+	if _ending_open and _epi_t < 0.0 and _ending_t > 2.0 and (event.is_action_pressed("jump")
+			or event.is_action_pressed("parry") or event.is_action_pressed("ui_accept")):
+		get_viewport().set_input_as_handled()
+		open_epilogue()
+		return
 	if _ending_open and event.is_action_pressed("restart"):
 		_ending_open = false
+		_epi_t = -1.0
 		ending_closed.emit()
 		return
 	if _paused:
@@ -381,10 +428,11 @@ func _draw_comms() -> void:
 	if _line.is_empty():
 		return
 	var echo: bool = _line["who"] == "ECHO"
-	var name_s: String = "SARA" if not echo else "ECHO"
+	var tape: bool = _line["who"] == "LOG"
+	var name_s: String = "ECHO" if echo else ("RECORDING 23:59:42" if tape else "SARA")
 	if echo and _rng.randf() < 0.12:
 		name_s = "EC" + GLITCH_CHARS[_rng.randi() % GLITCH_CHARS.length()] + "O"
-	_t(Vector2(12, 10), name_s, 1, CRIMSON if echo else CYAN)
+	_t(Vector2(12, 10), name_s, 1, CRIMSON if echo else (AMBER if tape else CYAN))
 	var left: int = int(_reveal)
 	for i: int in _wrapped.size():
 		if left <= 0:
@@ -545,7 +593,40 @@ func _draw_pause() -> void:
 		_t(Vector2(x, 210 + oy), "Adaptive difficulty  %d%%" % Director.percent(), 1, DIM)
 
 
+func _draw_epilogue() -> void:
+	## The world shows the scene (Epilogue.gd); this draws the film bars and the caption.
+	var e: Dictionary = DialogueData.ENDINGS[_ending_id]
+	var col: Color = e["color"]
+	var bar: float = 78.0 if H >= 324 else 66.0
+	_overlay.draw_rect(Rect2(0, 0, W, 22), Color(INK.r, INK.g, INK.b, 0.94))
+	_overlay.draw_rect(Rect2(0, H - bar, W, bar), Color(INK.r, INK.g, INK.b, 0.94))
+	var x0: float = _ox()
+	var wrap_w: int = int(minf(470.0, W - x0 * 2.0))
+	_t(Vector2(x0, 7), String(e["title"]).split(" // ")[0] + "  /  AFTER ROOFTOP 09", 1, col)
+	var entries: Array = DialogueData.EPILOGUE[_ending_id]
+	var i: int = clampi(_epi_beat, 0, entries.size() - 1)
+	var age: float = _epi_t - i * EPI_BEAT
+	## Each scene opens on the picture alone for a moment, then the caption types in.
+	if age > 0.7:
+		var y: float = H - bar + 8.0
+		_t(Vector2(x0, y), entries[i]["who"], 1, col)
+		y += LH + 1.0
+		var budget: int = int((age - 0.9) * 70.0)
+		for part: String in PixelFont.wrap(entries[i]["text"], wrap_w):
+			if budget > 0:
+				_t(Vector2(x0, y), part.substr(0, budget), 1, TEXT)
+			budget -= part.length() + 1
+			y += LH
+	for k: int in entries.size():
+		_overlay.draw_rect(Rect2(W - x0 - (entries.size() - k) * 9.0, 10, 6, 2), col if k <= i else DIM)
+	if i == entries.size() - 1 and age > 5.5:
+		_t(Vector2(W - x0, H - 16.0), "R  Bounce back again", 1, col, 1)
+
+
 func _draw_ending() -> void:
+	if _epi_t >= 0.0:
+		_draw_epilogue()
+		return
 	## Flows top to bottom from the real interface size: same positions as before at 576x324,
 	## tighter gaps on a short window, wider margins on a wide one.
 	var e: Dictionary = DialogueData.ENDINGS[_ending_id]
@@ -588,10 +669,8 @@ func _draw_ending() -> void:
 		_t(Vector2(sx, sy), stats[i][0], 1, DIM)
 		_t(Vector2(sx, sy + 11), stats[i][1], 1, TEXT)
 	y += 48.0 + (8.0 if tight else 18.0)
-	_t(Vector2(x0, y), "R", 1, col)
-	_t(Vector2(x0 + 14.0, y), "Bounce back again", 1, TEXT)
 	if _end_note != "":
-		_t(Vector2(x0 + 150.0, y), _end_note, 1, DIM)
+		_t(Vector2(x0, y), _end_note, 1, DIM)
 	var foot: PackedStringArray = PixelFont.wrap(
 			"Hack Club Haven Dhaka 2026. Art and music by Ansimuz, effects by BDragon1727.", int(W - x0 * 2.0))
 	for i: int in foot.size():

@@ -290,6 +290,48 @@ func _run() -> void:
 	GameState._meta_from = ""
 	GameState.run_time = 0.0
 
+	# ------------------------------------------------------------ spoken lines over the radio
+	var radio: int = AudioServer.get_bus_index("Radio")
+	var echo_bus: int = AudioServer.get_bus_index("Echo")
+	_check("V1 the Radio bus band-limits and overdrives, and the Echo bus exists",
+			radio >= 0 and echo_bus >= 0 and AudioServer.get_bus_effect_count(radio) == 4
+			and AudioServer.get_bus_effect(radio, 0) is AudioEffectHighPassFilter
+			and AudioServer.get_bus_effect(radio, 1) is AudioEffectLowPassFilter
+			and AudioServer.get_bus_effect(radio, 2) is AudioEffectDistortion,
+			"radio=%d echo=%d effects=%d" % [radio, echo_bus, AudioServer.get_bus_effect_count(radio) if radio >= 0 else -1])
+	_check("V2 a line nobody has recorded plays nothing and stays text",
+			is_zero_approx(AudioManager.play_voice("SARA", "no_such_line_1")) and not AudioManager.voice_playing(), "")
+	var stand_in: AudioStream = AudioManager._streams["drone"][0]
+	AudioManager.register_voice("SARA", "test_line_1", stand_in)
+	var spoken: float = AudioManager.play_voice("SARA", "test_line_1")
+	_check("V3 a recorded line plays on the Radio bus over the static bed and reports its length",
+			spoken > 0.5 and is_equal_approx(spoken, stand_in.get_length()) and AudioManager._vox.bus == "Radio"
+			and AudioManager._vox.playing and AudioManager._bed.playing
+			and AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music")) < -1.0,
+			"len=%.2f bus=%s vox=%s bed=%s" % [spoken, AudioManager._vox.bus, str(AudioManager._vox.playing), str(AudioManager._bed.playing)])
+	AudioManager.stop_voice()
+	_check("V4 stopping the line stops the voice and the static and restores the music",
+			not AudioManager._vox.playing and not AudioManager._bed.playing
+			and is_zero_approx(AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music"))), "")
+	var every_line_keyed: bool = true
+	for id: String in DialogueData.LINES:
+		for ln: Dictionary in DialogueData.LINES[id]:
+			if not (ln["who"] in ["SARA", "ECHO", "LOG", "SYS", "WORLD"]):
+				every_line_keyed = false
+	_check("V5 every line has a known speaker, and each choice and stage has its reaction lines",
+			every_line_keyed and DialogueData.LINES.has("after_Q_1") and DialogueData.LINES.has("after_E_3")
+			and DialogueData.LINES.has("resume_4") and DialogueData.LINES["s3_rally"][1]["who"] == "LOG", "")
+
+	var epilogue_ok: bool = true
+	for ending: String in ["A", "B", "C"]:
+		var entries: Array = DialogueData.EPILOGUE.get(ending, [])
+		var names: Array = []
+		for entry: Dictionary in entries:
+			names.append(entry["who"])
+		if entries.size() < 4 or not ("VINCENT" in names and "SARA" in names and "THE ECHO" in names):
+			epilogue_ok = false
+	_check("V9 every ending has an epilogue that covers Vincent, Sara and The Echo", epilogue_ok, "")
+
 	# ------------------------------------------------------------ model 9: personal bests
 	Director.enabled = true
 	Director.reset_profile()

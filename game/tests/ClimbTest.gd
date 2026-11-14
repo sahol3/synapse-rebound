@@ -243,6 +243,30 @@ func _run() -> void:
 	await _wait(1.5)
 	_check("K3 the sixth death in one room offers the way past", main._skip_key == stuck_key and not fp.dead,
 			"armed=%s deaths=%s" % [main._skip_key, str(main._room_deaths)])
+	# A reveal: time slows as it starts, and a recorded line holds the text for as long as it is spoken.
+	main.hud.clear_dialogue()
+	var tape: AudioStream = AudioManager._streams["drone"][0]
+	AudioManager.register_voice("LOG", "s3_rally_2", tape)
+	main.story_focus = true
+	main._on_stage_dialogue("s3_rally")
+	await _wait(0.3)
+	var slowed: float = Engine.time_scale
+	var waited: float = 0.0
+	while waited < 14.0 and String(main.hud._line.get("who", "")) != "LOG":
+		await _wait(0.1)
+		waited += 0.1
+	var on_tape: bool = String(main.hud._line.get("who", "")) == "LOG"
+	## A hit during the wait puts the bot in Blackout, which has its own slow motion.
+	_check("V6 a reveal slows time when it starts and lets it go again",
+			slowed < 0.9 and (is_equal_approx(Engine.time_scale, 1.0) or _p().in_blackout or _p().dead),
+			"during=%.2f after=%.2f blackout=%s" % [slowed, Engine.time_scale, str(_p().in_blackout)])
+	_check("V7 the recording plays on the radio and its line stays up for the length of the audio",
+			on_tape and AudioManager.voice_playing() and AudioManager._vox.bus == "Radio"
+			and main.hud._line_t >= tape.get_length() * 0.9,
+			"line=%s waited=%.1fs line_t=%.2f audio=%.2f" % [str(main.hud._line.get("who", "")), waited, main.hud._line_t, tape.get_length()])
+	main.hud.clear_dialogue()
+	main.story_focus = false
+	_check("V8 clearing the dialogue stops the voice", not AudioManager.voice_playing(), "")
 	var last: int = PLATS.size() - 1
 	## Control: the same bot with plain jumps only. It must fail, or this test proves nothing.
 	var plain: Dictionary = await _climb(false, 12.0, true)

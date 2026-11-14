@@ -24,6 +24,29 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-14 · Voiced lines over a radio, story reactions, epilogue (Claude Code, Fable 5.2)
+- Operator: "the game doesn't indulge the player in the game's story enough. Also I want some said out dialogues - I
+  can manage a female voice, we'd have to do a radio vibe on top of that, the crackle and noise", then "there is no
+  ending screen for the endings to actually show how the characters ended up... that adds depth".
+- Voice: `AudioManager.play_voice(who, key)`; Radio bus (high-pass 420 Hz, low-pass 2.9 kHz, overdrive, compressor),
+  Echo bus (pitch 0.84, lo-fi, reverb), static bed from Kenney `computerNoise_002`, key click from the `tap` samples,
+  music ducked 6 dB. The HUD holds a voiced line for the length of its audio. `docs/VOICE_SCRIPT.md` lists 32 Sara
+  lines and 30 optional Echo lines; `scripts/import_voice.py` converts and names the takes.
+- NO RECORDINGS EXIST YET. The operator records Sara. Until then every line is text with the old comms blip.
+- Story: reactions to each module choice (`after_Q_n` / `after_E_n`), `sync_high`, `idle_a` / `idle_b`,
+  `resume_1..4` on Continue; `s3_rally` now plays Sara's apology as a LOG line (her recorded voice, tape treatment);
+  two seconds of slow motion on the three reveals (`DialogueData.FOCUS`, off in dev runs via `Main.story_focus`).
+- After-story: `scripts/world/Epilogue.gd` (a StageBase with four sets) plays by itself 12 s after the ending text
+  (`HudController.EPI_AUTO`), 7.5 s per scene (`EPI_BEAT`), captions from `DialogueData.EPILOGUE`. Operator rejected
+  the first version (text only, opened with Space): "we should not need to press the space... lets animate and show
+  visually".
+- Verified: see the test line in the commit. An exported exe with two stand-in files printed
+  "voice: 2 of 62 spoken lines have a recording"; the stand-ins were removed afterwards. Epilogue capture in
+  `tools/_frames/epi/` (all three endings).
+- Not verified: how the radio effect sounds on a human voice. Nobody has listened to it; the filter values are first
+  guesses to tune against the first real take.
+- Next (operator): record from `docs/VOICE_SCRIPT.md`; then import, listen, tune `BED_DB`, cutoffs and drive.
+
 ### 2026-11-14 · Engagement pass: Lore tab, prologue, lifetime progress, model 9, room skip (Claude Code, Fable 5.2)
 - Operator: "run more engaging of the user through psychological things and make sure the retention is even better
   (include more models if you need to)... Make sure any player can actually understand the story and indulge in it

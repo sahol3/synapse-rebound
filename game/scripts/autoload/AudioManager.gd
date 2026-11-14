@@ -91,11 +91,30 @@ var _tier_cutoff: float = LOWPASS_OPEN
 var _blackout: bool = false
 var _rng := RandomNumberGenerator.new()
 
+## Spoken lines. A recording is a file at VOICE_DIR/<speaker>/<line key>.ogg (or .wav, .mp3); a line
+## without a file stays text only. Sara comes through a radio: band-limited, lightly overdriven,
+## over a bed of recorded static. The static and the clicks are pack samples, not generated noise.
+const VOICE_DIR: String = "res://assets/audio/voice/"
+const VOICE_FOLDER: Dictionary = {"SARA": "sara", "LOG": "sara", "ECHO": "echo"}
+const STATIC_BED: String = K + "computerNoise_002.ogg"
+const BED_DB: float = -21.0
+const BED_LOG_DB: float = -13.0
+const DUCK_DB: float = -6.0
+var _vox: AudioStreamPlayer
+var _bed: AudioStreamPlayer
+var _click: AudioStreamPlayer
+var _voice_cache: Dictionary = {}
+var _voice_end_ms: int = 0
+var _radio_bus: int = -1
+var _echo_bus: int = -1
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.seed = 909
 	_setup_buses()
+	_setup_voice()
+	_voice_report.call_deferred()
 	for k: String in SAMPLES:
 		var list: Array = []
 		for path: String in SAMPLES[k]:
@@ -196,6 +215,126 @@ func set_menu_muffle(active: bool) -> void:
 	_apply_filters(0.4)
 
 
+# ---------------------------------------------------------------- spoken lines
+
+func voice_stream(who: String, key: String) -> AudioStream:
+	## The recording for a line, or null when nobody has recorded it.
+	var id: String = String(VOICE_FOLDER.get(who, who.to_lower())) + "/" + key
+	if not _voice_cache.has(id):
+		var found: AudioStream = null
+		for ext: String in ["ogg", "wav", "mp3"]:
+			var path: String = VOICE_DIR + id + "." + ext
+			if ResourceLoader.exists(path):
+				found = load(path) as AudioStream
+				break
+		_voice_cache[id] = found
+	return _voice_cache[id]
+
+
+func register_voice(who: String, key: String, stream: AudioStream) -> void:
+	## Lets a test or a tool supply a recording without a file.
+	_voice_cache[String(VOICE_FOLDER.get(who, who.to_lower())) + "/" + key] = stream
+
+
+func play_voice(who: String, key: String) -> float:
+	## Plays the recording for a line and returns its length in seconds, or 0.0 when there is none.
+	var stream: AudioStream = voice_stream(who, key)
+	if stream == null:
+		return 0.0
+	var tape: bool = who == "LOG"
+	_vox.stream = stream
+	_vox.bus = "Echo" if who == "ECHO" else "Radio"
+	_vox.pitch_scale = 0.96 if tape else 1.0
+	_vox.stream_paused = false
+	_vox.play()
+	var length: float = stream.get_length() / _vox.pitch_scale
+	if who != "ECHO":
+		_bed.volume_db = BED_LOG_DB if tape else BED_DB
+		_bed.stream_paused = false
+		if not _bed.playing:
+			_bed.play(_rng.randf_range(0.0, 3.0))
+		_key_click()
+	_voice_end_ms = Time.get_ticks_msec() + int((length + 0.3) * 1000.0)
+	AudioServer.set_bus_volume_db(_music_bus, DUCK_DB)
+	return length
+
+
+func stop_voice() -> void:
+	if _vox == null:
+		return
+	_vox.stop()
+	_bed.stop()
+	_voice_end_ms = 0
+	AudioServer.set_bus_volume_db(_music_bus, 0.0)
+
+
+func pause_voice(on: bool) -> void:
+	if _vox == null:
+		return
+	_vox.stream_paused = on
+	_bed.stream_paused = on
+
+
+func voice_counts() -> Vector2i:
+	## (recorded, total) over every spoken line in the script.
+	var have: int = 0
+	var total: int = 0
+	for id: String in DialogueData.LINES:
+		var all: Array = DialogueData.LINES[id]
+		for i: int in all.size():
+			if all[i]["who"] in ["SARA", "LOG", "ECHO"]:
+				total += 1
+				if voice_stream(all[i]["who"], "%s_%d" % [id, i + 1]) != null:
+					have += 1
+	return Vector2i(have, total)
+
+
+func _voice_report() -> void:
+	var c: Vector2i = voice_counts()
+	if c.x > 0:
+		print("voice: %d of %d spoken lines have a recording" % [c.x, c.y])
+
+
+func voice_playing() -> bool:
+	return _vox != null and _vox.playing
+
+
+func _key_click() -> void:
+	## The short click of a radio keying on or off: a recorded tap, through the radio filter.
+	var taps: Array = _streams.get("tap", [])
+	if taps.is_empty():
+		return
+	_click.stream = taps[_rng.randi() % taps.size()]
+	_click.pitch_scale = _rng.randf_range(1.5, 1.8)
+	_click.play()
+
+
+func _process(_delta: float) -> void:
+	if _voice_end_ms > 0 and Time.get_ticks_msec() >= _voice_end_ms and not _vox.stream_paused:
+		_voice_end_ms = 0
+		if _bed.playing:
+			_bed.stop()
+			_key_click()
+		AudioServer.set_bus_volume_db(_music_bus, 0.0)
+
+
+func _setup_voice() -> void:
+	_vox = AudioStreamPlayer.new()
+	_vox.bus = "Radio"
+	add_child(_vox)
+	_click = AudioStreamPlayer.new()
+	_click.bus = "Radio"
+	_click.volume_db = -8.0
+	add_child(_click)
+	_bed = AudioStreamPlayer.new()
+	_bed.bus = "Radio"
+	var bed: AudioStreamOggVorbis = (load(STATIC_BED) as AudioStreamOggVorbis).duplicate()
+	bed.loop = true
+	_bed.stream = bed
+	_bed.volume_db = BED_DB
+	add_child(_bed)
+
+
 # ---------------------------------------------------------------- private
 
 func _voice(stream: AudioStream, vol: float, pit: float) -> void:
@@ -233,6 +372,47 @@ func _setup_buses() -> void:
 		_sfx_bus = AudioServer.bus_count - 1
 		AudioServer.set_bus_name(_sfx_bus, "SFX")
 		AudioServer.set_bus_send(_sfx_bus, "Master")
+	_radio_bus = AudioServer.get_bus_index("Radio")
+	if _radio_bus == -1:
+		## A handheld radio passes roughly 400 Hz to 3 kHz and clips when the speaker is loud.
+		AudioServer.add_bus()
+		_radio_bus = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(_radio_bus, "Radio")
+		AudioServer.set_bus_send(_radio_bus, "Master")
+		var hp := AudioEffectHighPassFilter.new()
+		hp.cutoff_hz = 420.0
+		var lp := AudioEffectLowPassFilter.new()
+		lp.cutoff_hz = 2900.0
+		var drive := AudioEffectDistortion.new()
+		drive.mode = AudioEffectDistortion.MODE_OVERDRIVE
+		drive.drive = 0.28
+		drive.post_gain = -2.0
+		var comp := AudioEffectCompressor.new()
+		comp.threshold = -18.0
+		comp.ratio = 4.0
+		comp.gain = 5.0
+		AudioServer.add_bus_effect(_radio_bus, hp, 0)
+		AudioServer.add_bus_effect(_radio_bus, lp, 1)
+		AudioServer.add_bus_effect(_radio_bus, drive, 2)
+		AudioServer.add_bus_effect(_radio_bus, comp, 3)
+	_echo_bus = AudioServer.get_bus_index("Echo")
+	if _echo_bus == -1:
+		## The Echo is the player's own voice from before the wipe: lower, degraded, in a room.
+		AudioServer.add_bus()
+		_echo_bus = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(_echo_bus, "Echo")
+		AudioServer.set_bus_send(_echo_bus, "Master")
+		var shift := AudioEffectPitchShift.new()
+		shift.pitch_scale = 0.84
+		var lofi := AudioEffectDistortion.new()
+		lofi.mode = AudioEffectDistortion.MODE_LOFI
+		lofi.drive = 0.2
+		var room := AudioEffectReverb.new()
+		room.room_size = 0.4
+		room.wet = 0.25
+		AudioServer.add_bus_effect(_echo_bus, shift, 0)
+		AudioServer.add_bus_effect(_echo_bus, lofi, 1)
+		AudioServer.add_bus_effect(_echo_bus, room, 2)
 
 
 func _cutoff_for_tier(t: int) -> float:
