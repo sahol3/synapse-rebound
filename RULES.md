@@ -241,6 +241,13 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 - Visual checks without a window: `--write-movie <ABSOLUTE dir>\f.png --fixed-fps 30 --quit-after N` (a relative path
   fails silently), then read the PNGs. `scripts\capture_frames.ps1 -Tag <name>` records menu, stages 1-4 and the MechTest
   run into `tools\_frames\<name>\`; `py -I scripts\contact_sheet.py <name>` builds `sheet_shots.jpg` and `sheet_mech.jpg`.
+- Icon and boot image: `game/icon.png` (256 px, a 64 px layout scaled 4x). Rebuild it with
+  `godot.cmd --path game --script res://tests/IconCard.gd -- --out=<abs>\game\icon.png` (needs a window).
+  It may only place existing pack art and the font; the operator asked for this composite on 2026-11-14, which
+  is the one allowed case of a script saving a PNG that ships. No Godot logo anywhere a player sees: project icon,
+  boot splash and exe details are ours. The Godot licence notice in `game/CREDITS.md` stays (MIT requires it).
+- Story lines that react to play live in `DialogueData.LINES` and are triggered from `Main.gd` (loops, rebounds,
+  rallies). A reactive line only plays when `hud.comms_idle()` and once per run (`GameState.once`).
 - UI type is m5x7 by Daniel Linssen (CC0), `game/assets/fonts/m5x7.ttf`, loaded by `scripts/ui/PixelFont.gd`.
   Use it only at multiples of 16 px (`PixelFont.PX`): 16 is one screen pixel per font pixel. Never draw glyphs
   in code or generate a font; a typeface is a downloaded file with its licence in `game/CREDITS.md`

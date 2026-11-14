@@ -44,6 +44,7 @@ var _card_t: float = -1.0
 var _card_index: int = 0
 var _loop_t: float = -1.0
 var _loop_n: int = 0
+var _back_t: float = -1.0
 var _saved_t: float = -1.0
 var _module_open: bool = false
 var _module_stage: int = 0
@@ -108,6 +109,10 @@ func _process(_delta: float) -> void:
 		_loop_t += dt
 		if _loop_t > 0.9:
 			_loop_t = -1.0
+	if _back_t >= 0.0:
+		_back_t += dt
+		if _back_t > 1.1:
+			_back_t = -1.0
 	if _saved_t >= 0.0:
 		_saved_t += dt
 		if _saved_t > 1.8:
@@ -185,6 +190,16 @@ func loop_flash(deaths: int) -> void:
 	_loop_t = 0.0
 
 
+func back_flash() -> void:
+	## The player deflected a shot during Blackout and is back on their feet.
+	_back_t = 0.0
+
+
+func comms_idle() -> bool:
+	## True when neither voice is speaking or waiting to speak.
+	return _line.is_empty() and _queue.is_empty()
+
+
 # ================================================================= modals
 
 func open_module_choice(stage_index: int) -> void:
@@ -260,6 +275,8 @@ func _draw_overlay() -> void:
 		_draw_card()
 	if _loop_t >= 0.0:
 		_draw_loop()
+	if _back_t >= 0.0 and not (_back_t < 0.3 and int(_back_t * 20.0) % 3 == 2):
+		_t(Vector2(W * 0.5, 120 + _oy()), "BOUNCED BACK", 2, AMBER, 2)
 	if player and is_instance_valid(player):
 		if player.in_blackout:
 			_draw_blackout()
@@ -347,6 +364,7 @@ func _draw_card() -> void:
 	var s: Dictionary = DialogueData.STAGES[_card_index - 1]
 	var parts: PackedStringArray = String(s["name"]).split(" // ")
 	_t(Vector2(12, H - 48.0), "%02d" % _card_index, 1, AMBER)
+	_t(Vector2(30, H - 48.0), s["beat"], 1, DIM)
 	_t(Vector2(12, H - 36.0), parts[0], 2, TEXT)
 
 
@@ -468,13 +486,17 @@ func _draw_ending() -> void:
 		budget -= lines[i].length() + 1
 	y += lines.size() * LH + (10.0 if tight else 14.0)
 	if not tight:
-		y = maxf(y, 196.0 + _oy())
+		y = maxf(y, 184.0 + _oy())
+	if _ending_t > 5.2:
+		_t(Vector2(x0, y), "You sent %d shots back and got up %d times." % [
+				GameState.parries, GameState.loop_deaths + GameState.rebounds], 1, col)
+	y += 16.0
 	var choices: PackedStringArray = []
 	for ch: String in GameState.choices:
 		choices.append("Stabilize" if ch == "Q" else "Overclock")
 	var stats: Array = [
 		["Time", GameState.format_time(GameState.run_time)], ["Loops", str(GameState.loop_deaths)],
-		["Deflections", str(GameState.parries)], ["Best rally", "x%d" % GameState.best_rally],
+		["Shots sent back", str(GameState.parries)], ["Longest rally", "x%d" % GameState.best_rally],
 		["Rebounds", str(GameState.rebounds)], ["Modules", ", ".join(choices)],
 	]
 	var col_step: float = minf(160.0, floorf(wrap_w / 3.0))

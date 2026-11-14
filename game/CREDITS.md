@@ -36,6 +36,12 @@ scratches of the rewind, The Echo's glitches, Sara's comms tone, footsteps, powe
 packs, which are released under Creative Commons Zero (CC0). The licence is in `assets/audio/sfx/kenney/License.txt`.
 Two long recordings (a thruster and a computer hum) were trimmed to short clips with ffmpeg.
 
+## Icon
+
+`icon.png` is a layout of art that already ships with the game: the Warped City skyline, the player's sprite, one
+shot sprite and the title set in m5x7. `tests/IconCard.gd` places them and captures the result. Nothing in it is
+drawn by code or generated.
+
 ## Typeface
 
 The interface typeface is m5x7 by Daniel Linssen, from https://managore.itch.io/m5x7, released under Creative

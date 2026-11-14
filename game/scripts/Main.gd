@@ -51,6 +51,9 @@ func _ready() -> void:
 	Director.assist_changed.connect(func(kind: String) -> void:
 		if _state == "play":
 			hud.say("assist_" + kind))
+	GameState.stats_changed.connect(func() -> void:
+		if _state == "play" and GameState.best_rally >= 3 and hud.comms_idle() and GameState.once("rally_3"):
+			hud.say("rally_3"))
 	var start_stage: int = 0
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--stage="):
@@ -203,8 +206,16 @@ func _on_player_died() -> void:
 	post.vhs_hold(false)
 	post.vhs(0.15)
 	hud.loop_flash(GameState.loop_deaths)
-	if GameState.current_stage != 1 and GameState.once("first_death"):
+	## Every death is a Lazarus rewind in the story, so the two voices keep count with the player.
+	if GameState.current_stage == 1 and GameState.loop_deaths == 1:
+		if GameState.once("first_death_s1"):
+			hud.say("first_death_s1")
+	elif GameState.current_stage != 1 and GameState.once("first_death"):
 		hud.say("first_death")
+	else:
+		var loop_line: String = DialogueData.loop_id(GameState.loop_deaths, GameState.current_stage)
+		if loop_line != "" and hud.comms_idle() and GameState.once("%s_%d" % [loop_line, GameState.loop_deaths]):
+			hud.say(loop_line)
 	_busy = false
 	if _state == "play" and player != null and is_instance_valid(player) and player.dead:
 		_on_player_died.call_deferred()
@@ -218,8 +229,13 @@ func _on_blackout_started() -> void:
 
 func _on_blackout_ended(rebounded: bool) -> void:
 	post.set_blackout(false)
-	if rebounded and GameState.once("first_rebound"):
+	if not rebounded:
+		return
+	hud.back_flash()
+	if GameState.once("first_rebound"):
 		hud.say("first_rebound")
+	elif GameState.rebounds in [3, 7] and hud.comms_idle() and GameState.once("rebound_%d" % GameState.rebounds):
+		hud.say("rebound_%d" % GameState.rebounds)
 
 
 # ================================================================= module choice

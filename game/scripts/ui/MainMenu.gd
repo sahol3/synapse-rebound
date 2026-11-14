@@ -173,6 +173,7 @@ func _draw_ui() -> void:
 	var w1: float = PixelFont.width("SYNAPSE ", 3)
 	_txt(Vector2(x + w1, 96 + oy), "//", 3, MAGENTA)
 	_txt(Vector2(x + w1 + PixelFont.width("// ", 3), 96 + oy), "REBOUND", 3, TEXT)
+	_txt(Vector2(x, 128 + oy), DialogueData.TAGLINE, 1, DIM)
 	if _panel == "":
 		for i: int in _items.size():
 			var y: float = 150 + oy + i * 16

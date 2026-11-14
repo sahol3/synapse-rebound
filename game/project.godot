@@ -8,6 +8,11 @@ config_version=5
 config/name="SYNAPSE // REBOUND"
 config/description="Hack Club Haven Dhaka 2026. Theme: Bounce Back."
 run/main_scene="res://scenes/Main.tscn"
+config/icon="res://icon.png"
+boot_splash/bg_color=Color(0.02, 0.016, 0.043, 1)
+boot_splash/image="res://icon.png"
+boot_splash/fullsize=false
+boot_splash/use_filter=false
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [autoload]

@@ -1,12 +1,21 @@
 # SYNAPSE // REBOUND
 
-A 2D cyberpunk action platformer made for Hack Club Haven Dhaka 2026. The theme is "Bounce Back", and the game uses it
-three ways: you bounce bullets back, you bounce between depth lanes, and you bounce back from the edge of death.
+A 2D cyberpunk action platformer made for Hack Club Haven Dhaka 2026. The theme is "Bounce Back", and each of the
+four stages is built on one meaning of it: you bounce bullets back, you bounce between depth lanes, you bounce back up
+the tower you fell from, and on the roof you bounce back from the fall itself.
 
 You play VINCENT-09, a courier who was shot off Tower 09 at midnight. A Lazarus implant snaps you back sixty seconds
 before your execution with no gun, only a kinetic wrist deflector. Two voices talk to you as you climb back to the roof:
 Sara, your handler, and The Echo, a recording you left for yourself before your memory was wiped. They disagree about
 who pulled the trigger.
+
+## Story and theme
+
+The story is told while you play. Each stage card names the meaning of Bounce Back that the stage is built on. Every
+death is a Lazarus rewind in the fiction, shown as a loop count, and Sara and The Echo keep count with you: they speak
+at the third, fifth, eighth and twelfth loop, and what Sara says changes once she has dropped the handler act in
+Stage 3. Coming back from Blackout flashes BOUNCED BACK, and The Echo marks the first, third and seventh time and your
+first three-bounce rally. The ending screen counts the shots you sent back and the times you got up.
 
 ## Play
 

@@ -102,6 +102,46 @@ const LINES: Dictionary = {
 	"first_rebound": [
 		{"who": "ECHO", "text": "There it is. We always bounce back."},
 	],
+	# ------------------------------------------------------------ reactive: the two voices watch you play
+	"first_death_s1": [
+		{"who": "SARA", "text": "That was the Lazarus implant. It throws you back a few seconds every time you die. Get up and go again."},
+	],
+	"loop_a_3": [
+		{"who": "SARA", "text": "The implant caught you again. It will not hold forever, Vincent. Stay behind cover and let me guide you."},
+	],
+	"loop_a_5": [
+		{"who": "ECHO", "text": "Five loops. Every one of them ends with you on your feet."},
+	],
+	"loop_a_8": [
+		{"who": "SARA", "text": "Your telemetry looks like static. Stop pushing forward and wait for my signal."},
+	],
+	"loop_a_12": [
+		{"who": "ECHO", "text": "Twelve loops. She keeps asking you to wait. Ask yourself what she is waiting for."},
+	],
+	"loop_b_3": [
+		{"who": "SARA", "text": "Every rewind burns away a little more of you. Stay down this time."},
+	],
+	"loop_b_5": [
+		{"who": "ECHO", "text": "She shot us once. We have come back five times. Do the arithmetic for her."},
+	],
+	"loop_b_8": [
+		{"who": "SARA", "text": "How many times do I have to kill you, Courier?"},
+	],
+	"loop_b_12": [
+		{"who": "ECHO", "text": "Twelve loops. She is running out of ways to say stay down."},
+	],
+	"loop_many": [
+		{"who": "ECHO", "text": "Count the loops if you like. The one that matters is the last."},
+	],
+	"rebound_3": [
+		{"who": "ECHO", "text": "Three hits that should have ended it. Three shots sent back. Keep that feeling."},
+	],
+	"rebound_7": [
+		{"who": "ECHO", "text": "Seven times she has put us on the floor. Seven times we got up. She is counting too."},
+	],
+	"rally_3": [
+		{"who": "ECHO", "text": "Third bounce. The shot comes back harder every time. So do we."},
+	],
 	"berserk": [
 		{"who": "WORLD", "text": "BERSERK OVERDRIVE"},
 	],
@@ -140,11 +180,15 @@ const ECHO_FRAGMENTS: PackedStringArray = [
 	"BOUNCE BACK",
 ]
 
+## Shown under the title on the menu: the premise and the jam theme in one line.
+const TAGLINE: String = "Shot off Tower 09 at midnight. Sixty seconds to bounce back."
+
+## "beat" is the meaning of Bounce Back that the stage is built on. It shows on the stage card.
 const STAGES: Array[Dictionary] = [
-	{"title": "STAGE 01", "name": "THE AWAKENING ALLEY", "time": "0:00 - 0:50"},
-	{"title": "STAGE 02", "name": "THE DUAL-HIGHWAY OVERPASS", "time": "0:50 - 1:45"},
-	{"title": "STAGE 03", "name": "THE ASCENT SHAFT", "time": "1:45 - 2:35"},
-	{"title": "STAGE 04", "name": "ROOFTOP 09 // VALKYRIE GUNSHIP", "time": "2:35 - 3:30"},
+	{"title": "STAGE 01", "name": "THE AWAKENING ALLEY", "time": "0:00 - 0:50", "beat": "Bounce their bullets back."},
+	{"title": "STAGE 02", "name": "THE DUAL-HIGHWAY OVERPASS", "time": "0:50 - 1:45", "beat": "Bounce between the lanes."},
+	{"title": "STAGE 03", "name": "THE ASCENT SHAFT", "time": "1:45 - 2:35", "beat": "Bounce back up the tower."},
+	{"title": "STAGE 04", "name": "ROOFTOP 09 // VALKYRIE GUNSHIP", "time": "2:35 - 3:30", "beat": "Bounce back from the fall."},
 ]
 
 const MODULES: Array[Dictionary] = [
@@ -186,7 +230,7 @@ const ENDINGS: Dictionary = {
 	},
 	"B": {
 		"title": "ENDING B // TOTAL OVERCLOCK // BERSERK",
-		"body": "At 400% Sync the final rally obliterates the gunship. Your pre-wipe consciousness, The Echo, fully merges with your body. Standing on the edge of Rooftop 09, you hijack Sara's corporate comms network and broadcast the Lazarus files to every citizen in Warped City.",
+		"body": "At 400% Sync the final rally obliterates the gunship. Your pre-wipe consciousness, The Echo, fully merges with your body. Standing on the edge of Rooftop 09, you hijack Sara's corporate comms network and broadcast the Lazarus files to every citizen in Warped City. By morning the whole city knows how a courier bounced back.",
 		"color": Color("#FF0033"),
 	},
 	"C": {
@@ -199,3 +243,13 @@ const ENDINGS: Dictionary = {
 
 func lines(id: String) -> Array:
 	return LINES.get(id, [])
+
+
+## The line a voice says when the player has died `n` times this run, or "" for most counts.
+## Sara still plays the handler in Stages 1 and 2 and has dropped the act by Stage 3.
+func loop_id(n: int, stage: int) -> String:
+	if n in [3, 5, 8, 12]:
+		return "loop_%s_%d" % ["a" if stage <= 2 else "b", n]
+	if n >= 16 and n % 8 == 0:
+		return "loop_many"
+	return ""

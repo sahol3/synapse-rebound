@@ -24,6 +24,22 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-14 · Story weave, Bounce Back in front, own icon (Claude Code, Fable 5.2)
+- Operator: "do a better weaving of the story with the game, and bring the overall understanding of the theme, 'bounce
+  back' into the spotlight. And then combine the fonts, the character and the background, make a icon and remove the
+  godot engine etc".
+- Story: reactive lines in `DialogueData.LINES` (first death in Stage 1 explains the rewind; loops 3, 5, 8, 12 with a
+  Stage 1-2 set and a Stage 3-4 set; every eighth loop from 16; rebounds 3 and 7; first three-bounce rally), triggered
+  in `Main.gd`, only when no voice is speaking. Stage cards carry one line each (the meaning of Bounce Back for that
+  stage). The title screen has a one-line premise. A rebound flashes BOUNCED BACK. The ending counts shots sent back
+  and times the player got up; ending B names the theme.
+- Icon: `game/icon.png` from `tests/IconCard.gd` (skyline, player sprite, shot, REBOUND in m5x7). Project icon and
+  boot splash point at it; the Windows preset now writes icon, product name, description and copyright into the exe.
+- Verified: see the test line in the commit; captures in `tools/_frames/font/` (card_s4, ending, exe_menu, exe_s1,
+  exe_icon).
+- Not verified: no person has played it. The reactive lines were not heard in a real run (the triggers are plain
+  counters; the tests do not assert them).
+
 ### 2026-11-14 · Typeface replaced with m5x7 (Claude Code, Fable 5.2)
 - Operator: "can we find a close enough exact looking font instead of the AI made font - rather find it".
 - The hand-written 5x7 glyph table in `PixelFont.gd` is gone. The game now loads m5x7 by Daniel Linssen (CC0,
