@@ -242,6 +242,9 @@ func _run() -> void:
 		await _wait(0.05)
 	await _wait(1.2)
 	_check("T7 15%% HP -> phase 3 execution rally", boss.phase == 3)
+	_check("T7b phase 3 hands her fire control over: the outline is on the gunship",
+			Director.model_stolen and boss._stolen != null and boss._stolen.visible and not Director.prediction_visible(),
+			"stolen=%s" % Director.model_stolen)
 	var rally_before: int = GameState.best_rally
 	t = 0.0
 	while t < 40.0 and main._state == "play":
@@ -252,6 +255,16 @@ func _run() -> void:
 	await _wait(3.5)
 	_check("T8 ending screen shown", main.hud._ending_open, "ending=%s" % GameState.ending_id())
 	_check("T9 every recorded SFX sample loaded", AudioManager.all_samples_loaded(), "%d sample ids" % AudioManager.SAMPLES.size())
+	var beeped: Array = DialogueData.lines("pred_miss_b")
+	_check("T10 joke cues exist and the bleeped line names its cue",
+			AudioManager.CUES.has("meme_scream") and AudioManager.CUES.has("meme_boom")
+			and AudioManager.CUES.has(String(beeped[0].get("sfx", ""))) and "----" in String(beeped[0]["text"]), "")
+	var no_take: bool = AudioManager.play_meme("no_such_take")
+	AudioManager.register_voice("MEME", "test_take", load(AudioManager.MEME + "scream_1.ogg"))
+	_check("T11 a recorded joke take plays, a missing one falls back", not no_take and AudioManager.play_meme("test_take"), "")
+	_check("T12 a long pause shows the handler typing, a short one shows nothing",
+			main.hud.pause_note(22.0).begins_with("Sara is typing") and main.hud.pause_note(28.0) == "Sara stopped typing."
+			and main.hud.pause_note(5.0) == "" and main.hud.pause_note(40.0) == "", "")
 
 	print("MECHTEST passed=%d failed=%d" % [passed, failed])
 	get_tree().quit(1 if failed > 0 else 0)

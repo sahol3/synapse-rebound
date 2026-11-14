@@ -9,6 +9,7 @@ const POOL_SIZE: int = 10
 const LOWPASS_OPEN: float = 20500.0
 const LOWPASS_BLACKOUT: float = 650.0
 const K: String = "res://assets/audio/sfx/kenney/"
+const MEME: String = "res://assets/audio/sfx/meme/"
 
 const MUSIC: Dictionary = {
 	"stage": "res://assets/audio/bgm/cyber_runner.ogg",
@@ -47,10 +48,16 @@ const SAMPLES: Dictionary = {
 	"power_up": [K + "powerUp1.ogg", K + "powerUp2.ogg", K + "powerUp3.ogg", K + "powerUp4.ogg", K + "powerUp5.ogg", K + "powerUp6.ogg"],
 	"lock_on": [K + "zapThreeToneUp.ogg"],
 	"rollover": [K + "rollover1.ogg", K + "rollover2.ogg", K + "rollover3.ogg", K + "rollover4.ogg", K + "rollover5.ogg", K + "rollover6.ogg"],
+	## Two CC0 recordings from Freesound, used for jokes (see CREDITS.md).
+	"scream": [MEME + "scream_1.ogg", MEME + "scream_2.ogg", MEME + "scream_3.ogg"],
+	"beep": [MEME + "censor_beep.ogg"],
 }
 
 ## key -> list of layers [sample_id, volume_db, pitch_multiplier, delay_seconds (optional)]
 const CUES: Dictionary = {
+	"meme_scream": [["scream", -9.0, 1.0]],
+	"meme_beep": [["beep", -8.0, 1.0]],
+	"meme_boom": [["low_boom", -1.0, 0.6], ["thump", -3.0, 0.5], ["bell", -16.0, 0.4]],
 	"parry_hit": [["metal", -4.0, 1.15], ["laser_small", -13.0, 1.4]],
 	"rally_ping": [["bell", -6.0, 1.0], ["glass", -10.0, 1.0]],
 	"z_lane_whoosh": [["phase_jump", -6.0, 1.0], ["thruster", -12.0, 1.1]],
@@ -95,6 +102,7 @@ var _rng := RandomNumberGenerator.new()
 ## without a file stays text only. Sara comes through a radio: band-limited, lightly overdriven,
 ## over a bed of recorded static. The static and the clicks are pack samples, not generated noise.
 const VOICE_DIR: String = "res://assets/audio/voice/"
+var _meme: AudioStreamPlayer
 const VOICE_FOLDER: Dictionary = {"SARA": "sara", "LOG": "sara", "ECHO": "echo"}
 const STATIC_BED: String = K + "computerNoise_002.ogg"
 const BED_DB: float = -21.0
@@ -257,6 +265,25 @@ func play_voice(who: String, key: String) -> float:
 	_voice_end_ms = Time.get_ticks_msec() + int((length + 0.3) * 1000.0)
 	AudioServer.set_bus_volume_db(_music_bus, DUCK_DB)
 	return length
+
+
+func play_meme(key: String, fallback: String = "") -> bool:
+	## A joke take the operator recorded himself: assets/audio/voice/meme/<key>.ogg, played dry.
+	## With no recording, the fallback cue plays (or nothing) and this returns false.
+	var stream: AudioStream = voice_stream("MEME", key)
+	if stream == null:
+		if fallback != "":
+			play_sfx(fallback)
+		return false
+	if _meme == null:
+		_meme = AudioStreamPlayer.new()
+		_meme.bus = "SFX"
+		_meme.volume_db = -3.0
+		_meme.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(_meme)
+	_meme.stream = stream
+	_meme.play()
+	return true
 
 
 func stop_voice() -> void:

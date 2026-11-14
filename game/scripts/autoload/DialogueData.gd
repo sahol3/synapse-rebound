@@ -91,6 +91,7 @@ const LINES: Dictionary = {
 		{"who": "SARA", "text": "Cockpit deflector online! Every shot you send, I send back. You can't win a rally against a gunship!"},
 		{"who": "ECHO", "text": "Five bounces. That's all it takes. She taught us that."},
 		{"who": "SYS", "text": "Five bounces to break the core. Don't drop it."},
+		{"who": "ECHO", "text": "Her fire control is ours now. The blue outline is where she will be."},
 	],
 	"s4_win": [
 		{"who": "SARA", "text": "No... no, no, NO..."},
@@ -169,6 +170,23 @@ const LINES: Dictionary = {
 	"after_E_3": [
 		{"who": "SARA", "text": "Four hundred percent. You have burned out everything I left in you."},
 		{"who": "ECHO", "text": "Everything she left in us was a leash. Finish it."},
+	],
+	# ------------------------------------------------------------ fire control: she has a model of you
+	"pred_first": [
+		{"who": "ECHO", "text": "That outline is her fire control. She trained it on forty of our deliveries. Be someone she has not met."},
+	],
+	"pred_miss_a": [
+		{"who": "SARA", "text": "Your movement profile is drifting, Vincent. Hold a steady line so I can cover you."},
+	],
+	"pred_miss_b": [
+		{"who": "SARA", "text": "Stop changing your ---- pattern. I know every route you have ever run.", "sfx": "meme_beep"},
+		{"who": "ECHO", "text": "Not this one."},
+	],
+	"pred_npc": [
+		{"who": "ECHO", "text": "Five calls in a row. You are moving like an NPC. Break the pattern."},
+	],
+	"idle_aura": [
+		{"who": "ECHO", "text": "Aura farming on a rooftop. She can still see you."},
 	],
 	# ------------------------------------------------------------ Sara wants you slow
 	"sync_high": [
@@ -259,6 +277,8 @@ const MEMORIES: Array[Dictionary] = [
 		"text": "The implant's last second before a rewind. Send one shot back inside it and the rewind is cancelled. You stay on your feet."},
 	{"id": "third", "title": "THE THIRD BOUNCE", "how": "Hold a rally for 5 bounces.",
 		"text": "A shot gains speed each time it is sent back. Enforcers carry shields that return your deflection. By the third return the shot is fast enough to go through the shield."},
+	{"id": "firecontrol", "title": "FIRE CONTROL", "how": "Make her prediction miss 10 times.",
+		"text": "The gunship's targeting was trained on forty of your delivery runs. It draws where it expects you to be and sends part of every shot there. Each habit you break is a shot that lands where you are not."},
 	{"id": "holster", "title": "THE HOLSTER", "how": "Reach the Overpass.",
 		"text": "Your sidearm was locked at 23:58, two minutes before the fall. Two people held the key. You were one of them."},
 	{"id": "2359", "title": "23:59:42", "how": "Reach the Ascent Shaft.",

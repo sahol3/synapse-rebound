@@ -19,6 +19,10 @@ OUT = ROOT / "game" / "assets" / "audio" / "voice"
 AUDIO = {".wav", ".mp3", ".m4a", ".ogg", ".flac", ".aac", ".opus", ".wma", ".mp4", ".3gp", ".amr"}
 
 
+## Optional joke takes, played dry (no radio filter): see the last section of the sheet.
+JOKES = ("hehe_boi", "oh_hell_nah")
+
+
 def read_sheet() -> dict[str, tuple[str, str]]:
     """Maps both the number and the file name of every line to (speaker folder, file name)."""
     names: dict[str, tuple[str, str]] = {}
@@ -53,6 +57,8 @@ def main() -> int:
         return 2
     names = read_sheet()
     wanted = {v for v in names.values()}
+    for joke in JOKES:
+        names[joke] = ("meme", joke)
     done: set[tuple[str, str]] = set()
     skipped: list[str] = []
     for f in sorted(src.iterdir()):
@@ -77,7 +83,8 @@ def main() -> int:
         dur = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(dest)],
                              capture_output=True, text=True).stdout.strip()
         print("ok  %-22s -> voice/%s/%s.ogg  %ss" % (f.name, speaker, key, dur[:5]))
-        done.add(hit)
+        if speaker != "meme":
+            done.add(hit)
     sara_total = len([w for w in wanted if w[0] == "sara"])
     sara_done = len([d for d in done if d[0] == "sara"])
     print("\nSara: %d of %d lines recorded. Echo: %d of %d." % (

@@ -206,6 +206,69 @@ func _run() -> void:
 			Director.move_acc >= Director.move_base_acc - 0.05,
 			"model=%.2f repeat-last=%.2f" % [Director.move_acc, Director.move_base_acc])
 
+	# ------------------------------------------------------------ fire control: the model calls the next move
+	Director.reset_profile()
+	Director.enabled = true
+	var calls: Array = []
+	var scores: Array = []
+	var on_call: Callable = func(w: String) -> void: calls.append(w)
+	var on_score: Callable = func(h: bool) -> void: scores.append(h)
+	Director.call_made.connect(on_call)
+	Director.call_scored.connect(on_score)
+	_check("F1 a change of movement gets a word, coming down from a jump gets none",
+			Director.call_word(2, 5) == "JUMP" and Director.call_word(4, 1) == "" and Director.call_word(1, 0) == "LEFT"
+			and Director.call_word(1, 2) == "RIGHT" and Director.call_word(2, 1) == "STOP", "")
+	for i: int in 100:
+		Director._last_call = -1000.0
+		Director.move_observe(cycle[i % cycle.size()])
+	_check("F2 no call and no outline before 120 samples", calls.is_empty() and not Director.prediction_visible(),
+			"calls=%d" % calls.size())
+	for i: int in range(100, 600):
+		Director._last_call = -1000.0
+		Director.move_observe(cycle[i % cycle.size()])
+	var landed: int = scores.count(true)
+	_check("F3 a habit is called before it happens, and the calls land",
+			calls.size() >= 50 and calls.count("JUMP") == calls.size() and landed >= int(scores.size() * 0.9),
+			"calls=%d landed=%d of %d" % [calls.size(), landed, scores.size()])
+	_check("F4 the run percentage is the real hit rate and the outline is on",
+			Director.run_predicted_percent() >= 80 and Director.prediction_visible() and absf(Director.predicted_offset()) > 6.0,
+			"run=%d%% offset=%.1f px" % [Director.run_predicted_percent(), Director.predicted_offset()])
+	var before_cool: int = calls.size()
+	for i: int in 300:
+		Director.move_observe(cycle[i % cycle.size()])
+	_check("F5 calls are spaced by the cooldown", calls.size() - before_cool <= 1, "new calls=%d" % (calls.size() - before_cool))
+	## Break the habit on the step she called: the call is scored a miss.
+	scores.clear()
+	var broke: bool = false
+	for i: int in 400:
+		Director._last_call = -1000.0
+		var want: int = cycle[i % cycle.size()]
+		if Director._call_tok >= 0 and not broke:
+			want = 0
+			broke = true
+		Director.move_observe(want)
+	_check("F6 doing something else on a called step scores a miss", broke and scores.count(false) >= 1,
+			"misses=%d" % scores.count(false))
+	Director.model_stolen = true
+	var before_theft: int = calls.size()
+	for i: int in 200:
+		Director._last_call = -1000.0
+		Director.move_observe(cycle[i % cycle.size()])
+	_check("F7 once the model is taken it stops reading the player",
+			calls.size() == before_theft and not Director.prediction_visible(), "new calls=%d" % (calls.size() - before_theft))
+	Director.run_started()
+	_check("F8 a new run starts with her model back and the count at zero",
+			not Director.model_stolen and Director.run_calls == 0 and Director.run_predicted_percent() == -1, "")
+	Director.challenge = 0.0
+	var floor_on: float = Director.lead_amount()
+	Director.enabled = false
+	var floor_off: float = Director.lead_amount()
+	Director.enabled = true
+	_check("F9 some fire always goes to the outline while the director is on",
+			is_equal_approx(floor_on, Director.LEAD_FLOOR) and floor_off == 0.0, "on=%.2f off=%.2f" % [floor_on, floor_off])
+	Director.call_made.disconnect(on_call)
+	Director.call_scored.disconnect(on_score)
+
 	# ------------------------------------------------------------ persistence
 	Director.challenge = 0.61
 	Director.hit_w[0] = -2.25

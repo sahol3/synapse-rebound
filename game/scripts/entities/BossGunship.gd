@@ -31,6 +31,9 @@ var _core: Projectile
 var _core_cd: float = 0.0
 var _body: Node2D
 var _hull: Sprite2D
+var _stolen: Sprite2D
+var _last_gpos: Vector2 = Vector2.ZERO
+var _vel_smooth: Vector2 = Vector2.ZERO
 var _flash_mat: ShaderMaterial
 var _flash_t: float = 0.0
 var _hurtbox: Area2D
@@ -99,6 +102,7 @@ func _physics_process(delta: float) -> void:
 		_overlay.queue_redraw()
 		return
 	_lane_visual = move_toward(_lane_visual, float(lane), delta * 3.0)
+	_update_stolen_outline(delta)
 	match phase:
 		1:
 			_sweep(delta, 70.0, arena.position.y)
@@ -121,6 +125,24 @@ func _sweep(delta: float, speed: float, y: float) -> void:
 		_move_dir = 1.0
 	position.y = lerpf(position.y, y + sin(_t * 1.3) * 8.0, clampf(delta * 2.0, 0.0, 1.0))
 	_hull.flip_h = _move_dir < 0.0
+
+
+func _update_stolen_outline(delta: float) -> void:
+	## Once the Echo has her fire control, it reads the gunship: a cyan outline half a second ahead of it.
+	var vel: Vector2 = (global_position - _last_gpos) / maxf(delta, 0.001)
+	_last_gpos = global_position
+	_vel_smooth = _vel_smooth.lerp(vel, 0.15)
+	if _stolen == null:
+		_stolen = Sprite2D.new()
+		_stolen.texture = _hull.texture
+		_stolen.top_level = true
+		_stolen.z_index = z_index - 1
+		add_child(_stolen)
+	_stolen.visible = Director.model_stolen and alive
+	if _stolen.visible:
+		_stolen.global_position = _hull.global_position + _vel_smooth * 0.5
+		_stolen.global_scale = _hull.global_scale
+		_stolen.modulate = Color(0.0, 0.94, 1.0, 0.26 + 0.08 * sin(float(Time.get_ticks_msec()) * 0.02))
 
 
 func _hover_center(delta: float) -> void:

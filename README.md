@@ -42,6 +42,10 @@ compresses it, over a bed of recorded static, with a click when the radio keys o
 she speaks. The recording sheet is `docs/VOICE_SCRIPT.md` and `scripts/import_voice.py` brings a folder of takes
 into the game. The static and the click are Kenney samples; nothing is synthesized.
 
+The Echo is Vincent's own voice from before the memory wipe, so a male recording belongs to the Echo lines. Two
+optional joke takes (`oh_hell_nah` and `hehe_boi`) go in `game/assets/audio/voice/meme/` and play without the radio
+effect; the sheet says when each one plays.
+
 ## Play
 
 To run from source, open the `game/` folder in Godot 4.7 (standard edition, GDScript) and press Play. The Web export
@@ -123,6 +127,37 @@ checkpoint. The last room of a stage and the boss cannot be skipped.
 
 The pause screen shows the current level, and F3 shows the models' numbers during play.
 
+## Fire control
+
+Sara's gunship has a model of the player, and the game shows it. The move model (one of the nine above) predicts the
+courier's next movement state five times a second. After 24 seconds of play its output appears on screen in three
+places.
+
+- A faint magenta outline stands where the model expects Vincent to be shortly. At least a quarter of every enemy's
+  aim goes to that outline, and more as the challenge rises.
+- A line under the sync meter reads `predicted 71%`, the model's recent hit rate on this player.
+- When the model is at least 55% sure the player is about to change what they are doing, it names the move first
+  (`she calls: JUMP`), and a moment later the line reads `called it` or `missed`. Calls are at least five seconds
+  apart.
+
+In the story, the fire control was trained on forty of Vincent's delivery runs, which is how Sara knew where he would
+stand on the roof. The Echo's advice is to be someone she has not met. Ten missed calls in a run recover the Lore
+entry FIRE CONTROL, and the ending screen states the share of moves she predicted in that run.
+
+At the third phase of the boss the Echo takes the model. The outline leaves the player, a cyan outline appears half
+a second ahead of the gunship, and the line reads `you predict her`.
+
+## Small things
+
+- A pause of 20 seconds shows "Sara is typing..." and then "Sara stopped typing."
+- Leaving the window mid-run changes its title to the loop count and "she is still watching".
+- When the hit rate reads exactly 67%, the line adds "six seven".
+- Dying within three seconds of getting up plays a low thud and notes "Crashed out in 1.4 seconds." under the loop
+  count, at most once every 40 seconds.
+- About one Enforcer or sniper in six goes down with a film scream, at most once every 25 seconds.
+- Late in the game Sara loses her temper and the channel bleeps one word.
+- Five correct calls in a row and a long stand on a roof each get one remark from the Echo.
+
 ## Saving
 
 The run is saved at every stage start, checkpoint and death, and when you quit to the title screen or close the
@@ -175,9 +210,9 @@ Four headless tests drive the real game.
 
 | Scene | Checks |
 |---|---|
-| `res://tests/MechTest.tscn` | The fixed mechanics with the director off: deflection, the Enforcer rally and railgun kill, Blackout and Rebound, death and rewind, the module choice, lane switching, all three boss phases and the ending screen |
-| `res://tests/DirectorTest.tscn` | The nine models against simulated players (struggling, middling, expert), the profile save and load, the display scale rule across 1,317 window sizes, and the progress save file |
-| `res://tests/DirectorLive.tscn` | The director inside Stage 1 with a weak bot and a strong bot in front of a real turret |
+| `res://tests/MechTest.tscn` | The fixed mechanics with the director off: deflection, the Enforcer rally and railgun kill, Blackout and Rebound, death and rewind, the module choice, lane switching, all three boss phases, the hand-over of fire control at phase 3, the joke sound cues and the ending screen |
+| `res://tests/DirectorTest.tscn` | The nine models against simulated players (struggling, middling, expert), the fire-control calls (F1 to F9), the profile save and load, the display scale rule across 1,317 window sizes, and the progress save file |
+| `res://tests/DirectorLive.tscn` | The director inside Stage 1 with a weak bot and a strong bot in front of a real turret, then the outline while the player walks back and forth |
 | `res://tests/ClimbTest.tscn` | Continue resumes a saved run at its checkpoint. A keyboard-only bot climbs the Ascent Shaft from the floor to the roof deck, and a control run with plain jumps shows that it cannot |
 
 ```

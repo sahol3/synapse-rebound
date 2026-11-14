@@ -17,7 +17,7 @@ regenerate this sheet.
   `py -I scripts\import_voice.py <that folder>`
   A line with no recording stays as text, so a partial set is fine.
 
-## Sara (32 lines)
+## Sara (34 lines)
 
 | # | File name | Line | How to say it |
 |---|---|---|---|
@@ -50,11 +50,13 @@ regenerate this sheet.
 | 27 | `after_E_2_1` | Stop. You are reading tags you were never cleared to read. | The handler. Warm, fast, urgent, on his side. |
 | 28 | `after_Q_3_1` | Core stable. It will not save you up here. | The act is over. Cold, angry, giving orders. |
 | 29 | `after_E_3_1` | Four hundred percent. You have burned out everything I left in you. | The act is over. Cold, angry, giving orders. |
-| 30 | `sync_high_1` | Your sync is climbing too fast. Ease off, Vincent. Slow is how you stay alive. | The handler. Warm, fast, urgent, on his side. |
-| 31 | `idle_a_1` | Vincent? Your signal has gone flat. Keep moving. | The handler. Warm, fast, urgent, on his side. |
-| 32 | `idle_b_1` | Standing still, Courier? Good. Stay right there. | The act is over. Cold, angry, giving orders. |
+| 30 | `pred_miss_a_1` | Your movement profile is drifting, Vincent. Hold a steady line so I can cover you. | The handler. Warm, fast, urgent, on his side. |
+| 31 | `pred_miss_b_1` | Stop changing your ---- pattern. I know every route you have ever run. | The handler. Warm, fast, urgent, on his side. |
+| 32 | `sync_high_1` | Your sync is climbing too fast. Ease off, Vincent. Slow is how you stay alive. | The handler. Warm, fast, urgent, on his side. |
+| 33 | `idle_a_1` | Vincent? Your signal has gone flat. Keep moving. | The handler. Warm, fast, urgent, on his side. |
+| 34 | `idle_b_1` | Standing still, Courier? Good. Stay right there. | The act is over. Cold, angry, giving orders. |
 
-## The Echo (30 lines, optional)
+## The Echo (35 lines, optional)
 
 The Echo is Vincent's own voice from before the memory wipe. The game lowers and degrades whatever is
 recorded. Say these slowly and evenly, like someone reading a message they wrote for themselves. Name
@@ -71,24 +73,39 @@ the files by file name with an `echo_` prefix on the number (`echo_03.wav`) or b
 | 07 | `s3_rally_3` | That was her voice. |
 | 08 | `s3_module_2` | 60 seconds are up. We're back on the roof where we died. Overclock the core [E]. Let's return the bullet she gave us. |
 | 09 | `s4_phase3_2` | Five bounces. That's all it takes. She taught us that. |
-| 10 | `first_death_1` | Rewind. Again. You've died on this roof before, Vincent. Count the loops. |
-| 11 | `first_rebound_1` | There it is. We always bounce back. |
-| 12 | `loop_a_5_1` | Five loops. Every one of them ends with you on your feet. |
-| 13 | `loop_a_12_1` | Twelve loops. She keeps asking you to wait. Ask yourself what she is waiting for. |
-| 14 | `loop_b_5_1` | She shot us once. We have come back five times. Do the arithmetic for her. |
-| 15 | `loop_b_12_1` | Twelve loops. She is running out of ways to say stay down. |
-| 16 | `loop_many_1` | Count the loops if you like. The one that matters is the last. |
-| 17 | `rebound_3_1` | Three hits that should have ended it. Three shots sent back. Keep that feeling. |
-| 18 | `rebound_7_1` | Seven times she has put us on the floor. Seven times we got up. She is counting too. |
-| 19 | `rally_3_1` | Third bounce. The shot comes back harder every time. So do we. |
-| 20 | `after_Q_1_2` | She sounded relieved. Ask yourself what a handler has to be relieved about. |
-| 21 | `after_E_1_2` | One block gone. I can see rain on the roof, and someone standing behind us. |
-| 22 | `after_Q_2_2` | Exactly what she needs. Listen to how she said that. |
-| 23 | `after_E_2_2` | Her division. Her drones. Now you can read the tags yourself. |
-| 24 | `after_Q_3_2` | Stable or not, we are standing where we fell. Finish it. |
-| 25 | `after_E_3_2` | Everything she left in us was a leash. Finish it. |
-| 26 | `sync_high_2` | Slow is how she keeps us small. |
-| 27 | `resume_1_1` | Back in the alley. Someone shot us off the roof, and Sara says it was a syndicate. Keep climbing. |
-| 28 | `resume_2_1` | The overpass. Our holster was locked from the inside. Remember that when she talks. |
-| 29 | `resume_3_1` | The shaft. We heard her voice on the recording. The roof is straight up. |
-| 30 | `resume_4_1` | Rooftop 09. She is in the gunship. Send everything back. |
+| 10 | `s4_phase3_4` | Her fire control is ours now. The blue outline is where she will be. |
+| 11 | `first_death_1` | Rewind. Again. You've died on this roof before, Vincent. Count the loops. |
+| 12 | `first_rebound_1` | There it is. We always bounce back. |
+| 13 | `loop_a_5_1` | Five loops. Every one of them ends with you on your feet. |
+| 14 | `loop_a_12_1` | Twelve loops. She keeps asking you to wait. Ask yourself what she is waiting for. |
+| 15 | `loop_b_5_1` | She shot us once. We have come back five times. Do the arithmetic for her. |
+| 16 | `loop_b_12_1` | Twelve loops. She is running out of ways to say stay down. |
+| 17 | `loop_many_1` | Count the loops if you like. The one that matters is the last. |
+| 18 | `rebound_3_1` | Three hits that should have ended it. Three shots sent back. Keep that feeling. |
+| 19 | `rebound_7_1` | Seven times she has put us on the floor. Seven times we got up. She is counting too. |
+| 20 | `rally_3_1` | Third bounce. The shot comes back harder every time. So do we. |
+| 21 | `after_Q_1_2` | She sounded relieved. Ask yourself what a handler has to be relieved about. |
+| 22 | `after_E_1_2` | One block gone. I can see rain on the roof, and someone standing behind us. |
+| 23 | `after_Q_2_2` | Exactly what she needs. Listen to how she said that. |
+| 24 | `after_E_2_2` | Her division. Her drones. Now you can read the tags yourself. |
+| 25 | `after_Q_3_2` | Stable or not, we are standing where we fell. Finish it. |
+| 26 | `after_E_3_2` | Everything she left in us was a leash. Finish it. |
+| 27 | `pred_first_1` | That outline is her fire control. She trained it on forty of our deliveries. Be someone she has not met. |
+| 28 | `pred_miss_b_2` | Not this one. |
+| 29 | `pred_npc_1` | Five calls in a row. You are moving like an NPC. Break the pattern. |
+| 30 | `idle_aura_1` | Aura farming on a rooftop. She can still see you. |
+| 31 | `sync_high_2` | Slow is how she keeps us small. |
+| 32 | `resume_1_1` | Back in the alley. Someone shot us off the roof, and Sara says it was a syndicate. Keep climbing. |
+| 33 | `resume_2_1` | The overpass. Our holster was locked from the inside. Remember that when she talks. |
+| 34 | `resume_3_1` | The shaft. We heard her voice on the recording. The roof is straight up. |
+| 35 | `resume_4_1` | Rooftop 09. She is in the gunship. Send everything back. |
+
+## Joke takes (2, optional)
+
+Two short takes in your own voice, played as they are with no radio effect. Without them the game
+plays a low thud for the first and nothing for the second.
+
+- `oh_hell_nah`: plays when Vincent goes down within three seconds of getting up. At most once every
+  40 seconds. Say it the way the meme does, under two seconds.
+- `hehe_boi`: plays the first time Sara's fire control calls a move wrong, and on every fifth miss
+  after that. Smug, under two seconds.

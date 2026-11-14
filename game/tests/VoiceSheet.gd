@@ -79,6 +79,16 @@ func _run() -> void:
 		var r: Dictionary = echo[i]
 		md.append("| %02d | `%s` | %s |" % [i + 1, r["key"], String(r["text"]).replace("|", "/")])
 	md.append("")
+	md.append("## Joke takes (2, optional)")
+	md.append("")
+	md.append("Two short takes in your own voice, played as they are with no radio effect. Without them the game")
+	md.append("plays a low thud for the first and nothing for the second.")
+	md.append("")
+	md.append("- `oh_hell_nah`: plays when Vincent goes down within three seconds of getting up. At most once every")
+	md.append("  40 seconds. Say it the way the meme does, under two seconds.")
+	md.append("- `hehe_boi`: plays the first time Sara's fire control calls a move wrong, and on every fifth miss")
+	md.append("  after that. Smug, under two seconds.")
+	md.append("")
 	var f: FileAccess = FileAccess.open(out, FileAccess.WRITE)
 	if f == null:
 		push_error("VoiceSheet: cannot write " + out)

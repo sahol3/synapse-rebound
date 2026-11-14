@@ -10,7 +10,7 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 |---|---|---|---|
 | 1 | Game concept and scope: SYNAPSE // REBOUND, spec in `docs/DESIGN.md` | operator | done 2026-11-13 |
 | 2 | Track: Godot game (Ren'Py not started) | operator | done 2026-11-13 |
-| 3 | `butler login` once on this machine (opens a browser; operator only) | operator | open |
+| 3 | `butler login` once on this machine (opens a browser; operator only) | operator | done 2026-11-14 13:20 ("Authenticated successfully", key in `~/.config/itch/butler_creds`) |
 | 4 | Create itch.io project page and note its `<user>/<game>` slug here | operator | open |
 | 6 | Click the itch shortcut once to confirm the app starts from D: (not verifiable from Claude's tools) | operator | open |
 | 7 | Uninstall Tiled from Settings > Apps (the 66 MB C: copy; the project uses `tools\tiled`) | operator | open |
@@ -23,6 +23,37 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 | 5 | Inkscape 1.4.4 not installed: Windows Installer needs 171,620 KB free on C: and only 109,488 KB was free (log `tools\_ink\admin.log`). Free ~300 MB on C:, then run `scripts\install_inkscape_portable.ps1` (MSI already downloaded) | operator, then agent | blocked on C: space |
 
 ## Entries
+
+### 2026-11-14 · Fire control (the model made visible), phase 3 hand-over, meme moments (Claude Code, Fable 5.2)
+- Operator: "our game is pretty generic... We need something tuff", then "I like your angle for the uniqueness - but
+  man, something unpredictable?", "the brainrots - dont overdo it, add the best ones... those are a little aged, can
+  you add some meme sounds too in specific moments?", then "make the meme sounds like 'hehe bouy' or like 'o hell
+  na'... go with whatever matches the vibe", "lemme record although it'd be a male one", "do the itch.io login
+  request in my browser and I'll login".
+- Fire control: `Director.call_made(word)` / `call_scored(hit)`, consts `CALL_CONF 0.55`, `CALL_MIN_SAMPLES 120`,
+  `CALL_COOLDOWN 5.0`, `LEAD_FLOOR 0.25`; `predicted_percent()`, `run_predicted_percent()`, `predicted_offset()`,
+  `prediction_visible()`, `model_stolen`. Player draws `_pred` (magenta copy of the current frame at the predicted
+  offset). HUD line at (W-12, 50); "saved" moved to y 61, memory toast to 73/84. Lore entry `firecontrol` (10 missed
+  calls). Ending summary adds "She predicted N% of your moves."
+- Twist: `Main._on_boss_phase(3)` sets `Director.model_stolen`; `BossGunship._update_stolen_outline` draws a cyan
+  copy of the hull at position + smoothed velocity x 0.5 s; `s4_phase3` has a new Echo line.
+- Meme layer: `AudioManager.CUES` `meme_scream` (3 takes cut from Freesound 675810, CC0), `meme_beep` (Freesound
+  195116, CC0), `meme_boom` (Kenney layers). `AudioManager.play_meme(key, fallback)` plays the operator's own take
+  from `assets/audio/voice/meme/<key>.ogg` (`oh_hell_nah`, `hehe_boi`). Lines `pred_first`, `pred_miss_a`,
+  `pred_miss_b` (bleeped), `pred_npc`, `idle_aura`. `HudController.pause_note()`, window title on focus loss, "six
+  seven" at 67%.
+- NOT shipped: "oh hell nah", "hehe boi" and vine boom clips. They are other people's recordings with no free
+  licence (the Pixabay vine boom page returned 403 and its uploader's rights are unclear). Research notes:
+  `tools/_freestyle/memes.md`.
+- Voice: the AI voice (Deepgram Aura-2 "theia") was not used. The operator will record a male voice; that fits the
+  Echo lines (the Echo is Vincent's own voice). `docs/VOICE_SCRIPT.md` regenerated: 34 Sara lines, 35 Echo lines, two
+  joke takes.
+- Verified: MECHTEST 32/32 (T7b phase 3 hand-over, T10 to T12), DIRECTORTEST 72/72 (F1 to F9: 96 of 96 calls landed
+  on a habitual player, a broken habit scores a miss), CLIMBTEST 17/17, DIRECTORLIVE 9/9 (L9: outline visible on 61
+  samples of real walking, 50 on the heading side, predicted 83%).
+- Not verified: nobody has listened to the three scream takes or the beep; they were chosen by level and frequency
+  content. The look of the outline and the HUD line has not been judged by the operator.
+- itch.io: `butler login` done by the operator at 13:20. Upload waits for his yes and the `<user>/<game>` slug.
 
 ### 2026-11-14 · Voiced lines over a radio, story reactions, epilogue (Claude Code, Fable 5.2)
 - Operator: "the game doesn't indulge the player in the game's story enough. Also I want some said out dialogues - I

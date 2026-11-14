@@ -125,6 +125,9 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
   Sound must be recorded samples from a downloaded asset pack: synthesizing sound in code is NOT allowed
   (operator, 2026-11-13). Raw packs go in `assets/raw/sfx/<pack>/` (gitignored); `scripts/import_sfx.py` copies
   the chosen files into `game/assets/audio/sfx/kenney/`. Trimming or pitch-shifting a recorded sample is fine.
+  Joke sounds live in `game/assets/audio/sfx/meme/` and must each have a stated CC0 or public-domain source in
+  `game/CREDITS.md`. Well-known meme clips of real people ("oh hell nah", "hehe boi", vine boom uploads) have no
+  such licence and are not shipped; the operator can record his own take into `game/assets/audio/voice/meme/`.
 - Free sources: kenney.nl (CC0), opengameart.org (check each), itch.io game assets (check each page),
   Google Fonts (OFL). Paid itch.io packs need the operator's purchase; never buy.
 - Pixel art: LibreSprite, export PNG sheets to `game/assets/sprites/`. Keep `.ase` sources in `assets/source/`.

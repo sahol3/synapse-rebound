@@ -59,6 +59,10 @@ var _loop_note: String = ""
 var _line_speed: float = 55.0
 var _epi_t: float = -1.0
 var _epi_beat: int = -1
+var _call_s: String = ""
+var _pause_ms: int = 0
+var _call_t: float = -1.0
+var _call_hit: int = -1
 var _mem_t: float = -1.0
 var _mem_s: String = ""
 var _pro_t: float = -1.0
@@ -131,6 +135,10 @@ func _process(_delta: float) -> void:
 		_flash_t += dt
 		if _flash_t > 1.3:
 			_flash_t = -1.0
+	if _call_t >= 0.0:
+		_call_t += dt
+		if _call_t > 1.6:
+			_call_t = -1.0
 	if _mem_t >= 0.0:
 		_mem_t += dt
 		if _mem_t > 4.0:
@@ -177,7 +185,8 @@ func say(id: String) -> void:
 		match who:
 			"SARA", "ECHO", "LOG":
 				## The key names the recording for this line: <id>_<position in the list>.
-				_queue.append({"who": who, "text": PixelFont.clean(text), "key": "%s_%d" % [id, i + 1]})
+				_queue.append({"who": who, "text": PixelFont.clean(text), "key": "%s_%d" % [id, i + 1],
+						"sfx": String(line.get("sfx", ""))})
 			"SYS":
 				system(text)
 			"WORLD":
@@ -212,6 +221,12 @@ func _tick_comms(dt: float) -> void:
 			_line_speed = clampf(n / maxf(spoken * 0.85, 0.4), 14.0, 80.0)
 		else:
 			AudioManager.play_sfx("echo_glitch" if who == "ECHO" else "sara_comms")
+		var cue: String = String(_line.get("sfx", ""))
+		if cue != "":
+			## The channel's filter bleeps the handler at the moment the text reaches the gap.
+			var at: float = maxf(float(String(_line["text"]).find("----")), 0.0) / _line_speed
+			get_tree().create_timer(at, true, false, true).timeout.connect(
+					func() -> void: AudioManager.play_sfx(cue))
 
 
 func clear_dialogue() -> void:
@@ -248,6 +263,18 @@ func flash(text: String, col: Color = AMBER) -> void:
 func back_flash() -> void:
 	## The player deflected a shot during Blackout and is back on their feet.
 	flash("BOUNCED BACK")
+
+
+func call_shown(word: String) -> void:
+	## Fire control has named the player's next move.
+	_call_s = word
+	_call_hit = -1
+	_call_t = 0.0
+
+
+func call_result(hit: bool) -> void:
+	_call_hit = 1 if hit else 0
+	_call_t = 0.5
 
 
 func memory_toast(title: String) -> void:
@@ -288,8 +315,18 @@ func open_module_choice(stage_index: int) -> void:
 	_module_t = 0.0
 
 
+func pause_note(elapsed: float) -> String:
+	## Leave the game paused and the handler starts a message she never sends.
+	if elapsed >= 20.0 and elapsed < 27.0:
+		return "Sara is typing" + ".".repeat(1 + int(elapsed * 2.0) % 3)
+	if elapsed >= 27.0 and elapsed < 33.0:
+		return "Sara stopped typing."
+	return ""
+
+
 func set_paused_panel(on: bool) -> void:
 	_paused = on
+	_pause_ms = Time.get_ticks_msec()
 
 
 func show_ending(id: String) -> void:
@@ -388,6 +425,8 @@ func _draw_overlay() -> void:
 		return
 	_draw_comms()
 	_draw_sync()
+	if not _module_open and not _paused and not Director.debug:
+		_draw_fire_control()
 	if boss and is_instance_valid(boss) and boss.phase > 0:
 		_draw_boss()
 	if _sys_t > 0.0 and not _module_open and _card_t < 0.0:
@@ -402,8 +441,8 @@ func _draw_overlay() -> void:
 	if _flash_t >= 0.0 and _loop_t < 0.0 and not (_flash_t < 0.3 and int(_flash_t * 20.0) % 3 == 2):
 		_t(Vector2(W * 0.5, 120 + _oy()), _flash_s, 2, _flash_col, 2)
 	if _mem_t >= 0.0 and not _module_open and not _paused:
-		_t(Vector2(W - 12.0, 62), "memory recovered", 1, DIM, 1)
-		_t(Vector2(W - 12.0, 73), _mem_s, 1, AMBER, 1)
+		_t(Vector2(W - 12.0, 73), "memory recovered", 1, DIM, 1)
+		_t(Vector2(W - 12.0, 84), _mem_s, 1, AMBER, 1)
 	if player and is_instance_valid(player):
 		if player.in_blackout:
 			_draw_blackout()
@@ -413,7 +452,7 @@ func _draw_overlay() -> void:
 		if not _module_open and not _paused:
 			_draw_reticle()
 	if _saved_t >= 0.0 and not Director.debug and not _module_open and not _paused:
-		_t(Vector2(W - 12.0, 50), "saved", 1, DIM, 1)
+		_t(Vector2(W - 12.0, 61), "saved", 1, DIM, 1)
 	if Director.debug and not _module_open and not _paused:
 		var dbg: PackedStringArray = Director.debug_lines()
 		for i: int in dbg.size():
@@ -444,6 +483,28 @@ func _draw_comms() -> void:
 			if s[k] != " ":
 				s = s.substr(0, k) + GLITCH_CHARS[_rng.randi() % GLITCH_CHARS.length()] + s.substr(k + 1)
 		_t(Vector2(12, 23 + i * LH), s, 1, ECHO_TEXT if echo else TEXT)
+
+
+func _draw_fire_control() -> void:
+	## One line under the sync meter: how well Sara's model is reading the player, and for a
+	## moment after each call, what it called and whether it was right.
+	var r: float = W - 12.0
+	if Director.model_stolen:
+		_t(Vector2(r, 50), "you predict her", 1, CYAN, 1)
+		return
+	if not Director.prediction_visible():
+		return
+	if _call_t >= 0.0:
+		if _call_hit < 0:
+			_t(Vector2(r, 50), "she calls: " + _call_s, 1, MAGENTA, 1)
+		elif _call_hit == 1:
+			_t(Vector2(r, 50), _call_s + "  called it", 1, MAGENTA, 1)
+		else:
+			_t(Vector2(r, 50), _call_s + "  missed", 1, CYAN, 1)
+		return
+	var pct: int = Director.predicted_percent()
+	_t(Vector2(r, 50), "predicted %d%%" % pct + ("  six seven" if pct == 67 else ""), 1,
+			Color(MAGENTA.r, MAGENTA.g, MAGENTA.b, 0.7), 1)
 
 
 func _draw_sync() -> void:
@@ -583,6 +644,9 @@ func _draw_pause() -> void:
 	var run: String = "Stage %d    Loop %d    %s" % [GameState.current_stage, GameState.loop_deaths,
 			GameState.format_time(GameState.run_time)]
 	_t(Vector2(x, 182 + oy), run, 1, DIM)
+	var note: String = pause_note(float(Time.get_ticks_msec() - _pause_ms) / 1000.0)
+	if note != "":
+		_t(Vector2(x, 200 + oy), note, 1, MAGENTA)
 	var mods: PackedStringArray = []
 	for i: int in GameState.choices.size():
 		var pair: Array = GameState.MODULE_MODS[i]
@@ -651,8 +715,11 @@ func _draw_ending() -> void:
 	if not tight:
 		y = maxf(y, 184.0 + _oy())
 	if _ending_t > 5.2:
-		_t(Vector2(x0, y), "You sent %d shots back and got up %d times." % [
-				GameState.parries, GameState.loop_deaths + GameState.rebounds], 1, col)
+		var summary: String = "You sent %d shots back and got up %d times." % [
+				GameState.parries, GameState.loop_deaths + GameState.rebounds]
+		if Director.run_predicted_percent() >= 0:
+			summary += " She predicted %d%% of your moves." % Director.run_predicted_percent()
+		_t(Vector2(x0, y), summary, 1, col)
 	y += 16.0
 	var choices: PackedStringArray = []
 	for ch: String in GameState.choices:

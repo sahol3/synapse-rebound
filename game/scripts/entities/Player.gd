@@ -84,6 +84,7 @@ var _last_ms: int = 0
 var _lane_visual: float = 0.0
 
 var _visual: Node2D
+var _pred: Sprite2D
 var _sprite: AnimatedSprite2D
 var _flash_mat: ShaderMaterial
 var _hurtbox: Area2D
@@ -154,6 +155,7 @@ func _physics_process(delta: float) -> void:
 	_afterimages(real_delta)
 	_animate()
 	_update_lane_visual(real_delta)
+	_update_prediction()
 	_arc.queue_redraw()
 	if StageBase.current != null and global_position.y > StageBase.current.kill_y:
 		die("fall")
@@ -553,6 +555,25 @@ func _emp_blast() -> void:
 		var p: Projectile = node as Projectile
 		if p and p.team == Projectile.Team.ENEMY and p.global_position.distance_to(chest()) < 70.0 and not p.is_core:
 			p.call("_fizzle")
+
+
+func _update_prediction() -> void:
+	## Sara's fire control draws where it expects the courier to be. It is the move model's real
+	## output, and part of every enemy's aim goes there.
+	if _pred == null:
+		_pred = Sprite2D.new()
+		_pred.top_level = true
+		_pred.z_index = 9
+		add_child(_pred)
+	var off: float = Director.predicted_offset() if (Director.prediction_visible() and not dead and input_enabled) else 0.0
+	_pred.visible = absf(off) > 6.0
+	if not _pred.visible:
+		return
+	_pred.texture = _sprite.sprite_frames.get_frame_texture(_sprite.animation, _sprite.frame)
+	_pred.flip_h = _sprite.flip_h
+	_pred.global_position = _sprite.global_position + Vector2(off, 0.0)
+	_pred.global_scale = _sprite.global_scale
+	_pred.modulate = Color(1.0, 0.0, 0.33, 0.2 + 0.08 * sin(float(Time.get_ticks_msec()) * 0.02))
 
 
 func _update_lane_visual(real_delta: float) -> void:

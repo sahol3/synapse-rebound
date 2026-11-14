@@ -128,5 +128,27 @@ func _run() -> void:
 	_check("L8 strong bot: the timing model measured real swings and the room model knows the room",
 			Director.time_n >= 5 and Director._room_key != "" and dbg.size() == 10,
 			"swings=%d mean=%.2fs room=%s | %s | %s" % [Director.time_n, Director.time_mean, Director._room_key, dbg[5], dbg[7]])
+	## Fire control on a real player: after a minute and a half of play the model has its samples,
+	## and walking back and forth puts the outline ahead of the courier.
+	_bot = false
+	var pl: Player = get_tree().get_first_node_in_group("player") as Player
+	var shown: int = 0
+	var ahead: int = 0
+	for leg: int in 6:
+		var act: String = "move_right" if leg % 2 == 0 else "move_left"
+		Input.action_press(act)
+		var t: float = 0.0
+		while t < 1.0:
+			await _wait(0.1)
+			t += 0.1
+			if pl != null and is_instance_valid(pl) and pl._pred != null and pl._pred.visible:
+				shown += 1
+				var off: float = pl._pred.global_position.x - pl._sprite.global_position.x
+				if (off > 0.0) == (leg % 2 == 0):
+					ahead += 1
+		Input.action_release(act)
+	_check("L9 real play: the outline shows, and mostly on the side the player is heading",
+			Director.move_n >= Director.CALL_MIN_SAMPLES and shown >= 20 and ahead * 10 >= shown * 6,
+			"samples=%d shown=%d of 60 ahead=%d predicted=%d%%" % [Director.move_n, shown, ahead, Director.predicted_percent()])
 	print("DIRECTORLIVE passed=%d failed=%d" % [passed, failed])
 	get_tree().quit(1 if failed > 0 else 0)

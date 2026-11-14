@@ -34,6 +34,10 @@ var _epilogue: Epilogue
 ## Slow time for a moment when one of the plot's reveals starts. Off in tests and dev runs, where
 ## scripted bots depend on timing.
 var story_focus: bool = not GameState.is_dev_run()
+const GAME_TITLE: String = "SYNAPSE // REBOUND"
+var _call_streak: int = 0
+var _up_since_ms: int = 0
+var _last_meme_ms: int = -100000
 
 
 func _ready() -> void:
@@ -71,6 +75,10 @@ func _ready() -> void:
 	GameState.memory_unlocked.connect(func(id: String) -> void:
 		if _state == "play" or _state == "choice":
 			hud.memory_toast(DialogueData.memory(id)["title"]))
+	Director.call_made.connect(func(word: String) -> void:
+		if _state == "play":
+			hud.call_shown(word))
+	Director.call_scored.connect(_on_call_scored)
 	Director.praise.connect(func(text: String) -> void:
 		if _state == "play" and not _busy:
 			hud.flash(text, CYAN))
@@ -126,6 +134,38 @@ func _process(_delta: float) -> void:
 	if Time.get_ticks_msec() - Director._last_input_ms > 12000 and hud.comms_idle() \
 			and GameState.once("idle_%d" % GameState.current_stage):
 		hud.say("idle_a" if GameState.current_stage <= 2 else "idle_b")
+	if Time.get_ticks_msec() - Director._last_input_ms > 30000 and hud.comms_idle() and GameState.once("idle_aura"):
+		hud.say("idle_aura")
+
+
+func _on_call_scored(hit: bool) -> void:
+	## Fire control named the next move a moment ago; now it is known whether the player did it.
+	if _state != "play":
+		return
+	hud.call_result(hit)
+	if hit:
+		_call_streak += 1
+		if hud.comms_idle() and GameState.once("pred_first"):
+			hud.say("pred_first")
+		elif _call_streak >= 5 and hud.comms_idle() and GameState.once("pred_npc"):
+			hud.say("pred_npc")
+		return
+	_call_streak = 0
+	AudioManager.play_sfx("echo_glitch", 1.5, -14.0)
+	var misses: int = Director.run_calls - Director.run_call_hits
+	if misses == 1 or misses % 5 == 0:
+		AudioManager.play_meme("hehe_boi")
+	if misses >= 10:
+		GameState.unlock_memory("firecontrol")
+	if misses == 4 and hud.comms_idle() and GameState.once("pred_miss"):
+		hud.say("pred_miss_a" if GameState.current_stage <= 2 else "pred_miss_b")
+
+
+func _on_boss_phase(new_phase: int) -> void:
+	## Phase 3: the Echo takes her fire control. It stops reading the player and reads the gunship.
+	if new_phase == 3:
+		Director.model_stolen = true
+		hud.flash("HER MODEL IS YOURS", CYAN)
 
 
 func _on_stats_changed() -> void:
@@ -263,6 +303,8 @@ func load_stage(index: int, room: int = 0) -> void:
 		hud.say("after_%s_%d" % [GameState.choices[index - 2], index - 1])
 	if stage.get("boss") != null:
 		hud.boss = stage.get("boss")
+		if not stage.get("boss").phase_changed.is_connected(_on_boss_phase):
+			stage.get("boss").phase_changed.connect(_on_boss_phase)
 	else:
 		hud.boss = null
 
@@ -289,6 +331,13 @@ func _on_player_died() -> void:
 			if _room_far.has(room_key) and far > float(_room_far[room_key]) + 32.0:
 				note = "Further than last time."
 			_room_far[room_key] = maxf(far, float(_room_far.get(room_key, 0.0)))
+		## Dying within three seconds of getting up gets a thud and an honest note. Rare on purpose.
+		var up_for: float = float(Time.get_ticks_msec() - _up_since_ms) / 1000.0
+		if player.death_cause == "hit" and _up_since_ms > 0 and up_for < 3.0 \
+				and Time.get_ticks_msec() - _last_meme_ms > 40000:
+			_last_meme_ms = Time.get_ticks_msec()
+			note = "Crashed out in %.1f seconds." % up_for
+			AudioManager.play_meme("oh_hell_nah", "meme_boom")
 	GameState.register_death()
 	Director.player_died(player.death_cause, player.global_position)
 	GameState.save_run(stage.current_room)
@@ -301,6 +350,7 @@ func _on_player_died() -> void:
 		return
 	stage.reset_room()
 	player.respawn(stage.checkpoint_pos, stage.checkpoint_lane)
+	_up_since_ms = Time.get_ticks_msec()
 	camera.snap_to_target()
 	GameState.set_sync(maxf(GameState.sync_floor(), GameState.sync_rate * 0.5))
 	if stage.has_method("on_rewind"):
@@ -440,6 +490,11 @@ func _notification(what: int) -> void:
 	## Closing the window mid-run keeps the clock and stats up to the last moment.
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and _state == "play" and stage != null and is_instance_valid(stage):
 		GameState.save_run(stage.current_room)
+	## Look away mid-run and the window title says what she is doing about it.
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and _state == "play":
+		get_window().title = "%s  /  loop %d, she is still watching" % [GAME_TITLE, GameState.loop_deaths]
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		get_window().title = GAME_TITLE
 
 
 func _set_paused(on: bool) -> void:

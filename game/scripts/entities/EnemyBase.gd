@@ -11,6 +11,7 @@ signal killed(enemy: EnemyBase)
 signal sniper_locked
 
 enum Kind { TURRET, DRONE, SNIPER, ENFORCER, HEAVY, DEFLECTOR, WING }
+static var _last_scream_ms: int = -100000
 
 const BG_SCALE: float = 0.78
 const BG_TINT: Color = Color(0.65, 0.75, 0.95)
@@ -488,6 +489,11 @@ func die() -> void:
 	JuiceManager.hitstop(0.06)
 	JuiceManager.shake(0.35 * big)
 	AudioManager.play_sfx("explosion", randf_range(0.85, 1.1))
+	## About one enforcer or sniper in six goes down with the oldest scream in cinema.
+	if (kind == Kind.ENFORCER or kind == Kind.SNIPER) and randf() < 0.17 \
+			and Time.get_ticks_msec() - _last_scream_ms > 25000:
+		_last_scream_ms = Time.get_ticks_msec()
+		AudioManager.play_sfx("meme_scream", randf_range(0.96, 1.04))
 	GameState.register_kill()
 	killed.emit(self)
 	queue_free()

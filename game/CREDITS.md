@@ -27,7 +27,7 @@ redistributed. For that reason the sheets are not committed to this repository; 
 
 ## Sound effects
 
-Every sound effect is a recorded sample from a human-made pack. Nothing is synthesized and no AI audio tools were used.
+Every sound effect is a downloaded file made by a person. This project synthesizes nothing and no AI audio tools were used.
 
 **Sci-Fi Sounds, Impact Sounds, Interface Sounds, Digital Audio and UI Audio** by Kenney, https://kenney.nl
 
@@ -35,6 +35,16 @@ The deflection clangs, rally bells, lasers, force fields, explosions, the Blacko
 scratches of the rewind, The Echo's glitches, Sara's comms tone, footsteps, power-ups and menu sounds come from these
 packs, which are released under Creative Commons Zero (CC0). The licence is in `assets/audio/sfx/kenney/License.txt`.
 Two long recordings (a thruster and a computer hum) were trimmed to short clips with ffmpeg.
+
+Two more recordings come from Freesound, both released by their uploaders under Creative Commons Zero (CC0), and are
+in `assets/audio/sfx/meme/`.
+
+- "S38-01 Man eaten by alligator; screams [Wilhelm screams]" by craigsmith, https://freesound.org/s/675810/ . Three
+  one-second takes were cut from the preview file with ffmpeg (`scream_1.ogg` to `scream_3.ogg`).
+- "Censor Beep" by mattskydoodle, https://freesound.org/people/mattskydoodle/sounds/195116/ , shortened to 0.32
+  seconds (`censor_beep.ogg`). It is a broadcast test tone as its uploader published it.
+
+The low thud that plays on a very fast death is a layer of three Kenney samples at a lower pitch.
 
 ## Voice
 

@@ -49,6 +49,10 @@ signal assist_changed(kind: String)
 signal stuck
 ## Model 9 saw the player beat their own usual result. `text` is ready to show.
 signal praise(text: String)
+## Sara's fire control (the move model) has named the player's next move: "JUMP", "LEFT", "RIGHT"
+## or "STOP". One step later `call_scored` says whether the player did it.
+signal call_made(word: String)
+signal call_scored(hit: bool)
 
 const SAVE_PATH: String = "user://director.json"
 const VERSION: int = 1
@@ -142,6 +146,20 @@ var _near_tick: int = 0
 var _last_ms: int = 0
 var _last_hint: float = 0.0
 var _last_save: float = 0.0
+## Fire control: the move model made visible. A call needs this much confidence, this many
+## samples (120 = 24 seconds of play) and this long since the last one.
+const CALL_CONF: float = 0.55
+const CALL_MIN_SAMPLES: int = 120
+const CALL_COOLDOWN: float = 5.0
+const LEAD_FLOOR: float = 0.25
+## True once the Echo has taken the model from Sara (boss phase 3): it stops reading the player.
+var model_stolen: bool = false
+var run_calls: int = 0
+var run_call_hits: int = 0
+var run_steps: int = 0
+var run_step_hits: int = 0
+var _call_tok: int = -1
+var _last_call: float = -1000.0
 ## Model 9, personal bests. Saved: mean, variance and sample count per metric.
 const PB_FLOOR: Dictionary = {"streak": 5.0, "life": 25.0}
 const PB_MIN_SAMPLES: int = 3
@@ -310,7 +328,8 @@ func show_sights() -> bool:
 
 func lead_amount() -> float:
 	## 0 = enemies aim where the player is, 1 = where the move model says the player will be.
-	return smoothstep(0.6, 1.0, challenge) if enabled else 0.0
+	## Never below LEAD_FLOOR, so the outline the player sees is always where some of the fire goes.
+	return maxf(smoothstep(0.6, 1.0, challenge), LEAD_FLOOR) if enabled else 0.0
 
 
 func extra_air_dashes() -> int:
@@ -654,6 +673,37 @@ func move_predict() -> PackedFloat32Array:
 	return out
 
 
+func call_word(from: int, to: int) -> String:
+	## What a predicted change of movement state is called on screen. "" for a change that is
+	## physics and no decision (coming back down from a jump).
+	if from >= 3 and to < 3:
+		return ""
+	if from < 3 and to >= 3:
+		return "JUMP"
+	return ["LEFT", "STOP", "RIGHT"][to % 3]
+
+
+func predicted_percent() -> int:
+	## How often the model has named the player's next movement state lately.
+	return int(round(move_acc * 100.0))
+
+
+func run_predicted_percent() -> int:
+	## The same over this whole run, or -1 when there is too little to say.
+	if run_steps < 50:
+		return -1
+	return int(round(100.0 * float(run_step_hits) / float(run_steps)))
+
+
+func predicted_offset() -> float:
+	## Where the model expects the player to be shortly, as a horizontal distance from where they are.
+	return expected_dir() * Player.RUN_SPEED * 0.45
+
+
+func prediction_visible() -> bool:
+	return enabled and not model_stolen and move_n >= CALL_MIN_SAMPLES
+
+
 func move_observe(tok: int) -> void:
 	## Score the prediction that was made for this step, then learn from what happened.
 	var dist: PackedFloat32Array = move_predict()
@@ -661,6 +711,16 @@ func move_observe(tok: int) -> void:
 	for k: int in MOVE_SYMS:
 		if dist[k] > dist[best]:
 			best = k
+	run_steps += 1
+	if best == tok:
+		run_step_hits += 1
+	if _call_tok >= 0:
+		var called_right: bool = _call_tok == tok
+		run_calls += 1
+		if called_right:
+			run_call_hits += 1
+		_call_tok = -1
+		call_scored.emit(called_right)
 	move_acc = lerpf(move_acc, 1.0 if best == tok else 0.0, 0.03)
 	move_base_acc = lerpf(move_base_acc, 1.0 if _m1 == tok else 0.0, 0.03)
 	var rows: Array = [
@@ -678,6 +738,19 @@ func move_observe(tok: int) -> void:
 	_m3 = _m2
 	_m2 = _m1
 	_m1 = tok
+	## Name the next move out loud when the model is sure the player is about to change what
+	## they are doing. Staying the same is never called: there is nothing to see in it.
+	if enabled and not model_stolen and move_n >= CALL_MIN_SAMPLES and _now() - _last_call >= CALL_COOLDOWN:
+		var next: PackedFloat32Array = move_predict()
+		var top: int = _m1
+		for k: int in MOVE_SYMS:
+			if next[k] > next[top]:
+				top = k
+		var word: String = call_word(_m1, top) if top != _m1 else ""
+		if word != "" and next[top] >= CALL_CONF:
+			_call_tok = top
+			_last_call = _now()
+			call_made.emit(word)
 
 
 func expected_dir() -> float:
@@ -948,6 +1021,13 @@ func may_fire() -> bool:
 func run_started() -> void:
 	runs += 1
 	_in_run = true
+	## A new run is scored on its own: what she predicted last run is not this run's number.
+	model_stolen = false
+	run_calls = 0
+	run_call_hits = 0
+	run_steps = 0
+	run_step_hits = 0
+	_call_tok = -1
 	_streak = 0
 	_fall_streak = 0
 	_death_times.clear()
@@ -972,9 +1052,17 @@ func run_started() -> void:
 	_cur_streak = 0
 	_pb_fired.clear()
 	_last_praise = -1000.0
+	model_stolen = false
+	run_calls = 0
+	run_call_hits = 0
+	run_steps = 0
+	run_step_hits = 0
+	_call_tok = -1
+	_last_call = -1000.0
 
 
 func stage_loaded(index: int) -> void:
+	model_stolen = false
 	## Walking into the next stage means the last room of the one before was cleared.
 	room_entered(index, 0, _in_run and index == _stage_idx + 1)
 	_save()
