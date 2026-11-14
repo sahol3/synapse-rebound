@@ -38,8 +38,8 @@ Two long recordings (a thruster and a computer hum) were trimmed to short clips 
 
 ## Typeface
 
-The interface typeface is a 5x7 pixel font drawn for this game. Its glyphs are written out in
-`scripts/ui/PixelFont.gd` and built into a font in memory when the game starts, so the game ships no font files.
+The interface typeface is m5x7 by Daniel Linssen, from https://managore.itch.io/m5x7, released under Creative
+Commons Zero (CC0). The file is `assets/fonts/m5x7.ttf`, unchanged from the download.
 
 ## Editor plugin
 

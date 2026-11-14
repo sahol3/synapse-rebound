@@ -24,6 +24,21 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-14 · Typeface replaced with m5x7 (Claude Code, Fable 5.2)
+- Operator: "can we find a close enough exact looking font instead of the AI made font - rather find it".
+- The hand-written 5x7 glyph table in `PixelFont.gd` is gone. The game now loads m5x7 by Daniel Linssen (CC0,
+  https://managore.itch.io/m5x7, 34,300 bytes) from `game/assets/fonts/m5x7.ttf`. Raw download kept in
+  `assets/raw/fonts/m5x7/`.
+- Measured before the swap (PIL render at 16 px against the old glyph table, 92 glyphs): cap height 7, x-height 5,
+  37 glyphs pixel-identical, 31 within 4 pixels, 24 differ by 5 or more (M W m w are 7 wide in m5x7, and A B E F H K N
+  P R have a different stroke). 76 of 92 advances equal; a sample line is 327 px against 320.
+- `PixelFont` keeps its API (`draw`, `label`, `width`, `wrap`, `clean`, SIZE 9 / ASCENT 7 / DESCENT 2). New const
+  `PX = 16`. The font's size caches get ascent 7 and descent 2 per scale so Labels keep the old line box.
+- Verified: see the test line in the commit; before and after screenshots of the menu and Stage 1 in
+  `tools/_frames/font/`.
+- Not verified: every dialogue line and the credits and controls screens were not looked at one by one for a wrap
+  that now runs one word longer.
+
 ### 2026-11-13 · Director models 4 to 8 (Claude Code, Fable 5.2)
 - Operator: "mind adding more prediction and modulating models so that it goes very well?"
 - Added to `Director.gd`: timing model (how early the player swings, P(on time), personal deflect window up to +0.08 s,

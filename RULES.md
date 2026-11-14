@@ -241,8 +241,10 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
 - Visual checks without a window: `--write-movie <ABSOLUTE dir>\f.png --fixed-fps 30 --quit-after N` (a relative path
   fails silently), then read the PNGs. `scripts\capture_frames.ps1 -Tag <name>` records menu, stages 1-4 and the MechTest
   run into `tools\_frames\<name>\`; `py -I scripts\contact_sheet.py <name>` builds `sheet_shots.jpg` and `sheet_mech.jpg`.
-- UI type is `scripts/ui/PixelFont.gd`, a 5x7 bitmap face drawn by hand and built in memory (fixed size 9, integer
-  scaling only). HUD and menu layers are scaled by `Display.ui` (2x and 576x324 interface pixels at the design size);
+- UI type is m5x7 by Daniel Linssen (CC0), `game/assets/fonts/m5x7.ttf`, loaded by `scripts/ui/PixelFont.gd`.
+  Use it only at multiples of 16 px (`PixelFont.PX`): 16 is one screen pixel per font pixel. Never draw glyphs
+  in code or generate a font; a typeface is a downloaded file with its licence in `game/CREDITS.md`
+  (operator, 2026-11-14). HUD and menu layers are scaled by `Display.ui` (2x and 576x324 interface pixels at the design size);
   world text uses it at 2x world pixels.
   The operator rejected boxed panels, tag blocks, bold display type and explanatory sub-labels (2026-11-13, "It looks
   more AI now") and approved the minimal pass ("much much better"); keep the HUD to outlined text and thin bars.

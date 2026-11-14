@@ -155,7 +155,7 @@ The models have been tested on simulated players only. No recorded human play ex
 | `game/scripts/entities/` | Player, Projectile, EnemyBase, BossGunship |
 | `game/scripts/world/` | StageBase (stage builder), camera, rain, Z-rings, module pickup |
 | `game/scripts/levels/` | The four stages |
-| `game/scripts/ui/` | HUD, pixel font, post-processing stack, main menu, Echo world text |
+| `game/scripts/ui/` | HUD, typeface loader (m5x7), post-processing stack, main menu, Echo world text |
 | `game/shaders/` | CRT, Blackout crimson, VHS rewind, shockwave, hit flash, glitch text |
 | `game/scenes/` | Scene files, generated with `scripts/build_scenes.gd` |
 | `docs/` | The design document, decisions log |

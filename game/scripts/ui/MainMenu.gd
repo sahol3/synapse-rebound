@@ -27,7 +27,7 @@ const CREDITS: Array = [
 	["Enemy characters", "Sideview Sci-Fi by Ansimuz (CC0)"],
 	["Effects", "Free Effect and Bullet 16x16 by BDragon1727"],
 	["Sound effects", "Kenney sound packs (CC0)"],
-	["Typeface", "5x7 pixel font drawn for this game"],
+	["Typeface", "m5x7 by Daniel Linssen"],
 	["Engine", "Godot 4.7"],
 	["", "No AI-generated art, music or voice."],
 ]

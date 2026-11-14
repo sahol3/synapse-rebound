@@ -143,7 +143,7 @@ func say(id: String) -> void:
 
 
 func system(text: String, seconds: float = 5.0) -> void:
-	_sys_lines = PixelFont.wrap(text, 330)
+	_sys_lines = PixelFont.wrap(text, 340)
 	_sys_t = seconds
 
 
@@ -156,7 +156,7 @@ func _tick_comms(dt: float) -> void:
 			_line = {}
 	elif not _queue.is_empty():
 		_line = _queue.pop_front()
-		_wrapped = PixelFont.wrap(_line["text"], 270)
+		_wrapped = PixelFont.wrap(_line["text"], 278)
 		_reveal = 0.0
 		var n: float = float(String(_line["text"]).length())
 		_line_t = (1.6 + n * 0.045) if _line["who"] == "SARA" else (2.0 + n * 0.05)
