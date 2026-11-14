@@ -1,11 +1,5 @@
 class_name BossGunship
 extends Node2D
-## Stage 4: Saif's Valkyrie Interceptor Gunship (Warped City police hull + two turret hardpoints).
-## Phase 1  Foreground Barrage: plasma spreads; deflect shots into the two wing turrets.
-## Phase 2  Depth Retreat: hull moves to the background lane and fires rail-missiles across planes;
-##          parry them back across the depth plane into the hull.
-## Phase 3  5-Bounce Execution Rally (at 15% HP): he parries the Overcharged Core back.
-##          Win the rally to bounce 5 and the core shatters the cockpit.
 
 signal phase_changed(phase: int)
 signal defeated
@@ -128,7 +122,6 @@ func _sweep(delta: float, speed: float, y: float) -> void:
 
 
 func _update_stolen_outline(delta: float) -> void:
-	## Once the Echo has his fire control, it reads the gunship: a cyan outline half a second ahead of it.
 	var vel: Vector2 = (global_position - _last_gpos) / maxf(delta, 0.001)
 	_last_gpos = global_position
 	_vel_smooth = _vel_smooth.lerp(vel, 0.15)
@@ -209,8 +202,6 @@ func _core_logic(delta: float) -> void:
 	AudioManager.play_sfx("rail", 0.5)
 	JuiceManager.ring(from, Color("#FF0055"), 50.0, 0.5, 4.0, true)
 
-
-# ================================================================= damage
 
 func receive_projectile(p: Projectile) -> String:
 	if not alive or _transitioning:
@@ -295,8 +286,6 @@ func _death_sequence() -> void:
 		defeated.emit()
 		queue_free())
 
-
-# ================================================================= phases
 
 func _on_wing_killed(_w: EnemyBase) -> void:
 	for w: EnemyBase in _wings:

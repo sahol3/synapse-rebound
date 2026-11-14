@@ -1,17 +1,7 @@
 class_name PixelFont
 extends RefCounted
-## The game's interface typeface: m5x7 by Daniel Linssen (CC0), loaded from
-## `res://assets/fonts/m5x7.ttf`. It is a 5x7 pixel face: capitals are 7 px tall, lowercase is 5,
-## descenders go 2 px below the baseline. The file is drawn at 16 px per pixel-grid unit, so only
-## whole multiples are used (16 = 1x, 32 = 2x, 48 = 3x) and text lands on the same pixel grid as
-## the 16 px Warped City art.
-##
-## SIZE, ASCENT and DESCENT describe the line box the layout code works with (cap height plus
-## descenders), which is smaller than the metrics stored in the font file. `font()` writes them
-## into the font's size caches so Labels lay out on that box too.
 
 const PATH: String = "res://assets/fonts/m5x7.ttf"
-## Font size that gives one screen pixel per font pixel.
 const PX: int = 16
 const SIZE: int = 9
 const ASCENT: int = 7
@@ -38,7 +28,6 @@ static func font() -> FontFile:
 	return f
 
 
-## Replaces characters the layout should not meet (curly quotes, dashes, ellipsis) with ASCII.
 static func clean(text: String) -> String:
 	var t: String = text.replace("…", "...").replace("—", "-").replace("–", "-")
 	t = t.replace("‘", "'").replace("’", "'").replace("“", "\"").replace("”", "\"")
@@ -46,7 +35,6 @@ static func clean(text: String) -> String:
 	return t
 
 
-## Advance of one character in font pixels, including its 1 px letter gap.
 static func _advance(ch: String) -> int:
 	if _widths.has(ch):
 		return _widths[ch]
@@ -55,7 +43,6 @@ static func _advance(ch: String) -> int:
 	return w
 
 
-## Pixel width of `text` at `scale` (1 = 16 px). Trailing letter gap is excluded.
 static func width(text: String, scale: int = 1) -> int:
 	var w: int = 0
 	for i: int in text.length():
@@ -63,7 +50,6 @@ static func width(text: String, scale: int = 1) -> int:
 	return maxi(w - 1, 0) * scale
 
 
-## A Label in the pixel face with a hard 1 px drop shadow, the only outline style bitmap glyphs allow.
 static func label(text: String, scale: int, color: Color, _unused: bool = false, shadow: Color = Color(0.02, 0.01, 0.06, 1.0)) -> Label:
 	var l := Label.new()
 	l.text = clean(text)
@@ -79,7 +65,6 @@ static func label(text: String, scale: int, color: Color, _unused: bool = false,
 	return l
 
 
-## Greedy word wrap to `max_w` pixels at `scale`. Keeps explicit newlines.
 static func wrap(text: String, max_w: int, scale: int = 1) -> PackedStringArray:
 	var out: PackedStringArray = []
 	for para: String in clean(text).split("\n"):
@@ -95,8 +80,6 @@ static func wrap(text: String, max_w: int, scale: int = 1) -> PackedStringArray:
 	return out
 
 
-## Draws `text` with a 1-pixel outline on all eight sides, the way pixel games keep type readable
-## over busy art without a box. `pos` is the top-left (align 0), right edge (1) or centre (2).
 static func draw(ci: CanvasItem, pos: Vector2, text: String, scale: int, col: Color,
 		align: int = 0, outline: Color = Color("#05040B")) -> void:
 	var f: FontFile = font()

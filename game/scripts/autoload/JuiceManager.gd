@@ -1,8 +1,4 @@
 extends Node
-## Hit-stop, slow motion, camera trauma, shockwave rings, Sandevistan afterimages,
-## screen flashes. Owns Engine.time_scale so overlapping effects never fight:
-## base_time_scale is the "world speed" (Blackout, Chrono-Sight, module prompt),
-## hit-stop temporarily overrides it and always restores to the current base.
 
 const GHOST_COLORS: Array[Color] = [Color("#00F0FF"), Color("#FF0055"), Color("#4A00E0")]
 
@@ -26,8 +22,6 @@ func _process(_delta: float) -> void:
 		Engine.time_scale = base_time_scale
 
 
-# ---------------------------------------------------------------- time
-
 func hitstop(duration: float) -> void:
 	var end_ms: int = Time.get_ticks_msec() + int(duration * 1000.0)
 	if end_ms <= _hitstop_until_ms:
@@ -43,7 +37,6 @@ func set_base_time_scale(value: float) -> void:
 
 
 func slowmo(scale: float, real_seconds: float) -> void:
-	## Temporary base slowdown (Chrono-Sight). Never overrides a slower base (Blackout).
 	if base_time_scale < scale:
 		return
 	_slowmo_token += 1
@@ -61,8 +54,6 @@ func reset_time() -> void:
 	Engine.time_scale = 1.0
 
 
-# ---------------------------------------------------------------- camera / screen
-
 func shake(trauma: float) -> void:
 	if camera and camera.has_method("add_trauma"):
 		camera.add_trauma(trauma)
@@ -77,8 +68,6 @@ func screen_shockwave(world_pos: Vector2, strength: float = 1.0) -> void:
 	if post_fx and post_fx.has_method("shockwave"):
 		post_fx.shockwave(world_pos, strength)
 
-
-# ---------------------------------------------------------------- spawners
 
 func ring(pos: Vector2, color: Color, radius: float = 60.0, duration: float = 0.35,
 		width: float = 4.0, flash_fill: bool = false) -> void:
@@ -100,7 +89,6 @@ func fx(anim: String, color: String, pos: Vector2, rot: float = 0.0, scl: float 
 
 
 func ghost(source: AnimatedSprite2D, color_override: Color = Color(0, 0, 0, 0)) -> void:
-	## Sandevistan afterimage: a frozen copy of the current frame that fades out.
 	if fx_root == null or source == null or source.sprite_frames == null:
 		return
 	var tex: Texture2D = source.sprite_frames.get_frame_texture(source.animation, source.frame)
@@ -127,10 +115,8 @@ func ghost(source: AnimatedSprite2D, color_override: Color = Color(0, 0, 0, 0)) 
 
 
 func text_pop(pos: Vector2, text: String, color: Color, size: int = 10) -> void:
-	## Small world-space kinetic number ("x3 RALLY", "+50%").
 	if fx_root == null:
 		return
-	## Pixel face, whole-pixel rise, flickers out instead of fading (no sub-pixel smear).
 	var l := PixelFont.label(text, 2 if size >= 14 else 1, color)
 	l.z_index = 40
 	fx_root.add_child(l)

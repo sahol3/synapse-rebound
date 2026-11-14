@@ -1,10 +1,5 @@
 class_name WorldGlitchText
 extends Node2D
-## The Echo's words burned onto the buildings between the depth lane and the foreground.
-## Pixel face at 2x world pixels. A " // " in the line splits it into beats that play one after
-## another in the same spot ("00:00:00", then "IMPACT AVOIDED", then "BOUNCING BACK -60.0s");
-## a long beat wraps to two lines at most. Each beat types on in hard steps, holds with the odd
-## corrupted glyph, and the last one flickers out. Runs on real time.
 
 const MAX_CHARS: int = 22
 const TYPE_TIME: float = 0.2
@@ -53,7 +48,6 @@ func _show(i: int) -> void:
 	_beat = i
 	_label.text = _beats[i]
 	_label.visible_characters = 0
-	## Size from the glyph table, not from the Label (it reports 0 before its first draw).
 	var lines: PackedStringArray = _beats[i].split("\n")
 	var w: float = 0.0
 	for ln: String in lines:

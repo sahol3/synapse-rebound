@@ -1,6 +1,5 @@
 class_name ModulePickup
 extends Area2D
-## A stolen neural module ripped back from a Command Enforcer.
 
 signal collected
 

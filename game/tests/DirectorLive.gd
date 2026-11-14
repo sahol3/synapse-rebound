@@ -1,13 +1,4 @@
 extends Node
-## End-to-end check of the adaptive director inside the real game: Stage 1, the player parked in
-## front of the first turret, two bots in turn.
-##   weak bot   - lets about two shots in three through in normal play, but always deflects
-##                while in Blackout (so a mercy shot becomes a rebound).
-##   strong bot - deflects everything.
-## Expect: challenge falls for the weak bot and rises for the strong one, the shots are really
-## being followed by the hit model, and the mercy shot turns Blackouts into rebounds.
-## Run: tools\bin\godot.cmd --headless --path game res://tests/DirectorLive.tscn
-## Prints PASS/FAIL per check and "DIRECTORLIVE passed=N failed=M"; exit code 1 on any failure.
 
 var main: Node
 var passed: int = 0
@@ -68,12 +59,10 @@ func _physics_process(_delta: float) -> void:
 			continue
 		var id: int = pr.get_instance_id()
 		if not _decided.has(id):
-			## Decide once per shot whether this bot fumbles it.
 			_decided[id] = _rng.randf() < _skip_rate
 		if bool(_decided[id]) and not p.in_blackout:
 			continue
 		if pr.global_position.distance_to(p.chest()) < 40.0 and p.parry_ready() >= 1.0:
-			## Send it up and away: a shot straight back would kill the turret and end the session.
 			p.aim_override = (pr.global_position - p.chest()).normalized().rotated(-0.8)
 			_press("parry", true)
 			_release_next = true
@@ -100,7 +89,6 @@ func _session(skip_rate: float, seconds: float) -> Dictionary:
 		low = minf(low, Director.challenge)
 		high = maxf(high, Director.challenge)
 		p = _p()
-		## Keep the bot in front of the turret (Blackout knocks it back; a rewind moves it to spawn).
 		if p != null and not p.dead and not p.in_blackout and p.is_on_floor() and absf(p.global_position.x - 160.0) > 40.0:
 			p.global_position.x = 160.0
 	_bot = false
@@ -128,8 +116,6 @@ func _run() -> void:
 	_check("L8 strong bot: the timing model measured real swings and the room model knows the room",
 			Director.time_n >= 5 and Director._room_key != "" and dbg.size() == 10,
 			"swings=%d mean=%.2fs room=%s | %s | %s" % [Director.time_n, Director.time_mean, Director._room_key, dbg[5], dbg[7]])
-	## Fire control on a real player: after a minute and a half of play the model has its samples,
-	## and walking back and forth puts the outline ahead of the courier.
 	_bot = false
 	var pl: Player = get_tree().get_first_node_in_group("player") as Player
 	var shown: int = 0

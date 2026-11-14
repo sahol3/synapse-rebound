@@ -1,7 +1,5 @@
 class_name GameCamera
 extends Camera2D
-## Pixel camera (zoom = Display.art, a whole number at every window size): follows the player with mouse look-ahead, trauma-based shake that runs
-## on real time (so hit-stop still rattles), and per-stage limits.
 
 const LOOK_AHEAD: float = 0.16
 const MAX_OFFSET: Vector2 = Vector2(14, 10)
@@ -12,7 +10,6 @@ var trauma: float = 0.0
 var fixed_point: Vector2 = Vector2.ZERO
 var use_fixed: bool = false
 var vertical_bias: float = -18.0
-## When not NAN the camera keeps this world Y (boss arena).
 var lock_y: float = NAN
 
 var _noise := FastNoiseLite.new()
@@ -51,7 +48,6 @@ func _apply_display() -> void:
 
 
 func _apply_limits() -> void:
-	## A view larger than the stage is centred on it instead of pinned to one edge.
 	var r: Rect2 = _limit_rect
 	var v: Vector2 = Display.view
 	if v.x > r.size.x:

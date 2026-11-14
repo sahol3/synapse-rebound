@@ -1,10 +1,5 @@
 class_name MainMenu
 extends Node2D
-## Title screen over a drifting, rain-soaked Warped City skyline. The interface layer is scaled by
-## Display.ui, so positions are interface pixels (576x324 at the design size, more on other
-## windows; the block stays centred vertically) and all text is PixelFont.
-## W/S or the arrow keys move, Space, Enter or a click selects; the mouse also hovers items.
-## Esc or Space leaves the Controls, Lore and Credits lists; in Lore, W/S pick an entry.
 
 signal start_requested
 signal continue_requested
@@ -107,7 +102,6 @@ func _apply_display() -> void:
 
 
 func _oy() -> float:
-	## Vertical offset that keeps the 324-pixel-tall design block centred in a taller or shorter window.
 	return floorf((_ui.size.y - 324.0) * 0.5)
 
 
@@ -174,8 +168,6 @@ func _choose(item: String) -> void:
 			get_tree().quit()
 
 
-# ================================================================= drawing
-
 func _txt(pos: Vector2, text: String, scale: int, col: Color, align: int = 0) -> void:
 	PixelFont.draw(_ui, pos, text, scale, col, align)
 
@@ -207,7 +199,6 @@ func _draw_ui() -> void:
 	else:
 		_draw_panel(CONTROLS if _panel == "controls" else CREDITS)
 	_txt(Vector2(x, _ui.size.y - 20.0), "Hack Club Haven Dhaka 2026", 1, DIM)
-	## What the player has built up across runs, once there is something to show.
 	var meta: Dictionary = GameState.meta()
 	if _panel == "" and (int(meta["finished"]) > 0 or not (meta["memories"] as Array).is_empty()):
 		var bits: PackedStringArray = ["Memories %d of %d" % [GameState.memory_count(), DialogueData.MEMORIES.size()]]
@@ -218,14 +209,11 @@ func _draw_ui() -> void:
 
 
 func hide_interface() -> void:
-	## The prologue plays over the drifting skyline with the title and menu out of the way.
 	_started = true
 	_layer.visible = false
 
 
 func _draw_lore() -> void:
-	## Titles on the left, the picked entry on the right. A locked entry keeps its title and
-	## says what recovers it.
 	var x: float = 48
 	var y0: float = 148 + _oy()
 	var all: Array[Dictionary] = DialogueData.MEMORIES

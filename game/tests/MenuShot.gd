@@ -1,8 +1,4 @@
 extends SceneTree
-## Dev capture of the title screen, the Lore tab (an open entry and a locked one) and the prologue.
-## Run with a window:
-##   godot --path game --script res://tests/MenuShot.gd -- --save-file=shotchk.json --profile-file=shotchk_dir.json --out=<abs dir>
-## The two file arguments keep the run away from the player's own save, progress and profile.
 
 var _dir: String = ""
 

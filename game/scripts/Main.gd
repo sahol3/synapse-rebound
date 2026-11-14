@@ -1,7 +1,4 @@
 extends Node
-## Scene manager: title menu -> Stages 1-4 -> ending. Owns the camera, post-processing,
-## HUD, the 0.3s VHS rewind on death, the slow-motion module choice and pause.
-## Debug: `-- --stage=N` on the command line skips the menu and starts at stage N.
 
 const STAGE_SCENES: PackedStringArray = [
 	"res://scenes/levels/Stage01_Alley.tscn",
@@ -24,15 +21,12 @@ var menu: Node
 var _state: String = "menu"
 var _busy: bool = false
 var _death_pending: bool = false
-## Deaths in a room before the way past it is offered.
 const SKIP_AFTER: int = 6
 const CYAN: Color = Color("#00F0FF")
 var _room_deaths: Dictionary = {}
 var _room_far: Dictionary = {}
 var _skip_key: String = ""
 var _epilogue: Epilogue
-## Slow time for a moment when one of the plot's reveals starts. Off in tests and dev runs, where
-## scripted bots depend on timing.
 var story_focus: bool = not GameState.is_dev_run()
 const GAME_TITLE: String = "SYNAPSE // REBOUND"
 var _call_streak: int = 0
@@ -68,7 +62,6 @@ func _ready() -> void:
 			hud.say("assist_" + kind))
 	GameState.stats_changed.connect(_on_stats_changed)
 	GameState.tier_changed.connect(func(tier: int) -> void:
-		## Saif wants the player weak, so a rising sync worries him before the player knows why.
 		if _state == "play" and tier >= GameState.Tier.OVERCLOCKED and GameState.current_stage <= 2 \
 				and hud.comms_idle() and GameState.once("sync_high"):
 			hud.say("sync_high"))
@@ -92,8 +85,6 @@ func _ready() -> void:
 		show_menu()
 
 
-# ================================================================= menu / run
-
 func show_menu() -> void:
 	_state = "menu"
 	get_tree().paused = false
@@ -111,7 +102,6 @@ func show_menu() -> void:
 
 
 func _start_new_game() -> void:
-	## The premise in four lines over the title backdrop, then Stage 1. Any key skips it.
 	_state = "prologue"
 	if menu and is_instance_valid(menu):
 		menu.hide_interface()
@@ -128,7 +118,6 @@ func _on_stage_dialogue(id: String) -> void:
 
 
 func _process(_delta: float) -> void:
-	## Saif notices when the player stops moving. Once per stage.
 	if _state != "play" or _busy or get_tree().paused or stage == null:
 		return
 	if Time.get_ticks_msec() - Director._last_input_ms > 12000 and hud.comms_idle() \
@@ -139,7 +128,6 @@ func _process(_delta: float) -> void:
 
 
 func _on_call_scored(hit: bool) -> void:
-	## Fire control named the next move a moment ago; now it is known whether the player did it.
 	if _state != "play":
 		return
 	hud.call_result(hit)
@@ -162,7 +150,6 @@ func _on_call_scored(hit: bool) -> void:
 
 
 func _on_boss_phase(new_phase: int) -> void:
-	## Phase 3: the Echo takes his fire control. It stops reading the player and reads the gunship.
 	if new_phase == 3:
 		Director.model_stolen = true
 		hud.flash("HIS MODEL IS YOURS", CYAN)
@@ -196,7 +183,6 @@ func _begin_run(first_stage: int) -> void:
 
 
 func _continue_run() -> void:
-	## Resume the saved run: same stage and checkpoint, same modules, clock and loop count.
 	var d: Dictionary = GameState.saved_run()
 	if d.is_empty():
 		_begin_run(1)
@@ -224,8 +210,6 @@ func _clear_stage() -> void:
 
 
 func _on_epilogue_beat(index: int) -> void:
-	## The after-story plays in the world, behind the caption: build its set on the first scene,
-	## then cut the camera from one scene to the next.
 	if _state != "ending":
 		return
 	if _epilogue == null or not is_instance_valid(_epilogue):
@@ -298,7 +282,6 @@ func load_stage(index: int, room: int = 0) -> void:
 		player.respawn(stage.checkpoint_pos, stage.checkpoint_lane)
 		camera.snap_to_target()
 	GameState.save_run(stage.current_room)
-	## The two voices answer the module choice that brought the player here.
 	if index >= 2 and GameState.choices.size() >= index - 1 and GameState.once("after_%d" % (index - 1)):
 		hud.say("after_%s_%d" % [GameState.choices[index - 2], index - 1])
 	if stage.get("boss") != null:
@@ -309,19 +292,14 @@ func load_stage(index: int, room: int = 0) -> void:
 		hud.boss = null
 
 
-# ================================================================= death / rewind
-
 func _on_player_died() -> void:
 	if _state != "play":
 		return
 	if _busy:
-		## A death that lands while a rewind is still running must not be dropped: the player
-		## would stay dead with nothing left to bring them back (the Stage 3 freeze).
 		_death_pending = true
 		return
 	_busy = true
 	_death_pending = false
-	## What the player sees under the loop count: honest progress, when there is some.
 	var room_key: String = "%d:%d" % [GameState.current_stage, stage.current_room]
 	var note: String = ""
 	if player.death_cause != "restart":
@@ -331,7 +309,6 @@ func _on_player_died() -> void:
 			if _room_far.has(room_key) and far > float(_room_far[room_key]) + 32.0:
 				note = "Further than last time."
 			_room_far[room_key] = maxf(far, float(_room_far.get(room_key, 0.0)))
-		## Dying within three seconds of getting up gets a thud and an honest note. Rare on purpose.
 		var up_for: float = float(Time.get_ticks_msec() - _up_since_ms) / 1000.0
 		if player.death_cause == "hit" and _up_since_ms > 0 and up_for < 3.0 \
 				and Time.get_ticks_msec() - _last_meme_ms > 40000:
@@ -360,12 +337,10 @@ func _on_player_died() -> void:
 	post.vhs(0.15)
 	hud.loop_flash(GameState.loop_deaths, note)
 	hud.show_ads(GameState.loop_deaths)
-	## Nobody should be stopped for good by one room: after six deaths in it, offer a way past.
 	var tries: int = int(_room_deaths.get(room_key, 0))
 	if tries >= SKIP_AFTER and tries % 3 == 0 and stage.current_room < stage.checkpoint_count():
 		_skip_key = room_key
 		hud.system("Stuck here? Press F and the implant carries you to the next checkpoint.", 8.0)
-	## Every death is a Lazarus rewind in the story, so the two voices keep count with the player.
 	if GameState.current_stage == 1 and GameState.loop_deaths == 1:
 		if GameState.once("first_death_s1"):
 			hud.say("first_death_s1")
@@ -398,8 +373,6 @@ func _on_blackout_ended(rebounded: bool) -> void:
 		hud.say("rebound_%d" % GameState.rebounds)
 
 
-# ================================================================= module choice
-
 func _on_module_collected(stage_index: int) -> void:
 	if _state != "play":
 		return
@@ -428,8 +401,6 @@ func _on_module_collected(stage_index: int) -> void:
 	load_stage(stage_index + 1)
 
 
-# ================================================================= ending
-
 func _on_boss_defeated() -> void:
 	if _state != "play":
 		return
@@ -456,8 +427,6 @@ func _on_boss_defeated() -> void:
 	hud.show_ending(id)
 
 
-# ================================================================= pause / restart
-
 func _unhandled_input(event: InputEvent) -> void:
 	if _state != "play":
 		return
@@ -470,7 +439,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _skip_room() -> void:
-	## Offered after repeated deaths in one room. Moves the player to the next checkpoint.
 	if _busy or get_tree().paused or stage == null or player == null or player.dead or player.in_blackout:
 		return
 	if _skip_key == "" or _skip_key != "%d:%d" % [GameState.current_stage, stage.current_room]:
@@ -488,10 +456,8 @@ func _skip_room() -> void:
 
 
 func _notification(what: int) -> void:
-	## Closing the window mid-run keeps the clock and stats up to the last moment.
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and _state == "play" and stage != null and is_instance_valid(stage):
 		GameState.save_run(stage.current_room)
-	## Look away mid-run and the window title says what he is doing about it.
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and _state == "play":
 		get_window().title = "%s  /  loop %d, he is still watching" % [GAME_TITLE, GameState.loop_deaths]
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:

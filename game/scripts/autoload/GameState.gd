@@ -1,7 +1,4 @@
 extends Node
-## Run-wide state: Neural Sync Rate, module choices, deaths, stats, input map.
-## Every gameplay number that an upgrade changes is read through a function here,
-## so the Stabilize / Overclock choices stay in one place.
 
 signal sync_changed(value: float, tier: int)
 signal tier_changed(tier: int)
@@ -19,7 +16,6 @@ const SYNC_DECAY_PER_SEC: float = 7.0
 const SYNC_DECAY_DELAY: float = 2.5
 const SAVE_VERSION: int = 1
 
-## Physics layer bits (see project.godot [layer_names]).
 const BIT_WORLD_FG: int = 1
 const BIT_WORLD_BG: int = 2
 const BIT_PLAYER_HURT: int = 4
@@ -31,7 +27,6 @@ const TIER_COLORS: Array[Color] = [
 	Color("#00F0FF"), Color("#5CFFB0"), Color("#FF0055"), Color("#FF9900"),
 ]
 
-## Module upgrade ids per stage: [stabilize, overclock].
 const MODULE_MODS: Array = [
 	["phase_dash", "shockwave_dash"],
 	["chrono_sight", "prism_split"],
@@ -54,7 +49,6 @@ var best_rally: int = 0
 var rebounds: int = 0
 var flags: Dictionary = {}
 var current_lane: int = 0
-## Progress saving. Off for tests, captures and debug starts (see is_dev_run).
 var persist: bool = true
 var save_path: String = "user://save.json"
 
@@ -65,8 +59,6 @@ func _enter_tree() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	persist = not is_dev_run()
 	for arg: String in OS.get_cmdline_user_args():
-		## Dev check of the real save path in an exported build: `-- --save-file=name.json` saves to
-		## that file in the user folder even on a debug start, and never to the player's own save.
 		if arg.begins_with("--save-file="):
 			save_path = "user://" + arg.get_slice("=", 1).get_file()
 			persist = true
@@ -87,8 +79,6 @@ func _process(delta: float) -> void:
 	if _since_last_sync_gain > SYNC_DECAY_DELAY and sync_rate > sync_floor():
 		set_sync(maxf(sync_floor(), sync_rate - SYNC_DECAY_PER_SEC * real_delta))
 
-
-# ---------------------------------------------------------------- sync
 
 func add_sync(amount: float) -> void:
 	_since_last_sync_gain = 0.0
@@ -118,11 +108,8 @@ func tier_for(value: float) -> int:
 
 
 func sync_floor() -> float:
-	## Each Overclock choice burns in a permanent +100% floor.
 	return minf(100.0 * float(overclock_count), 300.0)
 
-
-# ---------------------------------------------------------------- modules
 
 func choose_module(stage: int, choice: String) -> void:
 	choices.append(choice)
@@ -153,8 +140,6 @@ func ending_id() -> String:
 		return "B"
 	return "C"
 
-
-# ---------------------------------------------------------------- tuning read by entities
 
 func parry_window() -> float:
 	return 0.18 + 0.03 * float(stabilize_count) + Director.parry_window_bonus()
@@ -188,10 +173,7 @@ func telegraph_sights() -> bool:
 	return stabilize_count > 0 or Director.show_sights()
 
 
-# ---------------------------------------------------------------- run lifecycle
-
 func once(key: String) -> bool:
-	## True the first time a key is seen this run.
 	if flags.has(key):
 		return false
 	flags[key] = true
@@ -242,10 +224,7 @@ func format_time(seconds: float) -> String:
 	return "%02d:%05.2f" % [m, s]
 
 
-# ---------------------------------------------------------------- progress saving
-
 static func is_dev_run() -> bool:
-	## Tests, frame captures and the `--stage=N` debug start must never touch the player's files.
 	if DisplayServer.get_name() == "headless" or OS.has_feature("movie"):
 		return true
 	for a: String in OS.get_cmdline_user_args():
@@ -255,7 +234,6 @@ static func is_dev_run() -> bool:
 
 
 func save_run(room: int) -> void:
-	## Called at every stage start, checkpoint and death. One small JSON file.
 	if not persist:
 		return
 	var f: FileAccess = FileAccess.open(save_path, FileAccess.WRITE)
@@ -270,7 +248,6 @@ func save_run(room: int) -> void:
 
 
 func saved_run() -> Dictionary:
-	## The saved run, or an empty dictionary when there is none or the file is unusable.
 	if not FileAccess.file_exists(save_path):
 		return {}
 	var f: FileAccess = FileAccess.open(save_path, FileAccess.READ)
@@ -285,7 +262,6 @@ func saved_run() -> Dictionary:
 	var picked: Variant = d.get("choices", [])
 	if int(d.get("v", 0)) != SAVE_VERSION or stage < 1 or stage > 4 or not (picked is Array):
 		return {}
-	## A stage can only be reached with one module choice per earlier stage.
 	if (picked as Array).size() != stage - 1:
 		return {}
 	for c: Variant in picked:
@@ -295,7 +271,6 @@ func saved_run() -> Dictionary:
 
 
 func apply_save(d: Dictionary) -> void:
-	## Restore a saved run. Call after reset_run().
 	var picked: Array = d.get("choices", [])
 	for i: int in picked.size():
 		choose_module(i + 1, String(picked[i]))
@@ -317,21 +292,16 @@ func clear_save() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
 
 
-# ---------------------------------------------------------------- lifetime progress (across runs)
-
 const OLD_HANDLER_ID: String = "sa" + "ra"
 var _meta: Dictionary = {}
 var _meta_from: String = ""
 
 
 func meta_path() -> String:
-	## Sits beside the run save, so a test or dev run that redirects the save redirects this too.
 	return save_path.get_basename() + "_meta.json"
 
 
 func meta() -> Dictionary:
-	## Recovered memories, endings seen and personal bests. Read from disk once per path, and only
-	## when saving is on, so a dev run never shows or changes the player's own progress.
 	var path: String = meta_path() + ("" if persist else "?off")
 	if _meta_from == path:
 		return _meta
@@ -350,7 +320,6 @@ func meta() -> Dictionary:
 		var list: Variant = (parsed as Dictionary).get(key, [])
 		if list is Array:
 			for v: Variant in list:
-				## The handler was renamed on 2026-11-14; a memory saved under the old id is the same memory.
 				var id: Variant = "saif" if (v is String and v == OLD_HANDLER_ID) else v
 				if id is String and not (id in _meta[key]):
 					_meta[key].append(id)
@@ -362,7 +331,6 @@ func meta() -> Dictionary:
 
 
 func voice_on() -> bool:
-	## The player's choice to hear the recorded lines. Off leaves every line as text with its blip.
 	return bool(meta().get("voice", true))
 
 
@@ -397,7 +365,6 @@ func memory_count() -> int:
 
 
 func unlock_memory(id: String) -> bool:
-	## True the first time. Recovered memories stay recovered across runs.
 	if has_memory(id) or DialogueData.memory(id).is_empty():
 		return false
 	meta()["memories"].append(id)
@@ -407,7 +374,6 @@ func unlock_memory(id: String) -> bool:
 
 
 func note_rally(bounces: int) -> bool:
-	## True when this is the longest rally the player has ever held.
 	if bounces <= int(meta()["best_rally"]):
 		return false
 	meta()["best_rally"] = bounces
@@ -416,7 +382,6 @@ func note_rally(bounces: int) -> bool:
 
 
 func record_ending(id: String) -> Dictionary:
-	## Called once when the boss falls. Says what was new about this finish.
 	var m: Dictionary = meta()
 	var out: Dictionary = {"new_ending": not (id in m["endings"]), "best_time": false}
 	if out["new_ending"]:
@@ -430,8 +395,6 @@ func record_ending(id: String) -> Dictionary:
 	unlock_memory("end_" + id)
 	return out
 
-
-# ---------------------------------------------------------------- input
 
 func _register_inputs() -> void:
 	_add_keys("move_left", [KEY_A, KEY_LEFT])

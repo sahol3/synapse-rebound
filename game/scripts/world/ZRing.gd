@@ -1,6 +1,5 @@
 class_name ZRing
 extends Area2D
-## Kinetic Z-Ring: touching it bounces the player into the other depth lane.
 
 var impulse: Vector2 = Vector2(0, -340)
 var _cd: float = 0.0
@@ -27,7 +26,6 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_cd -= delta
 	_t += delta
-	## Hard two-state blink (pixel lamps switch, they do not breathe); dim while recharging.
 	var on: bool = int(_t * 4.0) % 2 == 0
 	_sprite.modulate = Color(1, 1, 1, 1.0 if on else 0.7) if _cd <= 0.0 else Color(1, 1, 1, 0.25)
 

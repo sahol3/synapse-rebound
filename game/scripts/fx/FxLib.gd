@@ -1,7 +1,5 @@
 class_name FxLib
 extends RefCounted
-## Builds SpriteFrames from the human-made sheets (BDragon1727 16x16 effects, Ansimuz Warped City)
-## and spawns one-shot effect sprites. Frames are cached per (anim, color).
 
 const SHEETS: Dictionary = {
 	"cyan": "res://assets/vfx/water.png",
@@ -10,7 +8,6 @@ const SHEETS: Dictionary = {
 	"green": "res://assets/vfx/green.png",
 }
 
-## BDragon1727 cells, 16x16 each, (column, row).
 const ANIMS: Dictionary = {
 	"slash": {"cells": [Vector2i(10, 3), Vector2i(11, 3), Vector2i(12, 3)], "fps": 26.0, "loop": false},
 	"spark": {"cells": [Vector2i(10, 5), Vector2i(11, 5), Vector2i(12, 5)], "fps": 22.0, "loop": false},
@@ -30,7 +27,6 @@ const ANIMS: Dictionary = {
 	"rain_splash": {"cells": [Vector2i(30, 6), Vector2i(31, 6), Vector2i(32, 6)], "fps": 18.0, "loop": false},
 }
 
-## Warped City strips: folder, frame count, fps, loop.
 const STRIPS: Dictionary = {
 	"explosion": {"path": "res://assets/warped_city/misc/enemy-explosion/enemy-explosion-%d.png", "count": 6, "fps": 16.0, "loop": false},
 	"drone": {"path": "res://assets/warped_city/misc/drone/drone-%d.png", "count": 4, "fps": 10.0, "loop": true},

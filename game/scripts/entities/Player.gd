@@ -1,8 +1,5 @@
 class_name Player
 extends CharacterBody2D
-## VINCENT-09. Celeste-style movement (coyote time, jump/parry buffers, corner correction),
-## a 360-degree mouse-aimed kinetic deflector, SANABI air recoil, 2.5D Z-lane switching,
-## kinetic wall-slam, Sandevistan afterimages, and the 1.5s Blackout Rebound.
 
 signal died
 signal deflected(p: Projectile)
@@ -42,9 +39,7 @@ var aim_dir: Vector2 = Vector2.RIGHT
 var input_enabled: bool = true
 var dead: bool = false
 var in_blackout: bool = false
-## Non-zero overrides mouse aim (automated tests, future gamepad stick).
 var aim_override: Vector2 = Vector2.ZERO
-## Why the last death happened: "hit", "timeout", "fall" or "restart" (read by the director).
 var death_cause: String = ""
 
 var _coyote: float = 0.0
@@ -131,8 +126,6 @@ func _ready() -> void:
 	_last_ms = Time.get_ticks_msec()
 
 
-# ================================================================= main loop
-
 func _physics_process(delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 	var real_delta: float = minf(float(now - _last_ms) / 1000.0, 0.1)
@@ -166,8 +159,6 @@ func _tick(delta: float, real_delta: float) -> void:
 	_jump_buffer -= delta
 	_parry_buffer -= delta
 	_parry_active -= delta
-	## In Blackout the world runs at quarter speed. The parry recharge stays on real time there,
-	## so a click that came too early does not lock the player out when the shot arrives.
 	_parry_cd -= real_delta if in_blackout else delta
 	_dash_cd -= delta
 	_lane_charge -= real_delta
@@ -195,8 +186,6 @@ func _tick(delta: float, real_delta: float) -> void:
 func _read_input() -> void:
 	if Input.is_action_just_pressed("jump"):
 		if not is_on_floor() and _coyote <= 0.0 and _air_dashes > 0 and _dash_time <= 0.0:
-			## Space again in mid-air spends the air-dash straight up, steered by A/D. It is the
-			## keyboard way to climb: no need to swing the cursor above your head first.
 			_start_dash(Vector2(Input.get_axis("move_left", "move_right") * 0.55, -1.0))
 		else:
 			_jump_buffer = JUMP_BUFFER
@@ -224,8 +213,6 @@ func _read_input() -> void:
 		elif Input.is_action_just_pressed("lane_toggle"):
 			switch_lane(1 - lane)
 
-
-# ================================================================= movement
 
 func _move(delta: float) -> void:
 	var axis: float = Input.get_axis("move_left", "move_right") if input_enabled else 0.0
@@ -302,7 +289,7 @@ func _start_dash(forced: Vector2 = Vector2.ZERO) -> void:
 	var dir: Vector2 = aim_dir
 	if forced != Vector2.ZERO:
 		dir = forced
-		_jumping = false  # releasing Space must not cut the rise that follows the dash
+		_jumping = false
 	elif absf(dir.y) < 0.25:
 		dir = Vector2(signf(dir.x) if dir.x != 0.0 else float(_facing), 0.0)
 	_dash_dir = dir.normalized()
@@ -323,8 +310,6 @@ func _squash() -> void:
 	_sprite.scale = Vector2(1.18, 0.82)
 	tw.tween_property(_sprite, "scale", Vector2.ONE, 0.12)
 
-
-# ================================================================= parry
 
 func _start_parry() -> void:
 	_parry_buffer = 0.0
@@ -463,8 +448,6 @@ func _shockwave_dash_scan() -> void:
 			JuiceManager.fx("spark", "cyan", p.global_position, 0.0, 1.6)
 
 
-# ================================================================= wall slam
-
 func _wall_slam() -> void:
 	if _wall_vel.length() < 150.0:
 		return
@@ -499,14 +482,11 @@ func _slam_scan() -> void:
 			e.take_damage(3, self)
 
 
-# ================================================================= lanes
-
 func switch_lane(to: int, launch: bool = true) -> void:
 	if to == lane or dead:
 		return
 	var launch_v: float = _lane_launch_velocity(to)
 	if is_nan(launch_v):
-		## Never let a depth switch be suicide: no standable surface in that lane here.
 		JuiceManager.text_pop(chest(), "NO DEPTH SURFACE", Color("#FF9900"), 8)
 		AudioManager.play_sfx("echo_glitch", 1.6, -8.0)
 		_lane_cd = 0.25
@@ -529,8 +509,6 @@ func switch_lane(to: int, launch: bool = true) -> void:
 
 
 func _lane_launch_velocity(to: int) -> float:
-	## Find the first standable surface in the target lane above or just below us and
-	## return the upward velocity that lands on it (decks are one-way, so we rise through).
 	var feet: float = global_position.y + FEET_Y
 	var space := get_world_2d().direct_space_state
 	var mask: int = GameState.BIT_WORLD_BG if to == 1 else GameState.BIT_WORLD_FG
@@ -558,8 +536,6 @@ func _emp_blast() -> void:
 
 
 func _update_prediction() -> void:
-	## Saif's fire control draws where it expects the courier to be. It is the move model's real
-	## output, and part of every enemy's aim goes there.
 	if _pred == null:
 		_pred = Sprite2D.new()
 		_pred.top_level = true
@@ -594,10 +570,7 @@ func _visual_scale() -> float:
 	return lerpf(1.0, BG_SCALE, _lane_visual)
 
 
-# ================================================================= damage / blackout
-
 func receive_projectile(p: Projectile) -> bool:
-	## Called by an enemy projectile that overlapped the hurtbox. True = it hit.
 	if dead:
 		return false
 	if _aegis_active > 0.0 and not p.is_core:
@@ -734,8 +707,6 @@ func chest() -> Vector2:
 	return global_position + Vector2(0, -6.0 + 14.0 * (1.0 - _visual_scale()))
 
 
-# ================================================================= visuals
-
 func _flash(color: Color, dur: float) -> void:
 	_flash_mat.set_shader_parameter("flash_color", color)
 	_flash_mat.set_shader_parameter("active", true)
@@ -748,7 +719,6 @@ func _afterimages(real_delta: float) -> void:
 		trail = true
 	if not trail:
 		return
-	## Standing still, the afterimages would stack on the player and recolour the sprite.
 	if velocity.length() < 40.0 and _dash_time <= 0.0 and _slam_time <= 0.0 and not in_blackout:
 		return
 	_ghost_t -= real_delta

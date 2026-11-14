@@ -1,7 +1,4 @@
 extends Node
-## Headless end-to-end mechanics test. Drives the real input actions with an auto-parry bot.
-## Run: tools\bin\godot.cmd --headless --path game res://tests/MechTest.tscn
-## Prints PASS/FAIL per check and "MECHTEST passed=N failed=M"; exit code 1 on any failure.
 
 var main: Node
 var passed: int = 0
@@ -12,7 +9,6 @@ var _release_next: bool = false
 
 
 func _ready() -> void:
-	## These checks pin the fixed mechanics, so the adaptive director is off and never saves.
 	Director.enabled = false
 	Director.persist = false
 	main = load("res://scenes/Main.tscn").instantiate()
@@ -100,7 +96,6 @@ func _run() -> void:
 	_check("stage1 loaded", main.stage != null and main.stage.stage_index == 1)
 	_check("player landed", p != null and p.is_on_floor(), "pos=%s" % str(p.global_position if p else Vector2.ZERO))
 
-	# T1: basic deflect
 	bot_on = true
 	bot_target = null
 	var shot: Projectile = _shoot_at_player(80.0)
@@ -108,7 +103,6 @@ func _run() -> void:
 	_check("T1 deflect turns shot to player team", is_instance_valid(shot) == false or shot.team == Projectile.Team.PLAYER, "parries=%d" % GameState.parries)
 	_check("T1 parry counted + sync gained", GameState.parries >= 1 and GameState.sync_rate >= 10.0, "sync=%.1f" % GameState.sync_rate)
 
-	# T2: Enforcer rally -> railgun -> kill
 	var feet: Vector2 = p.global_position + Vector2(130, Player.FEET_Y)
 	var enf := EnemyBase.create(EnemyBase.Kind.ENFORCER, feet - Vector2(0, 20), 0, {"interval": 1.0})
 	main.stage.enemies_node.add_child(enf)
@@ -120,9 +114,7 @@ func _run() -> void:
 	_check("T2 enforcer killed by rally", not is_instance_valid(enf) or not enf.alive, "t=%.2fs best_rally=%d" % [t, GameState.best_rally])
 	_check("T2 rally reached railgun (bounce>=3)", GameState.best_rally >= 3, "best_rally=%d" % GameState.best_rally)
 
-	# T3: blackout -> rebound
 	bot_on = false
-	## Bystanders for the rebound shockwave: a walker and a turret to the player's left.
 	var walker := EnemyBase.create(EnemyBase.Kind.ENFORCER, p.global_position + Vector2(-70, 0), 0, {"patrol": 30.0})
 	walker.active = false
 	main.stage.enemies_node.add_child(walker)
@@ -138,8 +130,6 @@ func _run() -> void:
 	_check("T3 world slowed to 0.25", is_equal_approx(JuiceManager.base_time_scale, 0.25))
 	bot_on = true
 	bot_target = null
-	## Fast enough to catch the player, who is still sliding away from the first hit. (Until 2026-11-13
-	## this check passed by deflecting the shot that had already hit; that is no longer possible.)
 	_shoot_at_player(50.0, 600.0)
 	await _wait(0.9)
 	_check("T3 deflect during Blackout = Rebound", not p.in_blackout and GameState.rebounds == 1, "rebounds=%d" % GameState.rebounds)
@@ -152,7 +142,6 @@ func _run() -> void:
 	walker.queue_free()
 	bolted.queue_free()
 
-	# T4: blackout -> second hit -> death -> VHS rewind
 	bot_on = false
 	await _wait(1.3)
 	var deaths_before: int = GameState.loop_deaths
@@ -164,7 +153,6 @@ func _run() -> void:
 	_check("T4 death registered", GameState.loop_deaths == deaths_before + 1, "loops=%d" % GameState.loop_deaths)
 	_check("T4 player respawned alive", not p.dead and not p.in_blackout)
 
-	# T5: module carrier -> pickup -> Overclock choice -> stage 2
 	var carrier: EnemyBase = null
 	for e: Node in get_tree().get_nodes_in_group("enemies"):
 		if e is EnemyBase and (e as EnemyBase).carries_module:
@@ -185,12 +173,10 @@ func _run() -> void:
 		_check("T5 choice recorded as Overclock", GameState.choices == ["E"] and GameState.sync_floor() >= 100.0, "choices=%s floor=%.0f" % [str(GameState.choices), GameState.sync_floor()])
 		_check("T5 advanced to stage 2", main.stage != null and main.stage.stage_index == 2)
 
-	# T6: lane switch lands on the overpass
 	await _wait(0.2)
 	_freeze_enemies()
 	await _wait(1.4)
 	p = _p()
-	# Refusal: at x=48 there is no overpass behind the road.
 	bot_on = true
 	bot_target = null
 	_shoot_at_player(70.0)
@@ -216,7 +202,6 @@ func _run() -> void:
 	await _wait(1.4)
 	_check("T6 landed on the overpass deck (alive, on floor, BG lane)", not p.dead and p.lane == 1 and p.is_on_floor(), "pos=%s" % str(p.global_position))
 
-	# T7: boss phases + 5-bounce execution rally
 	bot_on = false
 	main.load_stage(4)
 	await _wait(2.6)
@@ -228,7 +213,6 @@ func _run() -> void:
 			w.die()
 	await _wait(1.2)
 	_check("T7 wings down -> phase 2 depth retreat (BG lane)", boss.phase == 2 and boss.lane == 1)
-	# Cross-plane parry: deflect one of his rail-missiles back into the hull.
 	bot_on = true
 	bot_target = boss
 	var hp_before: int = boss.hp

@@ -1,7 +1,4 @@
 extends SceneTree
-## Writes the recording sheet for the voiced lines from DialogueData, so the sheet's file names
-## always match the keys the game looks for.
-##   godot --headless --path game --script res://tests/VoiceSheet.gd -- --out=<abs path>/VOICE_SCRIPT.md
 
 const COLD: PackedStringArray = ["s3_rally", "s3_module", "s4_intro", "s4_phase2", "s4_phase3", "s4_win",
 		"loop_b_3", "loop_b_8", "idle_b", "after_Q_3", "after_E_3"]

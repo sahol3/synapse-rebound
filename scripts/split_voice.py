@@ -77,8 +77,6 @@ def best_window(line: list[str], words: list[str], lo: int, hi: int) -> tuple[fl
     target = " ".join(line)
     n = len(line)
     best = (0.0, -1, -1)
-    ## A take can open with a word the transcript misheard, so a start is tried wherever any of the next
-    ## four words is one of the line's first four.
     head = set(line[:4])
     for i in range(lo, hi):
         if not head.intersection(words[i:i + 4]):
@@ -120,7 +118,6 @@ def match(words_path: Path) -> None:
             continue
         found.append({"speaker": r["speaker"], "key": r["key"], "n": r["n"], "score": round(score, 2), "i": i, "j": j,
                       "s": tw[i]["s"], "e": tw[j]["e"], "said": said(tw[i:j + 1]), "text": r["text"]})
-    ## Two lines must not claim the same words: the better match keeps them.
     found.sort(key=lambda f: -f["score"])
     kept: list[dict] = []
     for f in found:
@@ -203,7 +200,6 @@ def cut(source: Path, cuts_path: Path, out_dir: Path, speaker: str) -> None:
     cuts = json.loads(cuts_path.read_text(encoding="utf-8"))
     levels, step = envelope(source)
     total = len(levels) * step
-    ## Room noise is the level the recording sits at when nobody speaks; a pause is anything within 7 dB of it.
     floor = sorted(levels)[len(levels) // 10]
     quiet = floor + 7.0
     print("room noise %.1f dB, pause threshold %.1f dB" % (floor, quiet))
@@ -214,8 +210,6 @@ def cut(source: Path, cuts_path: Path, out_dir: Path, speaker: str) -> None:
     for c in cuts:
         if speaker != "both" and c["speaker"] not in (speaker, "meme"):
             continue
-        ## Whisper's word edges are approximate. Each cut goes into the real pause nearest to the line's
-        ## first or last word: 0.10 s before the voice starts and up to 0.18 s after it stops.
         nxt = c["next_s"] if c["next_s"] is not None else total
         tight_start = c["s"] - c["prev_e"] < 0.25
         tight_end = nxt - c["e"] < 0.25

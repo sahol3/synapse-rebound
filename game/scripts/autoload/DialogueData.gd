@@ -1,18 +1,12 @@
 extends Node
-## Every line of the Stage 1-4 script, the module choices and the endings.
-## Speakers: SAIF (cyan HUD comms, top-left), ECHO (crimson glitch toast), LOG (a recording of
-## Saif's voice that the Echo plays back),
-## WORLD (giant kinetic typography burned onto the buildings), SYS (HUD banner).
 
 const LINES: Dictionary = {
-	# ---------------------------------------------------------------- ADAPTIVE DIRECTOR
 	"assist_ease": [
 		{"who": "SAIF", "text": "I'm jamming their fire control. Their shots are slower now, so watch one and send it back."},
 	],
 	"assist_hard": [
 		{"who": "ECHO", "text": "They have stopped holding back. So have you."},
 	],
-	# ---------------------------------------------------------------- STAGE 1
 	"s1_intro": [
 		{"who": "WORLD", "text": "00:00:00 // IMPACT AVOIDED // BOUNCING BACK -60.0s"},
 		{"who": "SAIF", "text": "Vincent?! Holy hell, your Lazarus implant actually fired! Listen to me. Syndicate hitters ambushed you on Tower 09 and stripped your weapons!"},
@@ -39,7 +33,6 @@ const LINES: Dictionary = {
 		{"who": "SAIF", "text": "You got your Dash Relay back! Don't overclock it, Vincent. Your neural sync will spike and burn out your memory core. Press [Q] to Stabilize!"},
 		{"who": "ECHO", "text": "Stabilizing it keeps the memory blocks locked. Overclock it [E]. Remember who was standing behind you in the rain."},
 	],
-	# ---------------------------------------------------------------- STAGE 2
 	"s2_intro": [
 		{"who": "SAIF", "text": "Snipers on the parallel overpass! Use heavy recoil or the kinetic rings to bounce yourself across lanes!"},
 		{"who": "SYS", "text": "Press W or S right after a deflection, or touch a Z-ring, to change lanes. Parry sniper shots back into the depth."},
@@ -61,7 +54,6 @@ const LINES: Dictionary = {
 		{"who": "SAIF", "text": "That's your Optic Prism! Stabilize it [Q] now so I can guide you safely up the central shaft!"},
 		{"who": "ECHO", "text": "He doesn't want your optics running at full resolution. Overclock it [E] and look at the IFF tags on these drones. They're HIS division."},
 	],
-	# ---------------------------------------------------------------- STAGE 3
 	"s3_intro": [
 		{"who": "WORLD", "text": "CLIMB BACK TO THE SCENE OF THE CRIME."},
 		{"who": "SAIF", "text": "Wait. Why are you taking the express shaft straight to Rooftop 09?! The landing pad is too hot, turn back to Sector 4!"},
@@ -77,7 +69,6 @@ const LINES: Dictionary = {
 		{"who": "SAIF", "text": "Last warning, Courier. Stabilize that core [Q] and surrender at the roof door, or I will personally vaporize what's left of your nervous system."},
 		{"who": "ECHO", "text": "60 seconds are up. We're back on the roof where we died. Overclock the core [E]. Let's return the bullet he gave us."},
 	],
-	# ---------------------------------------------------------------- STAGE 4
 	"s4_intro": [
 		{"who": "WORLD", "text": "ROOFTOP 09 // 00:00:00"},
 		{"who": "SAIF", "text": "You really came back. Fine. The Valkyrie doesn't miss twice."},
@@ -96,7 +87,6 @@ const LINES: Dictionary = {
 	"s4_win": [
 		{"who": "SAIF", "text": "No... no, no, NO..."},
 	],
-	# ---------------------------------------------------------------- generic
 	"first_death": [
 		{"who": "ECHO", "text": "Rewind. Again. You've died on this roof before, Vincent. Count the loops."},
 	],
@@ -106,7 +96,6 @@ const LINES: Dictionary = {
 	"first_rebound": [
 		{"who": "ECHO", "text": "There it is. We always bounce back."},
 	],
-	# ------------------------------------------------------------ reactive: the two voices watch you play
 	"first_death_s1": [
 		{"who": "SAIF", "text": "That was the Lazarus implant. It throws you back a few seconds every time you die. Get up and go again."},
 	],
@@ -146,7 +135,6 @@ const LINES: Dictionary = {
 	"rally_3": [
 		{"who": "ECHO", "text": "Third bounce. The shot comes back harder every time. So do we."},
 	],
-	# ------------------------------------------------------------ the two voices answer the module choice
 	"after_Q_1": [
 		{"who": "SAIF", "text": "Good. You kept the relay stable. Keep trusting me and I will get you out of this."},
 		{"who": "ECHO", "text": "He sounded relieved. Ask yourself what a handler has to be relieved about."},
@@ -171,7 +159,6 @@ const LINES: Dictionary = {
 		{"who": "SAIF", "text": "Four hundred percent. You have burned out everything I left in you."},
 		{"who": "ECHO", "text": "Everything he left in us was a leash. Finish it."},
 	],
-	# ------------------------------------------------------------ fire control: he has a model of you
 	"pred_first": [
 		{"who": "ECHO", "text": "That outline is his fire control. He trained it on forty of our deliveries. Be someone he has not met."},
 	],
@@ -188,7 +175,6 @@ const LINES: Dictionary = {
 	"idle_aura": [
 		{"who": "ECHO", "text": "Aura farming on a rooftop. He can still see you."},
 	],
-	# ------------------------------------------------------------ Saif wants you slow
 	"sync_high": [
 		{"who": "SAIF", "text": "Your sync is climbing too fast. Ease off, Vincent. Slow is how you stay alive."},
 		{"who": "ECHO", "text": "Slow is how he keeps us small."},
@@ -199,7 +185,6 @@ const LINES: Dictionary = {
 	"idle_b": [
 		{"who": "SAIF", "text": "Standing still, Courier? Good. Stay right there."},
 	],
-	# ------------------------------------------------------------ Continue: where we were
 	"resume_1": [
 		{"who": "ECHO", "text": "Back in the alley. Someone shot us off the roof, and Saif says it was a syndicate. Keep climbing."},
 	],
@@ -217,8 +202,6 @@ const LINES: Dictionary = {
 	],
 }
 
-## Shown again when the director sees the player stuck (repeat deaths, or a long time without
-## reaching the next checkpoint). One per stage, the one thing that gets you through it.
 const STUCK_HINTS: PackedStringArray = [
 	"Put the cursor on a shot and click as it reaches you. Space again in the air dashes upward.",
 	"Deflect a shot, then press W or S at once to change lanes. A Z-ring changes lanes for you.",
@@ -226,8 +209,6 @@ const STUCK_HINTS: PackedStringArray = [
 	"Send his shots back: the wing turrets first, then the hull, then five bounces off the cockpit.",
 ]
 
-## Shown in place of the stage hint when the director's skill model says the player has had the
-## chance to use a mechanic and has not shown it yet.
 const SKILL_HINTS: Dictionary = {
 	"parry": "To deflect, put the cursor on the shot and click just before it reaches you.",
 	"rebound": "When you are hit, time slows and the screen turns red. Deflect any shot in that moment to come back.",
@@ -236,7 +217,6 @@ const SKILL_HINTS: Dictionary = {
 	"lane": "Deflect a shot, then press W or S at once to change lanes.",
 }
 
-## Burned onto the buildings at random while Sync is 200%+ (The Echo leaking through).
 const ECHO_FRAGMENTS: PackedStringArray = [
 	"WHO PULLED THE TRIGGER",
 	"HE WAS BEHIND YOU",
@@ -250,11 +230,8 @@ const ECHO_FRAGMENTS: PackedStringArray = [
 	"BOUNCE BACK",
 ]
 
-## The three reveals the plot turns on. Time slows for two seconds when one starts, so the player
-## can take it in.
 const FOCUS: PackedStringArray = ["s1_echo", "s2_first_lane", "s3_rally"]
 
-## Shown once before a new game, one line at a time. Any key skips it.
 const PROLOGUE: PackedStringArray = [
 	"23:59. The roof of Tower 09, Neo-Dhaka.",
 	"Someone you trusted takes your gun, wipes your memory and shoots you off the edge.",
@@ -262,8 +239,6 @@ const PROLOGUE: PackedStringArray = [
 	"You have a wrist-guard that sends shots back, and a tower to climb.",
 ]
 
-## The Lore tab. Entries without "how" are readable from the start; the rest are recovered by
-## playing, and a locked entry shows its title and what recovers it.
 const MEMORIES: Array[Dictionary] = [
 	{"id": "vincent", "title": "VINCENT-09",
 		"text": "You are a courier in Neo-Dhaka. You carry sealed cases between towers and you do not open them. At midnight someone took your modules, locked your weapons, wiped your memory and shot you off the roof of Tower 09."},
@@ -295,10 +270,8 @@ const MEMORIES: Array[Dictionary] = [
 		"text": "You keep both voices and leave the roof with the case."},
 ]
 
-## Shown under the title on the menu: the premise and the jam theme in one line.
 const TAGLINE: String = "Shot off Tower 09 at midnight. Sixty seconds to bounce back."
 
-## "beat" is the meaning of Bounce Back that the stage is built on. It shows on the stage card.
 const STAGES: Array[Dictionary] = [
 	{"title": "STAGE 01", "name": "THE AWAKENING ALLEY", "time": "0:00 - 0:50", "beat": "Bounce their bullets back."},
 	{"title": "STAGE 02", "name": "THE DUAL-HIGHWAY OVERPASS", "time": "0:50 - 1:45", "beat": "Bounce between the lanes."},
@@ -356,7 +329,6 @@ const ENDINGS: Dictionary = {
 }
 
 
-## The second page of each ending: where everyone is after the part the ending tells.
 const EPILOGUE: Dictionary = {
 	"A": [
 		{"who": "VINCENT", "text": "He took a room above a noodle bar in Sector 4, under a name that is on no courier list. He still wakes at midnight. He has not carried a sealed case since."},
@@ -390,8 +362,6 @@ func memory(id: String) -> Dictionary:
 	return {}
 
 
-## The line a voice says when the player has died `n` times this run, or "" for most counts.
-## Saif still plays the handler in Stages 1 and 2 and has dropped the act by Stage 3.
 func loop_id(n: int, stage: int) -> String:
 	if n in [3, 5, 8, 12]:
 		return "loop_%s_%d" % ["a" if stage <= 2 else "b", n]

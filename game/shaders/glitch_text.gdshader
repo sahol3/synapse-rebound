@@ -1,5 +1,4 @@
 shader_type canvas_item;
-// The Echo's world-space typography: slice jitter, RGB ghosting, flicker.
 
 uniform float intensity : hint_range(0.0, 1.0) = 1.0;
 uniform vec4 tint : source_color = vec4(1.0, 0.0, 0.2, 1.0);

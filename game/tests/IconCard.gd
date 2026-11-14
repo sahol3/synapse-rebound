@@ -1,10 +1,4 @@
 extends SceneTree
-## Lays out the game's icon from art that already ships: the Warped City skyline, the player's
-## deflect pose, one enemy shot and the title in m5x7. Nothing is drawn here; every pixel comes
-## from a pack file or the font. The 64x64 layout is captured and scaled 4x without smoothing.
-##
-## Run with a window (not --headless):
-##   godot --path game --script res://tests/IconCard.gd -- --out=<absolute path>.png
 
 const ART: int = 64
 const SCALE: int = 4
@@ -22,17 +16,13 @@ class Card extends Node2D:
 
 	func _draw() -> void:
 		texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		# Skyline: the sunset band sits behind the legs, open night sky behind the head and the title.
 		draw_texture_rect_region(sky, Rect2(0, 0, 64, 64), Rect2(32, 118, 64, 64))
-		# Player, feet on the bottom edge, with the same 1 px dark outline the interface text uses.
 		var at := Vector2(-11, -3)
 		for d: Vector2 in [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1)]:
 			draw_texture(hero, at + d, INK)
 		draw_texture(hero, at)
-		# The shot he has just sent back, leaving the wrist-guard.
 		draw_texture(spark, Vector2(40, 22))
 		draw_texture(shot, Vector2(49, 22), Color("#00F0FF"))
-		# Title.
 		PixelFont.draw(self, Vector2(32, 3), "REBOUND", 1, Color("#F2F4FF"), 2)
 
 

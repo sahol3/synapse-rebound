@@ -1,11 +1,5 @@
 class_name EnemyBase
 extends Node2D
-## Turrets, flying drones, background snipers, Syndicate Enforcers (kinetic shield that rallies
-## your deflection back), Highway Heavies, gold Deflector drones, and the boss's wing turrets.
-## One class, behaviour picked by `kind`, so every enemy shares telegraphs, lanes, hit-flash and death.
-## Each kind has its own look: turrets and drones from Warped City; the Enforcer (rifle soldier),
-## the Stage 3 commander (bipedal walker), the Heavy (mech), the sniper (tank) and the Deflector
-## (winged drone) from the Sideview Sci-Fi pack. `skin` picks the art, never the behaviour.
 
 signal killed(enemy: EnemyBase)
 signal sniper_locked
@@ -17,10 +11,6 @@ const BG_SCALE: float = 0.78
 const BG_TINT: Color = Color(0.65, 0.75, 0.95)
 const SHIELD_COLOR: Color = Color("#FF0055")
 const SV: String = "res://assets/sideview_scifi/"
-## Art for the kinds that have their own character (Sideview Sci-Fi by Ansimuz, CC0).
-## anims: [name, file, frame width, frame height, frames, fps, crop x, crop width]; a "%d" in the
-## file name means one numbered file per frame. pos puts the feet (or the body, for flyers) on
-## the node; faces is the direction the art looks (1 right, -1 left).
 const SKINS: Dictionary = {
 	"marine": {
 		"anims": [["idle", "space-marine-idle.png", 48, 48, 4, 7.0, 0, 48], ["walk", "space-marine-run.png", 48, 48, 11, 14.0, 0, 48],
@@ -197,7 +187,6 @@ func _build_sprite() -> void:
 		_sprite.sprite_frames = _skin_frames(SKINS[skin])
 		_sprite.position = SKINS[skin]["pos"]
 		_sprite.play("default" if _sprite.sprite_frames.has_animation("default") else "idle")
-		## The new art is drawn at its own size; base_scale still sizes the logic (Heavy).
 		_body.scale = Vector2.ONE
 		return
 	match kind:
@@ -207,7 +196,6 @@ func _build_sprite() -> void:
 			if kind == Kind.WING:
 				_sprite.modulate = Color(1.3, 0.6, 1.2)
 		_:
-			## Drones. Every other kind has a skin and returned above.
 			_sprite.sprite_frames = FxLib.frames("drone")
 	_sprite.play("default" if _sprite.sprite_frames.has_animation("default") else "idle")
 	_body.scale = Vector2.ONE * base_scale
@@ -226,8 +214,6 @@ func _hurt_size() -> Vector2:
 	return Vector2(20, 18)
 
 
-# ================================================================= behaviour
-
 func _physics_process(delta: float) -> void:
 	if not alive:
 		return
@@ -238,18 +224,13 @@ func _physics_process(delta: float) -> void:
 	if _flash_t <= 0.0:
 		_flash_mat.set_shader_parameter("active", false)
 	if _shove.length() > 1.0:
-		## Enemies are not physics bodies, so a shove must never carry them through the world.
-		## (A rebound from above used to push walkers into the floor, out of reach, and the
-		## module they carried with them.)
 		match kind:
 			Kind.DRONE, Kind.DEFLECTOR:
-				## Flyers drift, then ease back to their anchor.
 				position += _shove * delta
 			Kind.ENFORCER, Kind.HEAVY:
-				## Walkers slide along their platform only, inside their patrol range.
 				position.x = clampf(position.x + _shove.x * delta, _anchor.x - patrol, _anchor.x + patrol)
 			_:
-				pass  # turrets, snipers and wing turrets are bolted down: stunned, not moved
+				pass
 		_shove = _shove.move_toward(Vector2.ZERO, 600.0 * delta)
 	var player: Player = _player()
 	match kind:
@@ -265,13 +246,11 @@ func _physics_process(delta: float) -> void:
 	elif active:
 		_fire_logic(delta, player)
 	if skin != "":
-		## Keep the body, not the frame, centred on the node when the art turns around.
 		_sprite.position.x = float(SKINS[skin]["pos"].x) * (-1.0 if _sprite.flip_h else 1.0)
 	_overlay.queue_redraw()
 
 
 func _face(player: Player) -> void:
-	## Turn toward the player. Warped City turrets and drones are drawn looking left.
 	if player == null:
 		return
 	var player_right: bool = player.global_position.x > global_position.x
@@ -280,7 +259,6 @@ func _face(player: Player) -> void:
 
 
 func _facing_sign() -> float:
-	## 1 when the enemy currently looks right, -1 when it looks left.
 	var art_faces: float = float(SKINS[skin]["faces"]) if skin != "" else -1.0
 	return -art_faces if _sprite.flip_h else art_faces
 
@@ -291,7 +269,6 @@ func _walk(delta: float, player: Player) -> void:
 	var dx: float = player.global_position.x - global_position.x
 	_sprite.flip_h = dx < 0.0
 	if patrol <= 0.0 or _stun > 0.0 or _charge_t > 0.0:
-		## While charging a shot the firing pose stays up: it is the tell that a shot is coming.
 		var pose: String = "shoot" if _charge_t > 0.0 and _sprite.sprite_frames.has_animation("shoot") else "idle"
 		if _sprite.animation != pose:
 			_sprite.play(pose)
@@ -315,8 +292,6 @@ func _fire_logic(delta: float, player: Player) -> void:
 		return
 	var can_see: bool = _can_target(player)
 	if can_see and player.in_blackout and Director.claim_mercy():
-		## Blackout runs at quarter speed, so a normal shot never arrives inside the window.
-		## One enemy fires a fast shot at once: there is always something to rebound off.
 		_charge_t = 0.0
 		_fire(player, true)
 		_fire_t = fire_interval * Director.fire_interval_mult()
@@ -379,7 +354,6 @@ func _fire(player: Player, mercy: bool = false) -> void:
 	for s: float in spread:
 		var opts: Dictionary = {"heavy": heavy, "shooter": self}
 		if mercy:
-			## The rebound shot tracks the player, so the knock-back cannot carry them out of its path.
 			opts["homing"] = player
 		var p := Projectile.make(from + dir * 8.0, dir.rotated(s) * speed, Projectile.Team.ENEMY, lane, opts)
 		if mercy:
@@ -432,8 +406,6 @@ func _laser_line(alpha: float, width: float) -> void:
 	_laser.width = width
 	_laser.default_color = Color(1, 0.05, 0.2, alpha)
 
-
-# ================================================================= damage
 
 func receive_projectile(p: Projectile) -> String:
 	if not alive:
@@ -489,7 +461,6 @@ func die() -> void:
 	JuiceManager.hitstop(0.06)
 	JuiceManager.shake(0.35 * big)
 	AudioManager.play_sfx("explosion", randf_range(0.85, 1.1))
-	## About one enforcer or sniper in six goes down with the oldest scream in cinema.
 	if (kind == Kind.ENFORCER or kind == Kind.SNIPER) and randf() < 0.17 \
 			and Time.get_ticks_msec() - _last_scream_ms > 25000:
 		_last_scream_ms = Time.get_ticks_msec()
@@ -510,8 +481,6 @@ func _flash(color: Color, dur: float) -> void:
 	_flash_mat.set_shader_parameter("active", true)
 	_flash_t = dur
 
-
-# ================================================================= visuals
 
 func _player() -> Player:
 	var p: Node = get_tree().get_first_node_in_group("player")

@@ -1,28 +1,19 @@
 class_name HudController
 extends CanvasLayer
-## In-run interface. Kept small and quiet: no panels, no labels for things the player can see,
-## outlined pixel type straight over the art. The layer is scaled by Display.ui, so coordinates
-## are interface pixels: 576x324 at the design size, and W x H follow the window everywhere else.
-## Top-left: the comms line (Saif and The Echo take turns). Top-right: Neural Sync.
-## Bottom: tutorial hints, stage name, boss. Clock, loops and modules live on the pause screen.
-## Everything animates on real time.
 
 signal module_choice(choice: String)
 signal pause_action(action: String)
 signal ending_closed
 signal prologue_done
-## The after-story moved to its next scene (0 = Vincent, 1 = Saif, 2 = The Echo, 3 = the city).
 signal epilogue_beat(index: int)
 
-## Seconds the ending text and stats stay up before the after-story starts by itself.
 const EPI_AUTO: float = 12.0
-## Seconds each after-story scene is held.
 const EPI_BEAT: float = 7.5
 
-var U: int = 2  ## screen pixels per interface pixel (Display.ui)
-var W: int = 576  ## interface size; follows the window (Display.ui_size)
+var U: int = 2
+var W: int = 576
 var H: int = 324
-const LH: int = 11  ## line height at 1x
+const LH: int = 11
 
 const CYAN: Color = Color("#00F0FF")
 const MAGENTA: Color = Color("#FF0055")
@@ -113,16 +104,12 @@ func _apply_display() -> void:
 
 
 func _oy() -> float:
-	## Keeps blocks designed for a 324-pixel-tall interface centred on a taller or shorter one.
 	return floorf(float(H - 324) * 0.5)
 
 
 func _ox() -> float:
-	## Left margin of the modal screens: 48 at the design width, never under 24.
 	return maxf(24.0, 48.0 + floorf(float(W - 576) * 0.5))
 
-
-# ================================================================= frame
 
 func _process(_delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
@@ -130,7 +117,6 @@ func _process(_delta: float) -> void:
 	_last_ms = now
 	_real_t += dt
 	_tick_comms(dt)
-	## A hint waits while the stage name is up; both live at the bottom of the screen.
 	if _card_t < 0.0:
 		_sys_t -= dt
 	if _card_t >= 0.0:
@@ -180,15 +166,10 @@ func _process(_delta: float) -> void:
 				epilogue_beat.emit(now_beat)
 	_sync_display = lerpf(_sync_display, GameState.sync_rate, clampf(dt * 10.0, 0.0, 1.0))
 	var playing: bool = show_gameplay and not _module_open and not _ending_open
-	## Confined while playing: in a window, a click that lands outside it would take focus away
-	## from the game and every key would stop working until the player clicked back in.
-	## (Browsers cannot confine the pointer, so the web build only hides it.)
 	var play_mode: int = Input.MOUSE_MODE_HIDDEN if OS.get_name() == "Web" else Input.MOUSE_MODE_CONFINED_HIDDEN
 	Input.mouse_mode = (play_mode if playing and not get_tree().paused else Input.MOUSE_MODE_VISIBLE) as Input.MouseMode
 	_overlay.queue_redraw()
 
-
-# ================================================================= dialogue
 
 func say(id: String) -> void:
 	var all: Array = DialogueData.lines(id)
@@ -198,7 +179,6 @@ func say(id: String) -> void:
 		var text: String = line["text"]
 		match who:
 			"SAIF", "ECHO", "LOG":
-				## The key names the recording for this line: <id>_<position in the list>.
 				_queue.append({"who": who, "text": PixelFont.clean(text), "key": "%s_%d" % [id, i + 1],
 						"sfx": String(line.get("sfx", ""))})
 			"SYS":
@@ -230,14 +210,12 @@ func _tick_comms(dt: float) -> void:
 		_line_speed = 40.0 if who == "ECHO" else 55.0
 		var spoken: float = AudioManager.play_voice(who, String(_line.get("key", "")))
 		if spoken > 0.0:
-			## A recorded line stays up for as long as it is spoken, and the text keeps pace with it.
 			_line_t = maxf(_line_t, spoken + 0.5)
 			_line_speed = clampf(n / maxf(spoken * 0.85, 0.4), 14.0, 80.0)
 		else:
 			AudioManager.play_sfx("echo_glitch" if who == "ECHO" else "saif_comms")
 		var cue: String = String(_line.get("sfx", ""))
 		if cue != "":
-			## The channel's filter bleeps the handler at the moment the text reaches the gap.
 			var at: float = maxf(float(String(_line["text"]).find("----")), 0.0) / _line_speed
 			get_tree().create_timer(at, true, false, true).timeout.connect(
 					func() -> void: AudioManager.play_sfx(cue))
@@ -257,7 +235,6 @@ func stage_card(index: int) -> void:
 
 
 func saved_flash() -> void:
-	## A checkpoint was reached and the run was written to disk.
 	_saved_t = 0.0
 
 
@@ -298,19 +275,16 @@ func loop_flash(deaths: int, note: String = "") -> void:
 
 
 func flash(text: String, col: Color = AMBER) -> void:
-	## One short line in the middle of the screen: a rebound, a personal best.
 	_flash_s = text
 	_flash_col = col
 	_flash_t = 0.0
 
 
 func back_flash() -> void:
-	## The player deflected a shot during Blackout and is back on their feet.
 	flash("BOUNCED BACK")
 
 
 func call_shown(word: String) -> void:
-	## Fire control has named the player's next move.
 	_call_s = word
 	_call_hit = -1
 	_call_t = 0.0
@@ -322,7 +296,6 @@ func call_result(hit: bool) -> void:
 
 
 func memory_toast(title: String) -> void:
-	## A Lore entry was recovered.
 	_mem_s = title
 	_mem_t = 0.0
 
@@ -331,7 +304,6 @@ const PRO_STEP: float = 1.9
 
 
 func play_prologue() -> void:
-	## The premise, one line at a time, before a new game. Emits prologue_done at the end or on a key.
 	_pro_t = 0.0
 
 
@@ -347,11 +319,8 @@ func set_ending_note(text: String) -> void:
 
 
 func comms_idle() -> bool:
-	## True when neither voice is speaking or waiting to speak.
 	return _line.is_empty() and _queue.is_empty()
 
-
-# ================================================================= modals
 
 func open_module_choice(stage_index: int) -> void:
 	_module_open = true
@@ -360,7 +329,6 @@ func open_module_choice(stage_index: int) -> void:
 
 
 func pause_note(elapsed: float) -> String:
-	## Leave the game paused and the handler starts a message he never sends.
 	if elapsed >= 20.0 and elapsed < 27.0:
 		return "Saif is typing" + ".".repeat(1 + int(elapsed * 2.0) % 3)
 	if elapsed >= 27.0 and elapsed < 33.0:
@@ -382,8 +350,6 @@ func show_ending(id: String) -> void:
 
 
 func open_epilogue() -> void:
-	## The after-story: one animated scene per character, each with a caption. It starts by
-	## itself; Space only brings it forward.
 	if _ending_open and _epi_t < 0.0:
 		_epi_t = 0.0
 		_epi_beat = -1
@@ -412,7 +378,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		ending_closed.emit()
 		return
 	if _paused:
-		## [ESC] itself is handled by Main (it toggles); here only the panel's extra keys.
 		if event.is_action_pressed("restart"):
 			pause_action.emit("restart")
 			get_viewport().set_input_as_handled()
@@ -431,8 +396,6 @@ func _close_module(choice: String) -> void:
 	module_choice.emit(choice)
 
 
-# ================================================================= drawing helpers
-
 func _t(pos: Vector2, text: String, scale: int, col: Color, align: int = 0) -> void:
 	PixelFont.draw(_overlay, pos, text, scale, col, align)
 
@@ -440,8 +403,6 @@ func _t(pos: Vector2, text: String, scale: int, col: Color, align: int = 0) -> v
 func _dim(alpha: float) -> void:
 	_overlay.draw_rect(Rect2(0, 0, W, H), Color(INK.r, INK.g, INK.b, alpha))
 
-
-# ================================================================= drawing
 
 func _draw_prologue() -> void:
 	_dim(clampf(_pro_t / 0.5, 0.0, 1.0) * 0.9)
@@ -537,8 +498,6 @@ func _draw_comms() -> void:
 
 
 func _draw_fire_control() -> void:
-	## One line under the sync meter: how well Saif's model is reading the player, and for a
-	## moment after each call, what it called and whether it was right.
 	var r: float = W - 12.0
 	if Director.model_stolen:
 		_t(Vector2(r, 50), "you predict him", 1, CYAN, 1)
@@ -566,7 +525,6 @@ func _draw_sync() -> void:
 	var r: float = W - 12.0
 	_t(Vector2(r, 10), "%d%%" % int(round(_sync_display)), 2, col, 1)
 	_t(Vector2(r, 29), GameState.TIER_NAMES[t].to_lower(), 1, Color(col.r, col.g, col.b, 0.75), 1)
-	## Four segments, one per tier, filled continuously; the bar is the only chrome on screen.
 	var seg_w: float = 30.0
 	var x0: float = r - (seg_w * 4.0 + 6.0)
 	for i: int in 4:
@@ -598,7 +556,6 @@ func _draw_boss() -> void:
 
 
 func _draw_card() -> void:
-	## Stage name, bottom-left, switched on and off in two steps.
 	if _card_t < 0.08 or (_card_t > 2.5 and int(_card_t * 20.0) % 2 == 0):
 		return
 	var s: Dictionary = DialogueData.STAGES[_card_index - 1]
@@ -634,7 +591,6 @@ func _draw_reticle() -> void:
 	var col: Color = CYAN if ready >= 1.0 else DIM
 	if player.in_blackout:
 		col = CRIMSON
-	## Four arms; while the parry recharges they light one by one.
 	var arms: Array[Vector2] = [Vector2.UP, Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT]
 	var lit: int = 4 if ready >= 1.0 else int(ready * 4.0)
 	for i: int in 4:
@@ -654,7 +610,6 @@ func _draw_module() -> void:
 	var m: Dictionary = DialogueData.MODULES[_module_stage - 1]
 	var c: Dictionary = DialogueData.MODULE_COMMON
 	var parts: PackedStringArray = String(m["name"]).split(": ")
-	## Two centred columns; on a small window they narrow instead of running off the screen.
 	var col_w: float = minf(228.0, floorf((W - 56.0) * 0.5))
 	var x0: float = floorf((W - (col_w * 2.0 + 24.0)) * 0.5)
 	var oy: float = maxf(_oy(), -30.0)
@@ -711,7 +666,6 @@ func _draw_pause() -> void:
 
 
 func _draw_epilogue() -> void:
-	## The world shows the scene (Epilogue.gd); this draws the film bars and the caption.
 	var e: Dictionary = DialogueData.ENDINGS[_ending_id]
 	var col: Color = e["color"]
 	var bar: float = 78.0 if H >= 324 else 66.0
@@ -723,7 +677,6 @@ func _draw_epilogue() -> void:
 	var entries: Array = DialogueData.EPILOGUE[_ending_id]
 	var i: int = clampi(_epi_beat, 0, entries.size() - 1)
 	var age: float = _epi_t - i * EPI_BEAT
-	## Each scene opens on the picture alone for a moment, then the caption types in.
 	if age > 0.7:
 		var y: float = H - bar + 8.0
 		_t(Vector2(x0, y), entries[i]["who"], 1, col)
@@ -744,8 +697,6 @@ func _draw_ending() -> void:
 	if _epi_t >= 0.0:
 		_draw_epilogue()
 		return
-	## Flows top to bottom from the real interface size: same positions as before at 576x324,
-	## tighter gaps on a short window, wider margins on a wide one.
 	var e: Dictionary = DialogueData.ENDINGS[_ending_id]
 	var col: Color = e["color"]
 	_dim(clampf(_ending_t / 1.2, 0.0, 1.0) * 0.94)

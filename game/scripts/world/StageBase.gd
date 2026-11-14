@@ -1,9 +1,5 @@
 class_name StageBase
 extends Node2D
-## Builds a stage in code from the Ansimuz Warped City tileset: buildings, catwalks, two depth
-## lanes (foreground layer 1 / background layer 2), props, traffic, rain, parallax, enemies by room,
-## checkpoints for the 0.3s VHS rewind, dialogue triggers, Z-rings and the module carrier.
-## Subclasses override build() and on_trigger().
 
 signal dialogue(id: String)
 signal module_collected(stage_index: int)
@@ -101,7 +97,6 @@ func _process(delta: float) -> void:
 			burn_text(frag, 0.6)
 
 
-## Override in stages.
 func build() -> void:
 	pass
 
@@ -117,8 +112,6 @@ func on_enemy_killed(_e: EnemyBase) -> void:
 func start() -> void:
 	pass
 
-
-# ================================================================= layers
 
 func _make_layers() -> void:
 	traffic = _node("Traffic", -9)
@@ -174,10 +167,7 @@ func _cell(lane: int, c: int, r: int, atlas: Vector2i) -> void:
 	_layer(lane).set_cell(Vector2i(c, r), 0, atlas)
 
 
-# ================================================================= geometry API (tile units)
-
 func building(c0: int, c1: int, top: int, lane: int = 0, deco: bool = true, bottom: int = -9999, one_way: bool = false) -> void:
-	## A block from `top` down to `bottom` (default: the stage's bottom row, i.e. off-screen).
 	var layer_bit: int = GameState.BIT_WORLD_BG if lane == 1 else GameState.BIT_WORLD_FG
 	var bot: int = bottom_row if bottom == -9999 else bottom
 	_roof(c0, c1, top, lane)
@@ -196,7 +186,6 @@ func building(c0: int, c1: int, top: int, lane: int = 0, deco: bool = true, bott
 
 
 func overpass(c0: int, c1: int, row: int, lane: int = 1) -> void:
-	## Thin elevated deck (3 rows) with support pylons every 6 columns.
 	building(c0, c1, row, lane, false, row + 2, true)
 	var c: int = c0 + 3
 	while c < c1 - 1:
@@ -216,7 +205,6 @@ func catwalk(c0: int, c1: int, row: int, lane: int = 0, poles: bool = true) -> v
 
 
 func wall(c0: int, c1: int, r0: int, r1: int, lane: int = 0) -> void:
-	## Solid facade block for wall-slams and shaft walls.
 	var layer_bit: int = GameState.BIT_WORLD_BG if lane == 1 else GameState.BIT_WORLD_FG
 	for r: int in range(r0, r1 + 1):
 		var k: int = (r - r0) % 4
@@ -292,8 +280,6 @@ func _solid_rect(rect: Rect2, layer_bit: int, one_way: bool) -> void:
 	solids.add_child(body)
 
 
-# ================================================================= props, traffic, text
-
 func prop(name_id: String, c: float, r: float, lane: int = 0) -> Node2D:
 	var node: Node2D
 	if ANIM_PROPS.has(name_id):
@@ -351,19 +337,15 @@ func burn_text(text: String, intensity: float = 1.0) -> void:
 	g.text = text
 	g.intensity = intensity
 	world_text.add_child(g)
-	## Upper-middle band: below the comms line, above the player's head; whole pixels only.
 	g.global_position = (center + Vector2(0, -36 + randf_range(-4, 4))).round()
 	AudioManager.play_sfx("echo_glitch", 0.75)
 
-
-# ================================================================= enemies & rooms
 
 func enemy(kind: int, c: float, r: float, lane: int = 0, room: int = 0, opts: Dictionary = {}) -> void:
 	_enemy_defs.append({"kind": kind, "c": c, "r": r, "lane": lane, "room": room, "opts": opts})
 
 
 func checkpoint(c: float, r: float, lane: int = 0, trigger_rect: Rect2 = Rect2()) -> void:
-	## Room boundary. Entering it moves the rewind point here and locks earlier rooms as cleared.
 	var idx: int = _checkpoints.size() + 1
 	var pos := Vector2(c * T, r * T - 20.0)
 	_checkpoints.append({"pos": pos, "lane": lane})
@@ -425,7 +407,6 @@ func checkpoint_count() -> int:
 
 
 func resume_at(room: int) -> void:
-	## Continue from a saved checkpoint: the rewind point moves there and earlier rooms count as cleared.
 	var r: int = clampi(room, 0, _checkpoints.size())
 	if r <= 0:
 		return
@@ -465,7 +446,6 @@ func _spawn_def(d: Dictionary) -> EnemyBase:
 
 
 func reset_room() -> void:
-	## Called on rewind: enemies of the current and later rooms come back, projectiles vanish.
 	for p: Node in projectiles_node.get_children():
 		p.queue_free()
 	for i: int in _enemy_defs.size():
@@ -499,16 +479,12 @@ func enemies_alive_in_room(room: int) -> int:
 	return n
 
 
-# ================================================================= parallax
-
 func _build_parallax() -> void:
 	var pb := ParallaxBackground.new()
 	pb.layer = -10
 	add_child(pb)
 	var vertical: bool = parallax_mode == "shaft"
 	if not vertical:
-		## A taller window shows more sky. The layers stay anchored to the bottom of the view
-		## and this flat strip, in the skyline's own top colour, fills the gap above them.
 		var fill_layer := ParallaxLayer.new()
 		fill_layer.motion_scale = Vector2.ZERO
 		pb.add_child(fill_layer)

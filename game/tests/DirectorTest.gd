@@ -1,8 +1,4 @@
 extends Node
-## Headless checks of the adaptive director's three models and the display scale rule.
-## Pure logic plus simulated players; no stage is loaded.
-## Run: tools\bin\godot.cmd --headless --path game res://tests/DirectorTest.tscn
-## Prints PASS/FAIL per check and "DIRECTORTEST passed=N failed=M"; exit code 1 on any failure.
 
 var passed: int = 0
 var failed: int = 0
@@ -27,8 +23,6 @@ static func _sig(z: float) -> float:
 
 
 func _sim_player(skill_bias: float, shots: int, seed_n: int) -> Dictionary:
-	## A simulated player whose true chance of taking a shot rises with shot speed and crowding
-	## and falls with the wider parry window the director hands out at low challenge.
 	Director.reset_profile()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_n
@@ -52,7 +46,6 @@ func _sim_player(skill_bias: float, shots: int, seed_n: int) -> Dictionary:
 
 
 func _run() -> void:
-	# ------------------------------------------------------------ display scale rule
 	var table: Array = [
 		[Vector2(1152, 648), 3, 2], [Vector2(1920, 1080), 5, 3], [Vector2(1366, 768), 3, 2],
 		[Vector2(1280, 720), 3, 2], [Vector2(1600, 900), 4, 3], [Vector2(2560, 1440), 6, 4],
@@ -78,7 +71,6 @@ func _run() -> void:
 			var sc2: Vector2i = Display.scales_for(Vector2(w, h))
 			var view: Vector2 = Vector2(w, h) / float(sc2.x)
 			var ui: Vector2 = Vector2(w, h) / float(sc2.y)
-			## Near-square windows trade height for the 320-pixel minimum width, so they may run taller.
 			var max_h: float = 300.5 if float(w) / float(h) >= 1.5 else 420.0
 			var bad: bool = view.x < 320.0 or view.y < 150.0 or view.y > max_h \
 					or (sc2.y > 1 and (ui.x < 480.0 or ui.y < 270.0))
@@ -88,7 +80,6 @@ func _run() -> void:
 	_check("D2 every landscape window keeps a playable view and a readable interface", sweep_ok,
 			"%d sizes%s" % [sweep_n, sweep_detail])
 
-	# ------------------------------------------------------------ knobs
 	Director.reset_profile()
 	Director.enabled = true
 	var mono: bool = true
@@ -111,7 +102,6 @@ func _run() -> void:
 			and not Director.mercy_enabled() and is_equal_approx(Director.blackout_bonus(), 0.0))
 	Director.enabled = true
 
-	# ------------------------------------------------------------ model 1: hit model
 	var novice: Dictionary = _sim_player(1.2, 400, 11)
 	var mid: Dictionary = _sim_player(-1.0, 400, 12)
 	var expert: Dictionary = _sim_player(-4.5, 400, 13)
@@ -135,7 +125,6 @@ func _run() -> void:
 	_check("H5 high quit risk lowers the challenge the hit model asks for", tilted_goal < calm_goal,
 			"calm=%.2f tilted=%.2f" % [calm_goal, tilted_goal])
 
-	# ------------------------------------------------------------ model 2: quit model
 	Director.reset_profile()
 	var fresh := PackedFloat32Array([1.0, 0.125, 0.05, 0.17, 0.0, 0.3])
 	var fed_up := PackedFloat32Array([1.0, 0.75, 0.5, 0.83, 1.0, 0.7])
@@ -144,7 +133,6 @@ func _run() -> void:
 			"fresh=%.2f fed_up=%.2f" % [Director.predict_quit(fresh), Director.predict_quit(fed_up)])
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
-	## A stubborn player: quits only when the last life was short, however long the streak.
 	for i: int in 600:
 		var x := PackedFloat32Array([1.0, rng.randf(), rng.randf(), rng.randf(), 1.0 if rng.randf() < 0.5 else 0.0, rng.randf()])
 		Director.quit_learn(x, x[4] > 0.5 and rng.randf() < 0.9)
@@ -175,9 +163,7 @@ func _run() -> void:
 	_check("Q6 two fall deaths switch on the fall assist (extra air-dash, longer coyote time)",
 			Director.extra_air_dashes() == 1 and Director.coyote_bonus() > 0.0)
 
-	# ------------------------------------------------------------ model 3: move model
 	Director.reset_profile()
-	## Run right three steps, jump right two steps, repeat: a habit, not a held key.
 	var cycle: Array[int] = [2, 2, 2, 5, 5]
 	for i: int in 800:
 		Director.move_observe(cycle[i % cycle.size()])
@@ -206,7 +192,6 @@ func _run() -> void:
 			Director.move_acc >= Director.move_base_acc - 0.05,
 			"model=%.2f repeat-last=%.2f" % [Director.move_acc, Director.move_base_acc])
 
-	# ------------------------------------------------------------ fire control: the model calls the next move
 	Director.reset_profile()
 	Director.enabled = true
 	var calls: Array = []
@@ -237,7 +222,6 @@ func _run() -> void:
 	for i: int in 300:
 		Director.move_observe(cycle[i % cycle.size()])
 	_check("F5 calls are spaced by the cooldown", calls.size() - before_cool <= 1, "new calls=%d" % (calls.size() - before_cool))
-	## Break the habit on the step he called: the call is scored a miss.
 	scores.clear()
 	var broke: bool = false
 	for i: int in 400:
@@ -269,7 +253,6 @@ func _run() -> void:
 	Director.call_made.disconnect(on_call)
 	Director.call_scored.disconnect(on_score)
 
-	# ------------------------------------------------------------ persistence
 	Director.challenge = 0.61
 	Director.hit_w[0] = -2.25
 	var saved: Dictionary = Director.to_dict()
@@ -282,7 +265,6 @@ func _run() -> void:
 	saved["v"] = 999
 	_check("P2 a profile from another version is refused", not Director.from_dict(saved))
 
-	# ------------------------------------------------------------ progress saving (file logic)
 	GameState.save_path = "user://save_test.json"
 	GameState.persist = true
 	GameState.reset_run()
@@ -326,7 +308,6 @@ func _run() -> void:
 	GameState.save_run(1)
 	_check("S6 with saving off nothing is written", not FileAccess.file_exists(GameState.save_path))
 
-	# ------------------------------------------------------------ lifetime progress (Lore, endings, bests)
 	GameState.save_path = "user://save_test.json"
 	GameState.persist = true
 	var meta_file: String = ProjectSettings.globalize_path(GameState.meta_path())
@@ -362,7 +343,6 @@ func _run() -> void:
 	GameState._meta_from = ""
 	GameState.run_time = 0.0
 
-	# ------------------------------------------------------------ spoken lines over the radio
 	var radio: int = AudioServer.get_bus_index("Radio")
 	var echo_bus: int = AudioServer.get_bus_index("Echo")
 	_check("V1 the Radio bus band-limits and overdrives, and the Echo bus exists",
@@ -412,7 +392,6 @@ func _run() -> void:
 			is_zero_approx(muted) and silent and AudioManager.play_voice("SAIF", "test_line_1") > 0.5 and GameState.voice_on(), "")
 	AudioManager.stop_voice()
 
-	# ------------------------------------------------------------ model 9: personal bests
 	Director.enabled = true
 	Director.reset_profile()
 	_check("M10a no bar and no praise before three samples",
@@ -444,7 +423,6 @@ func _run() -> void:
 			not off_praise and int(Director.pb_n.get("streak", 0)) == 5 and Director.pb_threshold("streak") >= 5.0,
 			"off=%s n=%d bar=%.2f" % [str(off_praise), int(Director.pb_n.get("streak", 0)), Director.pb_threshold("streak")])
 
-	# ------------------------------------------------------------ model 4: timing
 	Director.enabled = true
 	Director.reset_profile()
 	var rng4 := RandomNumberGenerator.new()
@@ -468,7 +446,6 @@ func _run() -> void:
 	_check("M4d a player with tight timing gets no extra window", is_zero_approx(Director.timing_bonus()),
 			"on_time=%.2f bonus=%.3f" % [Director.predict_on_time(0.0), Director.timing_bonus()])
 
-	# ------------------------------------------------------------ model 5: room rating
 	Director.reset_profile()
 	Director.room_entered(1, 0, false)
 	var fresh_speed: float = Director.shot_speed_mult()
@@ -491,7 +468,6 @@ func _run() -> void:
 	_check("M5c clearing the room again and again removes the easing", is_zero_approx(Director.room_ease()),
 			"clear=%.2f ease=%.3f" % [Director.predict_clear(), Director.room_ease()])
 
-	# ------------------------------------------------------------ model 6: lever bandit
 	Director.reset_profile()
 	var rng6 := RandomNumberGenerator.new()
 	rng6.seed = 23
@@ -515,7 +491,6 @@ func _run() -> void:
 			Director.shot_speed_mult() < speed_plain - 0.01 and is_equal_approx(Director.parry_window_bonus(), win_plain),
 			"speed %.3f -> %.3f" % [speed_plain, Director.shot_speed_mult()])
 
-	# ------------------------------------------------------------ model 7: pacing wave
 	Director.reset_profile()
 	var calm_interval: float = Director.fire_interval_mult()
 	Director.bump(0.5)
@@ -533,7 +508,6 @@ func _run() -> void:
 			is_equal_approx(Director.fire_interval_mult(), lerpf(1.50, 0.85, 0.8) * 0.92),
 			"%.3f" % Director.fire_interval_mult())
 
-	# ------------------------------------------------------------ model 8: skill tracing
 	Director.reset_profile()
 	Director.skill_used("parry")
 	Director.skills_close(1.5)
@@ -554,7 +528,6 @@ func _run() -> void:
 		Director.skills_close(10.0)
 	_check("M8d once the mechanic is used the skill hint stops", Director.weakest_skill() == "", str(Director.skill_p))
 
-	# ------------------------------------------------------------ models 4 to 8: saving and the off switch
 	Director.reset_profile()
 	for i: int in 12:
 		Director.timing_learn(0.2)

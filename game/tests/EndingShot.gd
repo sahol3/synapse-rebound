@@ -1,8 +1,4 @@
 extends SceneTree
-## Dev capture of screens that are slow to reach by hand: the Stage 4 card, the ending and the four
-## scenes of the after-story. Run with a window:
-##   godot --path game --script res://tests/EndingShot.gd -- --stage=4 --ending=C --out=<abs dir>
-## (`--stage=` marks the run as a dev run, so the player's save and profile are not touched.)
 
 var _dir: String = ""
 var _ending: String = "C"
@@ -41,7 +37,6 @@ func _run() -> void:
 	await create_timer(10.5, true, false, true).timeout
 	await _shot("ending_%s.png" % _ending)
 	var hud: Node = main.hud
-	## Nothing is pressed from here on: the after-story has to start and advance by itself.
 	await create_timer(hud.EPI_AUTO - 10.5 + 2.5 + 3.0, true, false, true).timeout
 	for i: int in 4:
 		print("ENDINGSHOT beat=", hud._epi_beat, " epilogue=", main._epilogue != null)

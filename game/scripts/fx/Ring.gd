@@ -1,7 +1,5 @@
 class_name Ring
 extends Node2D
-## Expanding shockwave ring drawn in code (no textures). Runs on real time so it
-## keeps moving through hit-stop and Blackout slow motion.
 
 var max_radius: float = 60.0
 var duration: float = 0.35

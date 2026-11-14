@@ -1,8 +1,5 @@
 class_name Rain
 extends Node2D
-## Acid rain drawn as streaks around the camera. Uses scaled delta, so it hangs in the air
-## during hit-stop and crawls during Blackout. The field follows the visible view, so a wide or
-## tall window gets the same density edge to edge.
 
 const BASE_COUNT: int = 140
 const BASE_AREA: Vector2 = Vector2(460, 300)

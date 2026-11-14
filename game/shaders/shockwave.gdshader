@@ -1,5 +1,4 @@
 shader_type canvas_item;
-// Screen-space radial distortion ring (Blackout Rebound, lane slams, boss kills).
 
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_linear;
 uniform vec2 center = vec2(0.5, 0.5);

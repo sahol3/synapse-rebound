@@ -1,6 +1,4 @@
 extends StageBase
-## STAGE 2: THE DUAL-HIGHWAY OVERPASS. Foreground road + background sniper overpass.
-## Teaches Z-lane switching, cross-lane sniper parries and the kinetic wall-slam.
 
 const K := EnemyBase.Kind
 
@@ -15,7 +13,6 @@ func _init() -> void:
 
 
 func build() -> void:
-	# ---- Room 0: road + first overpass, one sniper, Z-ring tutorial.
 	building(0, 30, 11)
 	overpass(6, 40, 6)
 	enemy(K.SNIPER, 24, 6, 1, 0)
@@ -25,7 +22,6 @@ func build() -> void:
 	prop("hotel-sign", 19, 13.0)
 	prop("control-box-2", 10, 10.1)
 
-	# ---- Room 1: the road breaks. Cross on the overpass.
 	checkpoint(32, 11)
 	building(32, 43, 11)
 	building(49, 62, 11)
@@ -40,7 +36,6 @@ func build() -> void:
 	prop("banner_coke", 52, 13.0)
 	trigger(Rect2(45, -10, 1, 30), "ambush")
 
-	# ---- Room 2: the pillar. Wall-slam the drones, then slip past on the overpass.
 	checkpoint(66, 11)
 	building(64, 92, 11)
 	wall(76, 78, 2, 10)
@@ -55,7 +50,6 @@ func build() -> void:
 	prop("banner_side", 77, 7.0)
 	prop("monitor", 80, 13.0)
 
-	# ---- Room 3: Highway Heavy arena.
 	checkpoint(94, 11)
 	building(94, 118, 11)
 	overpass(98, 118, 6)

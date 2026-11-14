@@ -19,7 +19,6 @@ OUT = ROOT / "game" / "assets" / "audio" / "voice"
 AUDIO = {".wav", ".mp3", ".m4a", ".ogg", ".flac", ".aac", ".opus", ".wma", ".mp4", ".3gp", ".amr"}
 
 
-## Optional joke takes, played dry (no radio filter): see the last section of the sheet.
 JOKES = ("hehe_boi", "oh_hell_nah")
 
 
@@ -71,8 +70,6 @@ def main() -> int:
         speaker, key = hit
         dest = OUT / speaker / (key + ".ogg")
         dest.parent.mkdir(parents=True, exist_ok=True)
-        ## Rumble out, steady room noise down by about 12 dB, leading and trailing silence off, a short fade
-        ## at each end so a cut never clicks, then one loudness for every line.
         chain = ("highpass=f=85,afftdn=nr=12:nf=-34:tn=1,"
                  "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05,"
                  "areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.12,"

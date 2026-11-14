@@ -1,8 +1,5 @@
 class_name PostFX
 extends CanvasLayer
-## Screen-space shader stack, each pass behind its own BackBufferCopy so they chain:
-## shockwave -> blackout_crimson -> vhs_rewind -> crt_cyberpunk (scanlines, aberration, tier border, flashes).
-## All animation runs on real time.
 
 var _shock: ShaderMaterial
 var _blackout: ShaderMaterial
@@ -36,7 +33,6 @@ func _ready() -> void:
 
 
 func _apply_display() -> void:
-	## The passes work on the art-pixel grid, so they need the real window size and scale.
 	for m: ShaderMaterial in [_blackout, _vhs, _crt]:
 		m.set_shader_parameter("screen_size", Display.size)
 		m.set_shader_parameter("art_px", float(Display.art))
@@ -111,7 +107,6 @@ func vhs_hold(on: bool) -> void:
 
 func _on_tier(t: int) -> void:
 	_crt.set_shader_parameter("border_color", GameState.TIER_COLORS[t])
-	## Frame only from Overclocked up; Degraded and Synced leave the screen edge alone.
 	_crt.set_shader_parameter("border_strength", [0.0, 0.0, 0.8, 1.0][t])
 	_crt.set_shader_parameter("berserk", 1.0 if t == GameState.Tier.BERSERK else 0.0)
 	_crt.set_shader_parameter("aberration", 0.0)

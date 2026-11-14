@@ -1,6 +1,4 @@
 extends StageBase
-## STAGE 1: THE AWAKENING ALLEY. Rain-slicked lower streets. Teaches the 360 deflection,
-## aerial recoil pogo off turret fire, coyote jumps, and the first Enforcer rally.
 
 const K := EnemyBase.Kind
 
@@ -17,13 +15,11 @@ func _init() -> void:
 
 
 func build() -> void:
-	# Depth decoration: tall background-lane blocks behind the gaps (no foreground collision).
 	building(10, 17, 3, 1)
 	building(31, 40, 2, 1)
 	building(62, 72, 1, 1)
 	building(86, 94, 4, 1)
 
-	# Room 0 - the balcony and the first turret.
 	building(0, 12, 10)
 	building(15, 24, 10)
 	enemy(K.TURRET, 21.5, 10, 0, 0)
@@ -33,7 +29,6 @@ func build() -> void:
 	prop("control-box-1", 17, 9.05)
 	trigger(Rect2(13, -10, 1, 30), "tutorial")
 
-	# Room 1 - the wide gap: parry the drone's shot in mid-air to recoil across.
 	checkpoint(26, 8)
 	building(27, 33, 8)
 	trigger(Rect2(31, -10, 1, 30), "pogo")
@@ -44,7 +39,6 @@ func build() -> void:
 	prop("banner_scroll", 44, 11.4)
 	prop("monitor", 48, 10.6)
 
-	# Room 2 - climb the scaffolding under crossfire.
 	checkpoint(43, 9)
 	catwalk(51, 54, 7)
 	building(56, 64, 5)
@@ -55,7 +49,6 @@ func build() -> void:
 	prop("antenna", 63, 2.0)
 	prop("banner_side", 60.5, 8.0)
 
-	# Room 3 - drop into the arena. Syndicate Enforcer holds MODULE 01.
 	checkpoint(72, 9)
 	building(71, 90, 9)
 	wall(91, 95, -12, 9)

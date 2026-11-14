@@ -1,9 +1,4 @@
 extends Node
-## 8-voice SFX pool, music player, and the Music-bus filter chain
-## (low-pass for Blackout, distortion + high-pass for Berserk Overdrive).
-## Every sound is a recorded sample from a human-made pack: Warped City (Ansimuz, CC0) and the
-## Kenney Sci-Fi, Impact, Interface, Digital Audio and UI Audio packs (CC0). Nothing is synthesized.
-## A cue is a list of layers; each layer picks a random variant of its sample, so repeats differ.
 
 const POOL_SIZE: int = 10
 const LOWPASS_OPEN: float = 20500.0
@@ -16,7 +11,6 @@ const MUSIC: Dictionary = {
 	"boss": "res://assets/audio/bgm/sci_fi_platformer02.ogg",
 }
 
-## sample id -> variant files (one is picked at random per play)
 const SAMPLES: Dictionary = {
 	"beam": ["res://assets/audio/sfx/beam.ogg"],
 	"explosion": ["res://assets/audio/sfx/explosion.ogg"],
@@ -48,12 +42,10 @@ const SAMPLES: Dictionary = {
 	"power_up": [K + "powerUp1.ogg", K + "powerUp2.ogg", K + "powerUp3.ogg", K + "powerUp4.ogg", K + "powerUp5.ogg", K + "powerUp6.ogg"],
 	"lock_on": [K + "zapThreeToneUp.ogg"],
 	"rollover": [K + "rollover1.ogg", K + "rollover2.ogg", K + "rollover3.ogg", K + "rollover4.ogg", K + "rollover5.ogg", K + "rollover6.ogg"],
-	## Two CC0 recordings from Freesound, used for jokes (see CREDITS.md).
 	"scream": [MEME + "scream_1.ogg", MEME + "scream_2.ogg", MEME + "scream_3.ogg"],
 	"beep": [MEME + "censor_beep.ogg"],
 }
 
-## key -> list of layers [sample_id, volume_db, pitch_multiplier, delay_seconds (optional)]
 const CUES: Dictionary = {
 	"meme_scream": [["scream", -9.0, 1.0]],
 	"meme_beep": [["beep", -8.0, 1.0]],
@@ -83,7 +75,7 @@ const CUES: Dictionary = {
 	"swing": [["tap", -15.0, 1.6]],
 }
 
-var _streams: Dictionary = {}  ## sample id -> Array of AudioStream
+var _streams: Dictionary = {}
 var _pool: Array[AudioStreamPlayer] = []
 var _pool_index: int = 0
 var _music: AudioStreamPlayer
@@ -98,12 +90,8 @@ var _tier_cutoff: float = LOWPASS_OPEN
 var _blackout: bool = false
 var _rng := RandomNumberGenerator.new()
 
-## Spoken lines. A recording is a file at VOICE_DIR/<speaker>/<line key>.ogg (or .wav, .mp3); a line
-## without a file stays text only. Saif comes through a radio: band-limited, lightly overdriven,
-## over a bed of recorded static. The static and the clicks are pack samples, not generated noise.
 const VOICE_DIR: String = "res://assets/audio/voice/"
 var _meme: AudioStreamPlayer
-## False when the player has turned the recorded voice off (GameState.set_voice).
 var voice_enabled: bool = true
 const VOICE_FOLDER: Dictionary = {"SAIF": "saif", "LOG": "saif", "ECHO": "echo"}
 const STATIC_BED: String = K + "computerNoise_002.ogg"
@@ -139,7 +127,6 @@ func _ready() -> void:
 	_music.bus = "Music"
 	_music.volume_db = -6.0
 	add_child(_music)
-	## Blackout bed: a recorded low engine hum, looped and pitched down, under the heartbeat.
 	_whine = AudioStreamPlayer.new()
 	_whine.bus = "SFX"
 	var drone: AudioStreamOggVorbis = (_streams["drone"][0] as AudioStreamOggVorbis).duplicate()
@@ -150,8 +137,6 @@ func _ready() -> void:
 	add_child(_whine)
 	GameState.tier_changed.connect(_on_tier_changed)
 
-
-# ---------------------------------------------------------------- public API
 
 func play_sfx(key: String, pitch: float = 1.0, volume_db: float = 0.0) -> void:
 	if not CUES.has(key):
@@ -167,11 +152,9 @@ func play_sfx(key: String, pitch: float = 1.0, volume_db: float = 0.0) -> void:
 		if delay <= 0.0:
 			_voice(stream, vol, pit)
 		else:
-			## Real-time delay so hit-stop or the Blackout slow-down does not stretch the rhythm.
 			get_tree().create_timer(delay, true, false, true).timeout.connect(func() -> void: _voice(stream, vol, pit))
 
 
-## True when every sample listed in SAMPLES loaded. Used by tests.
 func all_samples_loaded() -> bool:
 	for k: String in _streams:
 		for s: Variant in _streams[k]:
@@ -225,10 +208,7 @@ func set_menu_muffle(active: bool) -> void:
 	_apply_filters(0.4)
 
 
-# ---------------------------------------------------------------- spoken lines
-
 func voice_stream(who: String, key: String) -> AudioStream:
-	## The recording for a line, or null when nobody has recorded it.
 	var id: String = String(VOICE_FOLDER.get(who, who.to_lower())) + "/" + key
 	if not _voice_cache.has(id):
 		var found: AudioStream = null
@@ -242,13 +222,10 @@ func voice_stream(who: String, key: String) -> AudioStream:
 
 
 func register_voice(who: String, key: String, stream: AudioStream) -> void:
-	## Lets a test or a tool supply a recording without a file.
 	_voice_cache[String(VOICE_FOLDER.get(who, who.to_lower())) + "/" + key] = stream
 
 
 func play_voice(who: String, key: String) -> float:
-	## Plays the recording for a line and returns its length in seconds, or 0.0 when there is none
-	## or the player has turned the voice off.
 	var stream: AudioStream = voice_stream(who, key) if voice_enabled else null
 	if stream == null:
 		return 0.0
@@ -271,8 +248,6 @@ func play_voice(who: String, key: String) -> float:
 
 
 func play_meme(key: String, fallback: String = "") -> bool:
-	## A joke take the operator recorded himself: assets/audio/voice/meme/<key>.ogg, played dry.
-	## With no recording, the fallback cue plays (or nothing) and this returns false.
 	var stream: AudioStream = voice_stream("MEME", key) if voice_enabled else null
 	if stream == null:
 		if fallback != "":
@@ -306,7 +281,6 @@ func pause_voice(on: bool) -> void:
 
 
 func voice_counts() -> Vector2i:
-	## (recorded, total) over every spoken line in the script.
 	var have: int = 0
 	var total: int = 0
 	for id: String in DialogueData.LINES:
@@ -330,7 +304,6 @@ func voice_playing() -> bool:
 
 
 func _key_click() -> void:
-	## The short click of a radio keying on or off: a recorded tap, through the radio filter.
 	var taps: Array = _streams.get("tap", [])
 	if taps.is_empty():
 		return
@@ -365,8 +338,6 @@ func _setup_voice() -> void:
 	_bed.volume_db = BED_DB
 	add_child(_bed)
 
-
-# ---------------------------------------------------------------- private
 
 func _voice(stream: AudioStream, vol: float, pit: float) -> void:
 	var p: AudioStreamPlayer = _pool[_pool_index]
@@ -405,7 +376,6 @@ func _setup_buses() -> void:
 		AudioServer.set_bus_send(_sfx_bus, "Master")
 	_radio_bus = AudioServer.get_bus_index("Radio")
 	if _radio_bus == -1:
-		## A handheld radio passes roughly 400 Hz to 3 kHz and clips when the speaker is loud.
 		AudioServer.add_bus()
 		_radio_bus = AudioServer.bus_count - 1
 		AudioServer.set_bus_name(_radio_bus, "Radio")
@@ -428,7 +398,6 @@ func _setup_buses() -> void:
 		AudioServer.add_bus_effect(_radio_bus, comp, 3)
 	_echo_bus = AudioServer.get_bus_index("Echo")
 	if _echo_bus == -1:
-		## The Echo is the player's own voice from before the wipe: lower, degraded, in a room.
 		AudioServer.add_bus()
 		_echo_bus = AudioServer.bus_count - 1
 		AudioServer.set_bus_name(_echo_bus, "Echo")

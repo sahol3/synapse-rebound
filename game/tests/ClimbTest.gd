@@ -1,16 +1,8 @@
 extends Node
-## Proves Stage 3 can be climbed from the floor to the roof deck with the keyboard alone:
-## A/D, Space, and Space again in mid-air (the upward dash). No mouse aim, no deflections.
-## Enemies are frozen; this test is about the geometry and the controls, not the fight.
-## It climbs twice: once pressing the second Space at the top of the jump (best case) and once
-## pressing it early, 0.12 s after take-off (the sloppy case a new player produces).
-## Run: tools\bin\godot.cmd --headless --path game res://tests/ClimbTest.tscn
-## Prints PASS/FAIL per check and "CLIMBTEST passed=N failed=M"; exit code 1 on any failure.
 
 const T: int = 16
 const FLOOR_ROW: int = 18
 const TOP_ROW: int = -104
-## The same ladder Stage03Shaft.gd builds: [first column, last column, row].
 const PLATS: Array = [
 	[4, 26, 18],
 	[5, 10, 14], [16, 22, 10], [8, 13, 6], [19, 25, 2],
@@ -67,7 +59,6 @@ func _check(name: String, ok: bool, detail: String = "") -> void:
 
 
 func _index_under(p: Player) -> int:
-	## Which ladder platform the player is standing on (-1 if none).
 	var feet: float = p.global_position.y + Player.FEET_Y
 	for i: int in PLATS.size():
 		var pl: Array = PLATS[i]
@@ -92,13 +83,11 @@ func _physics_process(delta: float) -> void:
 		_hold("jump", false)
 		return
 	if _release_jump:
-		## One physics frame with Space up, so the next press counts as a new press.
 		_hold("jump", false)
 		_release_jump = false
 		return
 	var on_floor: bool = p.is_on_floor()
 	if on_floor and (not _was_floor or (Input.is_action_pressed("jump") and _held_t > 0.2)):
-		## Just landed, or a held Space did nothing: let go so the next press is a fresh one.
 		_hold("jump", false)
 		_held_t = 0.0
 		_was_floor = true
@@ -121,7 +110,6 @@ func _physics_process(delta: float) -> void:
 		var cur: Array = PLATS[here]
 		var nxt: Array = PLATS[here + 1]
 		var target_x: float = (float(int(nxt[0])) + float(int(nxt[1]) + 1)) * 0.5 * T
-		## Walk to the point of this platform nearest the next one, then jump toward it.
 		var launch_x: float = clampf(target_x, float(int(cur[0]) * T) + 10.0, float((int(cur[1]) + 1) * T) - 10.0)
 		var dx: float = launch_x - p.global_position.x
 		if absf(dx) > 5.0:
@@ -177,7 +165,6 @@ func _climb(early: bool, limit: float, no_air: bool = false) -> Dictionary:
 
 func _run() -> void:
 	await _wait(0.3)
-	# Save and Continue in the real game, on a throwaway save file.
 	GameState.save_path = "user://save_test.json"
 	GameState.persist = true
 	main._begin_run(3)
@@ -202,7 +189,6 @@ func _run() -> void:
 	_check("R4 rooms before the checkpoint are cleared, the room ahead is not",
 			main.stage.enemies_alive_in_room(0) == 0 and main.stage.enemies_alive_in_room(1) == 0 and main.stage.enemies_alive_in_room(2) > 0,
 			"room0=%d room1=%d room2=%d" % [main.stage.enemies_alive_in_room(0), main.stage.enemies_alive_in_room(1), main.stage.enemies_alive_in_room(2)])
-	# The way past a room that is offered after repeated deaths.
 	var room_before: int = main.stage.current_room
 	var has_next: bool = room_before < main.stage.checkpoint_count()
 	main._skip_room()
@@ -220,7 +206,6 @@ func _run() -> void:
 	GameState.persist = false
 	main._begin_run(3)
 	await _wait(1.0)
-	# Freeze check: die after climbing well above the last checkpoint (any cause), then again at once.
 	var fp: Player = _p()
 	fp.global_position.y -= 420.0
 	fp.velocity = Vector2.ZERO
@@ -243,7 +228,6 @@ func _run() -> void:
 	await _wait(1.5)
 	_check("K3 the sixth death in one room offers the way past", main._skip_key == stuck_key and not fp.dead,
 			"armed=%s deaths=%s" % [main._skip_key, str(main._room_deaths)])
-	# A reveal: time slows as it starts, and a recorded line holds the text for as long as it is spoken.
 	main.hud.clear_dialogue()
 	var tape: AudioStream = AudioManager._streams["drone"][0]
 	AudioManager.register_voice("LOG", "s3_rally_2", tape)
@@ -256,7 +240,6 @@ func _run() -> void:
 		await _wait(0.1)
 		waited += 0.1
 	var on_tape: bool = String(main.hud._line.get("who", "")) == "LOG"
-	## A hit during the wait puts the bot in Blackout, which has its own slow motion.
 	_check("V6 a reveal slows time when it starts and lets it go again",
 			slowed < 0.9 and (is_equal_approx(Engine.time_scale, 1.0) or _p().in_blackout or _p().dead),
 			"during=%.2f after=%.2f blackout=%s" % [slowed, Engine.time_scale, str(_p().in_blackout)])
@@ -268,7 +251,6 @@ func _run() -> void:
 	main.story_focus = false
 	_check("V8 clearing the dialogue stops the voice", not AudioManager.voice_playing(), "")
 	var last: int = PLATS.size() - 1
-	## Control: the same bot with plain jumps only. It must fail, or this test proves nothing.
 	var plain: Dictionary = await _climb(false, 12.0, true)
 	_check("C0 control: plain jumps alone never leave the shaft floor (a jump is 55 px, the first step is 64)",
 			int(plain["top"]) == 0, "reached platform %d in %.0fs with %d jumps" % [plain["top"], plain["t"], plain["jumps"]])

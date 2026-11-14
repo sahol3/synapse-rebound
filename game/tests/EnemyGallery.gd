@@ -1,8 +1,4 @@
 extends Node2D
-## Visual check, not a pass/fail test: every enemy kind in a row on one rooftop, with the player
-## standing at the left so they turn, charge and fire. Record it with the movie writer and look at
-## the frames (feet on the ground, facing, muzzle telegraph on the weapon, shield around the body).
-## Run: godot --path game --resolution 1280x400 --write-movie <ABS>\f.png --fixed-fps 30 --quit-after 100 res://tests/EnemyGallery.tscn
 
 class Roof extends StageBase:
 	func _init() -> void:

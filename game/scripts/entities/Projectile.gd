@@ -1,8 +1,5 @@
 class_name Projectile
 extends Area2D
-## Every bullet in the game. Carries bounce_count through the Ping-Pong Death Rally:
-## each bounce scales speed x1.32, size x1.15, shifts colour magenta -> cyan -> gold -> crimson
-## and steps the rally ping up in pitch. Bounce 3 (or Berserk Lock) turns it into a piercing railgun.
 
 enum Team { ENEMY, PLAYER }
 
@@ -87,7 +84,6 @@ func _ready() -> void:
 	_refresh_visual()
 	area_entered.connect(_on_area_entered)
 	if team == Team.ENEMY:
-		## The director scales fresh enemy fire and follows every shot to learn from its outcome.
 		if bounce_count == 0 and not is_core and not has_meta("mercy"):
 			velocity *= Director.shot_speed_mult()
 		Director.track_shot(self)
@@ -116,8 +112,6 @@ func _physics_process(delta: float) -> void:
 	_update_lane_visual(delta)
 	_update_trail()
 
-
-# ---------------------------------------------------------------- rally
 
 func deflect(dir: Vector2, by_player: bool) -> void:
 	bounce_count += 1
@@ -211,8 +205,6 @@ func _update_lane_visual(delta: float) -> void:
 	_trail.z_index = z_index - 1
 
 
-# ---------------------------------------------------------------- collisions
-
 func _ray(from: Vector2, to: Vector2) -> Dictionary:
 	if from.is_equal_approx(to):
 		return {}
@@ -302,8 +294,6 @@ func _explode() -> void:
 
 
 func spent() -> bool:
-	## True once the shot has hit something or expired. It stays in the tree for a few frames
-	## while it fades, and must not be deflected in that time.
 	return _dead
 
 

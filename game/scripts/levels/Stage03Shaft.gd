@@ -1,6 +1,4 @@
 extends StageBase
-## STAGE 3: THE ASCENT SHAFT. A vertical megastructure elevator shaft. The floor drops away:
-## anything below the climb line is gone. Air-deflection chains and gold Deflector-drone rallies.
 
 const K := EnemyBase.Kind
 const TOP_ROW: int = -104
@@ -20,12 +18,10 @@ func _init() -> void:
 
 
 func build() -> void:
-	## The outer walls run 12 tiles past the shaft so a wide screen never shows their far edge.
 	wall(-12, 3, -116, 24)
 	wall(27, 42, -116, 24)
 	building(4, 26, 18)
 
-	# Platform ladder: [c0, c1, row, room]. Spacing 4-5 rows = jump + dash, or pogo off fire.
 	var plats: Array = [
 		[5, 10, 14, 0], [16, 22, 10, 0], [8, 13, 6, 0], [19, 25, 2, 0],
 		[5, 11, -3, 1], [15, 20, -7, 1], [21, 25, -12, 1], [8, 14, -16, 1],
@@ -37,7 +33,6 @@ func build() -> void:
 	for pl: Array in plats:
 		catwalk(pl[0], pl[1], pl[2])
 
-	# Enemies by room.
 	enemy(K.TURRET, 19, 10, 0, 0)
 	enemy(K.DRONE, 14, 1.0, 0, 0, {"patrol": 30.0})
 	enemy(K.TURRET, 23.5, 2, 0, 0)
@@ -63,7 +58,6 @@ func build() -> void:
 	enemy(K.DEFLECTOR, 18, -88, 0, 4, {"patrol": 30.0})
 	enemy(K.TURRET, 23, -95, 0, 4)
 
-	# The roof door: landing deck + Command Enforcer with MODULE 03.
 	checkpoint(13, -100, 0, Rect2(4 * T, -101 * T, 23 * T, T))
 	catwalk(4, 26, TOP_ROW, 0, false)
 	for c: int in range(4, 27):
@@ -91,8 +85,6 @@ func _process(delta: float) -> void:
 
 func on_rewind() -> void:
 	_highest_y = checkpoint_pos.y
-	## Move the kill line now, not on the next frame: the player is already standing at the
-	## checkpoint, and a stale line above it would kill them again before this stage updates.
 	kill_y = _highest_y + 230.0
 
 

@@ -30,7 +30,6 @@ PICK: dict[str, list[str]] = {
     + ["zapThreeToneUp"],
     "kenney_ui-audio": rng("rollover", 1, 6, 1),
 }
-## (pack, source name, output name, start s, length s)
 TRIM = [
     ("kenney_sci-fi-sounds", "thrusterFire_000", "thrusterBurst_000", 0.15, 0.30),
     ("kenney_sci-fi-sounds", "thrusterFire_001", "thrusterBurst_001", 0.15, 0.30),

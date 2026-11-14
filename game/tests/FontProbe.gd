@@ -1,6 +1,4 @@
 extends SceneTree
-## Renders a specimen of PixelFont at 1x/2x/3x inside a 3x canvas, for movie-writer review.
-## tools\godot\Godot_v4.7.2-stable_win64_console.exe --path game --script res://tests/FontProbe.gd --write-movie <dir>\f.png --fixed-fps 10 --quit-after 3
 
 
 func _initialize() -> void:
