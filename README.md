@@ -6,14 +6,14 @@ the tower you fell from, and on the roof you bounce back from the fall itself.
 
 You play VINCENT-09, a courier who was shot off Tower 09 at midnight. A Lazarus implant snaps you back sixty seconds
 before your execution with no gun, only a kinetic wrist deflector. Two voices talk to you as you climb back to the roof:
-Sara, your handler, and The Echo, a recording you left for yourself before your memory was wiped. They disagree about
+Saif, your handler, and The Echo, a recording you left for yourself before your memory was wiped. They disagree about
 who pulled the trigger.
 
 ## Story and theme
 
 The story is told while you play. Each stage card names the meaning of Bounce Back that the stage is built on. Every
-death is a Lazarus rewind in the fiction, shown as a loop count, and Sara and The Echo keep count with you: they speak
-at the third, fifth, eighth and twelfth loop, and what Sara says changes once she has dropped the handler act in
+death is a Lazarus rewind in the fiction, shown as a loop count, and Saif and The Echo keep count with you: they speak
+at the third, fifth, eighth and twelfth loop, and what Saif says changes once he has dropped the handler act in
 Stage 3. Coming back from Blackout flashes BOUNCED BACK, and The Echo marks the first, third and seventh time and your
 first three-bounce rally. The ending screen counts the shots you sent back and the times you got up.
 
@@ -24,22 +24,22 @@ five-bounce rally, reaching each stage, finishing, and seeing each of the three 
 title and what recovers it. Recovered entries, endings seen, the best time and the longest rally are kept across
 runs in `user://save_meta.json`, and the title screen shows the totals.
 
-The two voices answer what you do. After each module choice Sara and The Echo each say what they make of it, Sara
-tells you to slow down the first time your sync passes 200%, and she notices when you stand still. Time slows for two
+The two voices answer what you do. After each module choice Saif and The Echo each say what they make of it, Saif
+tells you to slow down the first time your sync passes 200%, and he notices when you stand still. Time slows for two
 seconds when one of the three reveals begins. Continue opens with one line from The Echo about where you were.
 
 Each ending is followed by an after-story that plays by itself, twelve seconds after the ending text. It is four short
-animated scenes built from the game's own art, one each for Vincent, Sara, The Echo and the city, with a caption under
-each. What happens in a scene depends on the ending: in one Sara's gunship lies smoking on the lower deck with a light
+animated scenes built from the game's own art, one each for Vincent, Saif, The Echo and the city, with a caption under
+each. What happens in a scene depends on the ending: in one Saif's gunship lies smoking on the lower deck with a light
 still blinking, in another it never lands.
 
 ## Voice
 
 Any spoken line can have a recording. The game looks for `game/assets/audio/voice/<speaker>/<line>.ogg` and plays it
 with the text, which then stays up for as long as the line is spoken. A line without a recording stays text only.
-Sara is heard through a radio: the bus removes everything below 340 Hz and above 3.1 kHz, overdrives it slightly and
+Saif is heard through a radio: the bus removes everything below 340 Hz and above 3.1 kHz, overdrives it slightly and
 compresses it, over a bed of recorded static, with a click when the radio keys on and off. The music drops 6 dB while
-she speaks. The recording sheet is `docs/VOICE_SCRIPT.md` and `scripts/import_voice.py` brings a folder of takes
+he speaks. The recording sheet is `docs/VOICE_SCRIPT.md` and `scripts/import_voice.py` brings a folder of takes
 into the game. The static and the click are Kenney samples; nothing is synthesized.
 
 The voice can be turned off: the title menu has a Voice item when recordings exist, and V on the pause screen
@@ -89,7 +89,7 @@ below produces the build for itch.io.
   is how the Ascent Shaft is climbed. A deflection in mid-air gives the dash back.
 - **Neural Sync.** Deflections raise a sync meter from 0% to 400%. Higher tiers add speed, afterimage trails, a wider
   parry arc, memory fragments burned onto the buildings, and finally Berserk Overdrive.
-- **Modules.** Each of the first three stages ends with a stolen module. Stabilizing it follows Sara and gives a
+- **Modules.** Each of the first three stages ends with a stolen module. Stabilizing it follows Saif and gives a
   defensive upgrade. Overclocking it follows The Echo and gives an offensive one. The three choices decide which of the
   three endings you see.
 
@@ -138,7 +138,7 @@ The pause screen shows the current level, and F3 shows the models' numbers durin
 
 ## Fire control
 
-Sara's gunship has a model of the player, and the game shows it. The move model (one of the nine above) predicts the
+Saif's gunship has a model of the player, and the game shows it. The move model (one of the nine above) predicts the
 courier's next movement state five times a second. After 24 seconds of play its output appears on screen in three
 places.
 
@@ -146,25 +146,25 @@ places.
   aim goes to that outline, and more as the challenge rises.
 - A line under the sync meter reads `predicted 71%`, the model's recent hit rate on this player.
 - When the model is at least 55% sure the player is about to change what they are doing, it names the move first
-  (`she calls: JUMP`), and a moment later the line reads `called it` or `missed`. Calls are at least five seconds
+  (`he calls: JUMP`), and a moment later the line reads `called it` or `missed`. Calls are at least five seconds
   apart.
 
-In the story, the fire control was trained on forty of Vincent's delivery runs, which is how Sara knew where he would
-stand on the roof. The Echo's advice is to be someone she has not met. Ten missed calls in a run recover the Lore
-entry FIRE CONTROL, and the ending screen states the share of moves she predicted in that run.
+In the story, the fire control was trained on forty of Vincent's delivery runs, which is how Saif knew where he would
+stand on the roof. The Echo's advice is to be someone he has not met. Ten missed calls in a run recover the Lore
+entry FIRE CONTROL, and the ending screen states the share of moves he predicted in that run.
 
 At the third phase of the boss the Echo takes the model. The outline leaves the player, a cyan outline appears half
-a second ahead of the gunship, and the line reads `you predict her`.
+a second ahead of the gunship, and the line reads `you predict him`.
 
 ## Small things
 
-- A pause of 20 seconds shows "Sara is typing..." and then "Sara stopped typing."
-- Leaving the window mid-run changes its title to the loop count and "she is still watching".
+- A pause of 20 seconds shows "Saif is typing..." and then "Saif stopped typing."
+- Leaving the window mid-run changes its title to the loop count and "he is still watching".
 - When the hit rate reads exactly 67%, the line adds "six seven".
 - Dying within three seconds of getting up plays a low thud and notes "Crashed out in 1.4 seconds." under the loop
   count, at most once every 40 seconds.
 - About one Enforcer or sniper in six goes down with a film scream, at most once every 25 seconds.
-- Late in the game Sara loses her temper and the channel bleeps one word.
+- Late in the game Saif loses his temper and the channel bleeps one word.
 - Five correct calls in a row and a long stand on a roof each get one remark from the Echo.
 
 ## Saving
@@ -198,7 +198,7 @@ and the desktop build opens maximized.
 1. The Awakening Alley
 2. The Dual-Highway Overpass
 3. The Ascent Shaft
-4. Rooftop 09, against Sara's Valkyrie gunship in three phases
+4. Rooftop 09, against Saif's Valkyrie gunship in three phases
 
 ## Building from source
 

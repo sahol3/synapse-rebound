@@ -32,7 +32,7 @@ Every sound effect is a downloaded file made by a person. This project synthesiz
 **Sci-Fi Sounds, Impact Sounds, Interface Sounds, Digital Audio and UI Audio** by Kenney, https://kenney.nl
 
 The deflection clangs, rally bells, lasers, force fields, explosions, the Blackout heartbeat and engine hum, the tape
-scratches of the rewind, The Echo's glitches, Sara's comms tone, footsteps, power-ups and menu sounds come from these
+scratches of the rewind, The Echo's glitches, Saif's comms tone, footsteps, power-ups and menu sounds come from these
 packs, which are released under Creative Commons Zero (CC0). The licence is in `assets/audio/sfx/kenney/License.txt`.
 Two long recordings (a thruster and a computer hum) were trimmed to short clips with ffmpeg.
 
@@ -48,7 +48,7 @@ The low thud that plays on a very fast death is a layer of three Kenney samples 
 
 ## Voice
 
-Sara's 34 lines are one recording made by the game's author for this game, cut into lines and played through a
+Saif's 34 lines are one recording made by the game's author for this game, cut into lines and played through a
 radio filter built from Godot's audio effects. The Echo's lines have no recording yet and stay text. The static under the voice is `computerNoise_002` from the Kenney Sci-Fi Sounds pack (CC0). No voice in
 the game is generated.
 

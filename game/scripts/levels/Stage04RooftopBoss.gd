@@ -1,5 +1,5 @@
 extends StageBase
-## STAGE 4: ROOFTOP 09. The rain-drenched helipad where it started. Sara's Valkyrie Gunship.
+## STAGE 4: ROOFTOP 09. The rain-drenched helipad where it started. Saif's Valkyrie Gunship.
 
 signal boss_defeated
 

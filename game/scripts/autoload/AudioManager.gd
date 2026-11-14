@@ -64,7 +64,7 @@ const CUES: Dictionary = {
 	"blackout_heartbeat": [["thump", -1.0, 0.7], ["thump", -4.0, 0.62, 0.2]],
 	"blackout_rebound": [["low_boom", -6.0, 1.0], ["force_field", -7.0, 0.8], ["explosion", -11.0, 0.7]],
 	"vhs_rewind": [["scratch", -3.0, 0.8], ["scratch", -5.0, 0.7, 0.09], ["phaser_down", -10.0, 1.3]],
-	"sara_comms": [["bong", -9.0, 1.2]],
+	"saif_comms": [["bong", -9.0, 1.2]],
 	"echo_glitch": [["glitch", -3.0, 0.75], ["glitch", -5.0, 0.6, 0.05], ["glitch", -4.0, 0.9, 0.11], ["computer", -15.0, 0.75]],
 	"shot": [["beam", -11.0, 1.0]],
 	"heavy_shot": [["laser_large", -8.0, 0.8]],
@@ -99,13 +99,13 @@ var _blackout: bool = false
 var _rng := RandomNumberGenerator.new()
 
 ## Spoken lines. A recording is a file at VOICE_DIR/<speaker>/<line key>.ogg (or .wav, .mp3); a line
-## without a file stays text only. Sara comes through a radio: band-limited, lightly overdriven,
+## without a file stays text only. Saif comes through a radio: band-limited, lightly overdriven,
 ## over a bed of recorded static. The static and the clicks are pack samples, not generated noise.
 const VOICE_DIR: String = "res://assets/audio/voice/"
 var _meme: AudioStreamPlayer
 ## False when the player has turned the recorded voice off (GameState.set_voice).
 var voice_enabled: bool = true
-const VOICE_FOLDER: Dictionary = {"SARA": "sara", "LOG": "sara", "ECHO": "echo"}
+const VOICE_FOLDER: Dictionary = {"SAIF": "saif", "LOG": "saif", "ECHO": "echo"}
 const STATIC_BED: String = K + "computerNoise_002.ogg"
 const BED_DB: float = -21.0
 const BED_LOG_DB: float = -13.0
@@ -312,7 +312,7 @@ func voice_counts() -> Vector2i:
 	for id: String in DialogueData.LINES:
 		var all: Array = DialogueData.LINES[id]
 		for i: int in all.size():
-			if all[i]["who"] in ["SARA", "LOG", "ECHO"]:
+			if all[i]["who"] in ["SAIF", "LOG", "ECHO"]:
 				total += 1
 				if voice_stream(all[i]["who"], "%s_%d" % [id, i + 1]) != null:
 					have += 1

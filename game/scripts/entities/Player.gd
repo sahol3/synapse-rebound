@@ -558,7 +558,7 @@ func _emp_blast() -> void:
 
 
 func _update_prediction() -> void:
-	## Sara's fire control draws where it expects the courier to be. It is the move model's real
+	## Saif's fire control draws where it expects the courier to be. It is the move model's real
 	## output, and part of every enemy's aim goes there.
 	if _pred == null:
 		_pred = Sprite2D.new()

@@ -49,7 +49,7 @@ signal assist_changed(kind: String)
 signal stuck
 ## Model 9 saw the player beat their own usual result. `text` is ready to show.
 signal praise(text: String)
-## Sara's fire control (the move model) has named the player's next move: "JUMP", "LEFT", "RIGHT"
+## Saif's fire control (the move model) has named the player's next move: "JUMP", "LEFT", "RIGHT"
 ## or "STOP". One step later `call_scored` says whether the player did it.
 signal call_made(word: String)
 signal call_scored(hit: bool)
@@ -152,7 +152,7 @@ const CALL_CONF: float = 0.55
 const CALL_MIN_SAMPLES: int = 120
 const CALL_COOLDOWN: float = 5.0
 const LEAD_FLOOR: float = 0.25
-## True once the Echo has taken the model from Sara (boss phase 3): it stops reading the player.
+## True once the Echo has taken the model from Saif (boss phase 3): it stops reading the player.
 var model_stolen: bool = false
 var run_calls: int = 0
 var run_call_hits: int = 0
@@ -1021,7 +1021,7 @@ func may_fire() -> bool:
 func run_started() -> void:
 	runs += 1
 	_in_run = true
-	## A new run is scored on its own: what she predicted last run is not this run's number.
+	## A new run is scored on its own: what he predicted last run is not this run's number.
 	model_stolen = false
 	run_calls = 0
 	run_call_hits = 0

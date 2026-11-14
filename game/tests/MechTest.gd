@@ -228,7 +228,7 @@ func _run() -> void:
 			w.die()
 	await _wait(1.2)
 	_check("T7 wings down -> phase 2 depth retreat (BG lane)", boss.phase == 2 and boss.lane == 1)
-	# Cross-plane parry: deflect one of her rail-missiles back into the hull.
+	# Cross-plane parry: deflect one of his rail-missiles back into the hull.
 	bot_on = true
 	bot_target = boss
 	var hp_before: int = boss.hp
@@ -242,7 +242,7 @@ func _run() -> void:
 		await _wait(0.05)
 	await _wait(1.2)
 	_check("T7 15%% HP -> phase 3 execution rally", boss.phase == 3)
-	_check("T7b phase 3 hands her fire control over: the outline is on the gunship",
+	_check("T7b phase 3 hands his fire control over: the outline is on the gunship",
 			Director.model_stolen and boss._stolen != null and boss._stolen.visible and not Director.prediction_visible(),
 			"stolen=%s" % Director.model_stolen)
 	var rally_before: int = GameState.best_rally
@@ -263,7 +263,7 @@ func _run() -> void:
 	AudioManager.register_voice("MEME", "test_take", load(AudioManager.MEME + "scream_1.ogg"))
 	_check("T11 a recorded joke take plays, a missing one falls back", not no_take and AudioManager.play_meme("test_take"), "")
 	_check("T12 a long pause shows the handler typing, a short one shows nothing",
-			main.hud.pause_note(22.0).begins_with("Sara is typing") and main.hud.pause_note(28.0) == "Sara stopped typing."
+			main.hud.pause_note(22.0).begins_with("Saif is typing") and main.hud.pause_note(28.0) == "Saif stopped typing."
 			and main.hud.pause_note(5.0) == "" and main.hud.pause_note(40.0) == "", "")
 
 	print("MECHTEST passed=%d failed=%d" % [passed, failed])

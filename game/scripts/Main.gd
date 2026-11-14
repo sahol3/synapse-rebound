@@ -68,7 +68,7 @@ func _ready() -> void:
 			hud.say("assist_" + kind))
 	GameState.stats_changed.connect(_on_stats_changed)
 	GameState.tier_changed.connect(func(tier: int) -> void:
-		## Sara wants the player weak, so a rising sync worries her before the player knows why.
+		## Saif wants the player weak, so a rising sync worries him before the player knows why.
 		if _state == "play" and tier >= GameState.Tier.OVERCLOCKED and GameState.current_stage <= 2 \
 				and hud.comms_idle() and GameState.once("sync_high"):
 			hud.say("sync_high"))
@@ -128,7 +128,7 @@ func _on_stage_dialogue(id: String) -> void:
 
 
 func _process(_delta: float) -> void:
-	## Sara notices when the player stops moving. Once per stage.
+	## Saif notices when the player stops moving. Once per stage.
 	if _state != "play" or _busy or get_tree().paused or stage == null:
 		return
 	if Time.get_ticks_msec() - Director._last_input_ms > 12000 and hud.comms_idle() \
@@ -162,10 +162,10 @@ func _on_call_scored(hit: bool) -> void:
 
 
 func _on_boss_phase(new_phase: int) -> void:
-	## Phase 3: the Echo takes her fire control. It stops reading the player and reads the gunship.
+	## Phase 3: the Echo takes his fire control. It stops reading the player and reads the gunship.
 	if new_phase == 3:
 		Director.model_stolen = true
-		hud.flash("HER MODEL IS YOURS", CYAN)
+		hud.flash("HIS MODEL IS YOURS", CYAN)
 
 
 func _on_stats_changed() -> void:
@@ -490,9 +490,9 @@ func _notification(what: int) -> void:
 	## Closing the window mid-run keeps the clock and stats up to the last moment.
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and _state == "play" and stage != null and is_instance_valid(stage):
 		GameState.save_run(stage.current_room)
-	## Look away mid-run and the window title says what she is doing about it.
+	## Look away mid-run and the window title says what he is doing about it.
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and _state == "play":
-		get_window().title = "%s  /  loop %d, she is still watching" % [GAME_TITLE, GameState.loop_deaths]
+		get_window().title = "%s  /  loop %d, he is still watching" % [GAME_TITLE, GameState.loop_deaths]
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		get_window().title = GAME_TITLE
 

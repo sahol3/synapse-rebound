@@ -1,10 +1,10 @@
 class_name BossGunship
 extends Node2D
-## Stage 4: Sara's Valkyrie Interceptor Gunship (Warped City police hull + two turret hardpoints).
+## Stage 4: Saif's Valkyrie Interceptor Gunship (Warped City police hull + two turret hardpoints).
 ## Phase 1  Foreground Barrage: plasma spreads; deflect shots into the two wing turrets.
 ## Phase 2  Depth Retreat: hull moves to the background lane and fires rail-missiles across planes;
 ##          parry them back across the depth plane into the hull.
-## Phase 3  5-Bounce Execution Rally (at 15% HP): she parries the Overcharged Core back.
+## Phase 3  5-Bounce Execution Rally (at 15% HP): he parries the Overcharged Core back.
 ##          Win the rally to bounce 5 and the core shatters the cockpit.
 
 signal phase_changed(phase: int)
@@ -21,7 +21,7 @@ var alive: bool = true
 var hp: int = HP_MAX
 var phase: int = 0
 var arena: Rect2 = Rect2(80, 40, 360, 40)
-var display_name: String = "VALKYRIE INTERCEPTOR // SARA"
+var display_name: String = "VALKYRIE INTERCEPTOR // SAIF"
 
 var _t: float = 0.0
 var _fire_t: float = 2.5
@@ -128,7 +128,7 @@ func _sweep(delta: float, speed: float, y: float) -> void:
 
 
 func _update_stolen_outline(delta: float) -> void:
-	## Once the Echo has her fire control, it reads the gunship: a cyan outline half a second ahead of it.
+	## Once the Echo has his fire control, it reads the gunship: a cyan outline half a second ahead of it.
 	var vel: Vector2 = (global_position - _last_gpos) / maxf(delta, 0.001)
 	_last_gpos = global_position
 	_vel_smooth = _vel_smooth.lerp(vel, 0.15)

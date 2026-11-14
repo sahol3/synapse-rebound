@@ -3,7 +3,7 @@ extends CanvasLayer
 ## In-run interface. Kept small and quiet: no panels, no labels for things the player can see,
 ## outlined pixel type straight over the art. The layer is scaled by Display.ui, so coordinates
 ## are interface pixels: 576x324 at the design size, and W x H follow the window everywhere else.
-## Top-left: the comms line (Sara and The Echo take turns). Top-right: Neural Sync.
+## Top-left: the comms line (Saif and The Echo take turns). Top-right: Neural Sync.
 ## Bottom: tutorial hints, stage name, boss. Clock, loops and modules live on the pause screen.
 ## Everything animates on real time.
 
@@ -11,7 +11,7 @@ signal module_choice(choice: String)
 signal pause_action(action: String)
 signal ending_closed
 signal prologue_done
-## The after-story moved to its next scene (0 = Vincent, 1 = Sara, 2 = The Echo, 3 = the city).
+## The after-story moved to its next scene (0 = Vincent, 1 = Saif, 2 = The Echo, 3 = the city).
 signal epilogue_beat(index: int)
 
 ## Seconds the ending text and stats stay up before the after-story starts by itself.
@@ -183,7 +183,7 @@ func say(id: String) -> void:
 		var who: String = line["who"]
 		var text: String = line["text"]
 		match who:
-			"SARA", "ECHO", "LOG":
+			"SAIF", "ECHO", "LOG":
 				## The key names the recording for this line: <id>_<position in the list>.
 				_queue.append({"who": who, "text": PixelFont.clean(text), "key": "%s_%d" % [id, i + 1],
 						"sfx": String(line.get("sfx", ""))})
@@ -220,7 +220,7 @@ func _tick_comms(dt: float) -> void:
 			_line_t = maxf(_line_t, spoken + 0.5)
 			_line_speed = clampf(n / maxf(spoken * 0.85, 0.4), 14.0, 80.0)
 		else:
-			AudioManager.play_sfx("echo_glitch" if who == "ECHO" else "sara_comms")
+			AudioManager.play_sfx("echo_glitch" if who == "ECHO" else "saif_comms")
 		var cue: String = String(_line.get("sfx", ""))
 		if cue != "":
 			## The channel's filter bleeps the handler at the moment the text reaches the gap.
@@ -316,11 +316,11 @@ func open_module_choice(stage_index: int) -> void:
 
 
 func pause_note(elapsed: float) -> String:
-	## Leave the game paused and the handler starts a message she never sends.
+	## Leave the game paused and the handler starts a message he never sends.
 	if elapsed >= 20.0 and elapsed < 27.0:
-		return "Sara is typing" + ".".repeat(1 + int(elapsed * 2.0) % 3)
+		return "Saif is typing" + ".".repeat(1 + int(elapsed * 2.0) % 3)
 	if elapsed >= 27.0 and elapsed < 33.0:
-		return "Sara stopped typing."
+		return "Saif stopped typing."
 	return ""
 
 
@@ -473,7 +473,7 @@ func _draw_comms() -> void:
 		return
 	var echo: bool = _line["who"] == "ECHO"
 	var tape: bool = _line["who"] == "LOG"
-	var name_s: String = "ECHO" if echo else ("RECORDING 23:59:42" if tape else "SARA")
+	var name_s: String = "ECHO" if echo else ("RECORDING 23:59:42" if tape else "SAIF")
 	if echo and _rng.randf() < 0.12:
 		name_s = "EC" + GLITCH_CHARS[_rng.randi() % GLITCH_CHARS.length()] + "O"
 	_t(Vector2(12, 10), name_s, 1, CRIMSON if echo else (AMBER if tape else CYAN))
@@ -491,17 +491,17 @@ func _draw_comms() -> void:
 
 
 func _draw_fire_control() -> void:
-	## One line under the sync meter: how well Sara's model is reading the player, and for a
+	## One line under the sync meter: how well Saif's model is reading the player, and for a
 	## moment after each call, what it called and whether it was right.
 	var r: float = W - 12.0
 	if Director.model_stolen:
-		_t(Vector2(r, 50), "you predict her", 1, CYAN, 1)
+		_t(Vector2(r, 50), "you predict him", 1, CYAN, 1)
 		return
 	if not Director.prediction_visible():
 		return
 	if _call_t >= 0.0:
 		if _call_hit < 0:
-			_t(Vector2(r, 50), "she calls: " + _call_s, 1, MAGENTA, 1)
+			_t(Vector2(r, 50), "he calls: " + _call_s, 1, MAGENTA, 1)
 		elif _call_hit == 1:
 			_t(Vector2(r, 50), _call_s + "  called it", 1, MAGENTA, 1)
 		else:
@@ -622,7 +622,7 @@ func _choice(o: Vector2, key: String, tag: String, n: String, desc: String, extr
 	var tag_parts: PackedStringArray = tag.split(" // ")
 	_t(o, key + "  " + tag_parts[0], 1, col)
 	if tag_parts.size() > 1:
-		var who: String = tag_parts[1].to_lower().replace("sara", "Sara").replace("the echo", "The Echo")
+		var who: String = tag_parts[1].to_lower().replace("saif", "Saif").replace("the echo", "The Echo")
 		_t(o + Vector2(0, 12), who.substr(0, 1).to_upper() + who.substr(1), 1, DIM)
 	_overlay.draw_rect(Rect2(o + Vector2(0, 26), Vector2(w, 1)), Color(col.r, col.g, col.b, 0.6))
 	_t(o + Vector2(0, 34), n, 1, TEXT)
@@ -725,7 +725,7 @@ func _draw_ending() -> void:
 		var summary: String = "You sent %d shots back and got up %d times." % [
 				GameState.parries, GameState.loop_deaths + GameState.rebounds]
 		if Director.run_predicted_percent() >= 0:
-			summary += " She predicted %d%% of your moves." % Director.run_predicted_percent()
+			summary += " He predicted %d%% of your moves." % Director.run_predicted_percent()
 		_t(Vector2(x0, y), summary, 1, col)
 	y += 16.0
 	var choices: PackedStringArray = []

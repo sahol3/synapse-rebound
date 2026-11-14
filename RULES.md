@@ -254,7 +254,7 @@ Look up a class with `grep -rl "ClassName" refs/godot-docs/classes/` before gues
   with `persist` off nothing is read or written. Lore entries are `DialogueData.MEMORIES`; unlock with
   `GameState.unlock_memory(id)`. Engagement features must tell the player something true about their own play
   (progress, personal bests); no timers, no fake scarcity, no punishment for leaving.
-- Voice: a spoken line's recording is `game/assets/audio/voice/<sara|echo>/<id>_<n>.ogg`, where `<id>_<n>` is the
+- Voice: a spoken line's recording is `game/assets/audio/voice/<saif|echo>/<id>_<n>.ogg`, where `<id>_<n>` is the
   line's key in `DialogueData.LINES` (n counts from 1). Recordings come from a person; never generate a voice.
   After changing any spoken line, regenerate the sheet:
   `godot.cmd --headless --path game --script res://tests/VoiceSheet.gd -- --out=<abs>\docs\VOICE_SCRIPT.md`.

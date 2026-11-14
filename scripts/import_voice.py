@@ -28,8 +28,8 @@ def read_sheet() -> dict[str, tuple[str, str]]:
     names: dict[str, tuple[str, str]] = {}
     speaker = ""
     for line in SHEET.read_text(encoding="utf-8").splitlines():
-        if line.startswith("## Sara"):
-            speaker = "sara"
+        if line.startswith("## Saif"):
+            speaker = "saif"
         elif line.startswith("## The Echo"):
             speaker = "echo"
         m = re.match(r"\| (\d+) \| `([^`]+)` \|", line)
@@ -37,10 +37,10 @@ def read_sheet() -> dict[str, tuple[str, str]]:
             continue
         number, key = m.group(1), m.group(2)
         names[key.lower()] = (speaker, key)
-        if speaker == "sara":
+        if speaker == "saif":
             names[number] = (speaker, key)
             names[str(int(number))] = (speaker, key)
-            names["sara_" + number] = (speaker, key)
+            names["saif_" + number] = (speaker, key)
         else:
             names["echo_" + number] = (speaker, key)
             names["echo_" + str(int(number))] = (speaker, key)
@@ -89,13 +89,13 @@ def main() -> int:
         print("ok  %-22s -> voice/%s/%s.ogg  %ss" % (f.name, speaker, key, dur[:5]))
         if speaker != "meme":
             done.add(hit)
-    sara_total = len([w for w in wanted if w[0] == "sara"])
-    sara_done = len([d for d in done if d[0] == "sara"])
-    print("\nSara: %d of %d lines recorded. Echo: %d of %d." % (
-        sara_done, sara_total, len(done) - sara_done, len(wanted) - sara_total))
-    missing = sorted(k for s, k in wanted - done if s == "sara")
+    saif_total = len([w for w in wanted if w[0] == "saif"])
+    saif_done = len([d for d in done if d[0] == "saif"])
+    print("\nSaif: %d of %d lines recorded. Echo: %d of %d." % (
+        saif_done, saif_total, len(done) - saif_done, len(wanted) - saif_total))
+    missing = sorted(k for s, k in wanted - done if s == "saif")
     if missing:
-        print("Sara lines still text only:", ", ".join(missing))
+        print("Saif lines still text only:", ", ".join(missing))
     if skipped:
         print("Not matched to any line (check the name):", ", ".join(skipped))
     return 0

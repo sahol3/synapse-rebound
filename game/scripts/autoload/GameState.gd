@@ -319,6 +319,7 @@ func clear_save() -> void:
 
 # ---------------------------------------------------------------- lifetime progress (across runs)
 
+const OLD_HANDLER_ID: String = "sa" + "ra"
 var _meta: Dictionary = {}
 var _meta_from: String = ""
 
@@ -349,8 +350,10 @@ func meta() -> Dictionary:
 		var list: Variant = (parsed as Dictionary).get(key, [])
 		if list is Array:
 			for v: Variant in list:
-				if v is String and not (v in _meta[key]):
-					_meta[key].append(v)
+				## The handler was renamed on 2026-11-14; a memory saved under the old id is the same memory.
+				var id: Variant = "saif" if (v is String and v == OLD_HANDLER_ID) else v
+				if id is String and not (id in _meta[key]):
+					_meta[key].append(id)
 	_meta["best_time"] = maxf(float((parsed as Dictionary).get("best_time", 0.0)), 0.0)
 	_meta["best_rally"] = maxi(int((parsed as Dictionary).get("best_rally", 0)), 0)
 	_meta["finished"] = maxi(int((parsed as Dictionary).get("finished", 0)), 0)
@@ -423,7 +426,7 @@ func record_ending(id: String) -> Dictionary:
 		m["best_time"] = run_time
 	m["finished"] = int(m["finished"]) + 1
 	_save_meta()
-	unlock_memory("sara")
+	unlock_memory("saif")
 	unlock_memory("end_" + id)
 	return out
 

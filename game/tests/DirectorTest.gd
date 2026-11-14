@@ -237,7 +237,7 @@ func _run() -> void:
 	for i: int in 300:
 		Director.move_observe(cycle[i % cycle.size()])
 	_check("F5 calls are spaced by the cooldown", calls.size() - before_cool <= 1, "new calls=%d" % (calls.size() - before_cool))
-	## Break the habit on the step she called: the call is scored a miss.
+	## Break the habit on the step he called: the call is scored a miss.
 	scores.clear()
 	var broke: bool = false
 	for i: int in 400:
@@ -257,7 +257,7 @@ func _run() -> void:
 	_check("F7 once the model is taken it stops reading the player",
 			calls.size() == before_theft and not Director.prediction_visible(), "new calls=%d" % (calls.size() - before_theft))
 	Director.run_started()
-	_check("F8 a new run starts with her model back and the count at zero",
+	_check("F8 a new run starts with his model back and the count at zero",
 			not Director.model_stolen and Director.run_calls == 0 and Director.run_predicted_percent() == -1, "")
 	Director.challenge = 0.0
 	var floor_on: float = Director.lead_amount()
@@ -313,6 +313,15 @@ func _run() -> void:
 	_check("S4 an impossible save (stage 4 with one module) is ignored", GameState.saved_run().is_empty())
 	GameState.clear_save()
 	_check("S5 clearing the save removes the file", not FileAccess.file_exists(GameState.save_path))
+	var mf: FileAccess = FileAccess.open(GameState.meta_path(), FileAccess.WRITE)
+	mf.store_string(JSON.stringify({"memories": [GameState.OLD_HANDLER_ID, "guard"], "endings": []}))
+	mf.close()
+	GameState._meta_from = ""
+	var kept: Array = GameState.meta()["memories"]
+	_check("S6 a Lore entry saved under the handler's old name is kept under the new one",
+			"saif" in kept and "guard" in kept and not (GameState.OLD_HANDLER_ID in kept), str(kept))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(GameState.meta_path()))
+	GameState._meta_from = ""
 	GameState.persist = false
 	GameState.save_run(1)
 	_check("S6 with saving off nothing is written", not FileAccess.file_exists(GameState.save_path))
@@ -341,7 +350,7 @@ func _run() -> void:
 	_check("X3 endings seen, finishes and the best time are kept across runs",
 			end1["new_ending"] and not end1["best_time"] and not end2["new_ending"] and end2["best_time"]
 			and (mt["endings"] as Array).size() == 1 and int(mt["finished"]) == 2
-			and is_equal_approx(float(mt["best_time"]), 150.0) and GameState.has_memory("sara") and GameState.has_memory("end_A"),
+			and is_equal_approx(float(mt["best_time"]), 150.0) and GameState.has_memory("saif") and GameState.has_memory("end_A"),
 			str(mt))
 	DirAccess.remove_absolute(meta_file)
 	GameState.persist = false
@@ -363,10 +372,10 @@ func _run() -> void:
 			and AudioServer.get_bus_effect(radio, 2) is AudioEffectDistortion,
 			"radio=%d echo=%d effects=%d" % [radio, echo_bus, AudioServer.get_bus_effect_count(radio) if radio >= 0 else -1])
 	_check("V2 a line nobody has recorded plays nothing and stays text",
-			is_zero_approx(AudioManager.play_voice("SARA", "no_such_line_1")) and not AudioManager.voice_playing(), "")
+			is_zero_approx(AudioManager.play_voice("SAIF", "no_such_line_1")) and not AudioManager.voice_playing(), "")
 	var stand_in: AudioStream = AudioManager._streams["drone"][0]
-	AudioManager.register_voice("SARA", "test_line_1", stand_in)
-	var spoken: float = AudioManager.play_voice("SARA", "test_line_1")
+	AudioManager.register_voice("SAIF", "test_line_1", stand_in)
+	var spoken: float = AudioManager.play_voice("SAIF", "test_line_1")
 	_check("V3 a recorded line plays on the Radio bus over the static bed and reports its length",
 			spoken > 0.5 and is_equal_approx(spoken, stand_in.get_length()) and AudioManager._vox.bus == "Radio"
 			and AudioManager._vox.playing and AudioManager._bed.playing
@@ -379,7 +388,7 @@ func _run() -> void:
 	var every_line_keyed: bool = true
 	for id: String in DialogueData.LINES:
 		for ln: Dictionary in DialogueData.LINES[id]:
-			if not (ln["who"] in ["SARA", "ECHO", "LOG", "SYS", "WORLD"]):
+			if not (ln["who"] in ["SAIF", "ECHO", "LOG", "SYS", "WORLD"]):
 				every_line_keyed = false
 	_check("V5 every line has a known speaker, and each choice and stage has its reaction lines",
 			every_line_keyed and DialogueData.LINES.has("after_Q_1") and DialogueData.LINES.has("after_E_3")
@@ -391,16 +400,16 @@ func _run() -> void:
 		var names: Array = []
 		for entry: Dictionary in entries:
 			names.append(entry["who"])
-		if entries.size() < 4 or not ("VINCENT" in names and "SARA" in names and "THE ECHO" in names):
+		if entries.size() < 4 or not ("VINCENT" in names and "SAIF" in names and "THE ECHO" in names):
 			epilogue_ok = false
-	_check("V9 every ending has an epilogue that covers Vincent, Sara and The Echo", epilogue_ok, "")
-	AudioManager.register_voice("SARA", "test_line_1", AudioManager._streams["drone"][0])
+	_check("V9 every ending has an epilogue that covers Vincent, Saif and The Echo", epilogue_ok, "")
+	AudioManager.register_voice("SAIF", "test_line_1", AudioManager._streams["drone"][0])
 	GameState.set_voice(false)
-	var muted: float = AudioManager.play_voice("SARA", "test_line_1")
+	var muted: float = AudioManager.play_voice("SAIF", "test_line_1")
 	var silent: bool = not AudioManager.voice_playing() and not GameState.voice_on()
 	GameState.set_voice(true)
 	_check("V10 with the voice turned off a recorded line plays nothing; turned on again it plays",
-			is_zero_approx(muted) and silent and AudioManager.play_voice("SARA", "test_line_1") > 0.5 and GameState.voice_on(), "")
+			is_zero_approx(muted) and silent and AudioManager.play_voice("SAIF", "test_line_1") > 0.5 and GameState.voice_on(), "")
 	AudioManager.stop_voice()
 
 	# ------------------------------------------------------------ model 9: personal bests

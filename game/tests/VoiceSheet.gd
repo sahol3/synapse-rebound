@@ -13,7 +13,7 @@ func _init() -> void:
 
 func _how(id: String, who: String) -> String:
 	if who == "LOG":
-		return "Quiet and tired, close to the microphone. She is recording an apology nobody is meant to hear."
+		return "Quiet and tired, close to the microphone. He is recording an apology nobody is meant to hear."
 	if id == "s4_win":
 		return "Breaking. The gunship is going down."
 	if id in COLD:
@@ -28,15 +28,15 @@ func _run() -> void:
 		if arg.begins_with("--out="):
 			out = arg.get_slice("=", 1)
 	var data: Node = root.get_node("DialogueData")
-	var sara: Array = []
+	var saif: Array = []
 	var echo: Array = []
 	for id: String in data.LINES:
 		var all: Array = data.LINES[id]
 		for i: int in all.size():
 			var who: String = all[i]["who"]
 			var row: Dictionary = {"key": "%s_%d" % [id, i + 1], "id": id, "who": who, "text": all[i]["text"]}
-			if who == "SARA" or who == "LOG":
-				sara.append(row)
+			if who == "SAIF" or who == "LOG":
+				saif.append(row)
 			elif who == "ECHO":
 				echo.append(row)
 	var md: PackedStringArray = []
@@ -59,12 +59,12 @@ func _run() -> void:
 	md.append("  `py -I scripts\\import_voice.py <that folder>`")
 	md.append("  A line with no recording stays as text, so a partial set is fine.")
 	md.append("")
-	md.append("## Sara (%d lines)" % sara.size())
+	md.append("## Saif (%d lines)" % saif.size())
 	md.append("")
 	md.append("| # | File name | Line | How to say it |")
 	md.append("|---|---|---|---|")
-	for i: int in sara.size():
-		var r: Dictionary = sara[i]
+	for i: int in saif.size():
+		var r: Dictionary = saif[i]
 		md.append("| %02d | `%s` | %s | %s |" % [i + 1, r["key"], String(r["text"]).replace("|", "/"), _how(r["id"], r["who"])])
 	md.append("")
 	md.append("## The Echo (%d lines, optional)" % echo.size())
@@ -86,7 +86,7 @@ func _run() -> void:
 	md.append("")
 	md.append("- `oh_hell_nah`: plays when Vincent goes down within three seconds of getting up. At most once every")
 	md.append("  40 seconds. Say it the way the meme does, under two seconds.")
-	md.append("- `hehe_boi`: plays the first time Sara's fire control calls a move wrong, and on every fifth miss")
+	md.append("- `hehe_boi`: plays the first time Saif's fire control calls a move wrong, and on every fifth miss")
 	md.append("  after that. Smug, under two seconds.")
 	md.append("")
 	var f: FileAccess = FileAccess.open(out, FileAccess.WRITE)
@@ -95,5 +95,5 @@ func _run() -> void:
 	else:
 		f.store_string("\n".join(md))
 		f.close()
-		print("VOICESHEET sara=", sara.size(), " echo=", echo.size(), " out=", out)
+		print("VOICESHEET saif=", saif.size(), " echo=", echo.size(), " out=", out)
 	quit()

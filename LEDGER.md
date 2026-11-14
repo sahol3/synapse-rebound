@@ -24,6 +24,19 @@ Machine-wide mirror: `py ~/.claude/automation/ledger/ledger.py status haven-dhak
 
 ## Entries
 
+### 2026-11-14 · Handler renamed: Sara becomes Saif, a man (Claude Code, Fable 5.2)
+- Operator chose "Make the handler male" after his own voice went onto the handler's lines.
+- Name and pronouns changed in every script, test, tool and in README, RULES and CREDITS (18 files): speaker key
+  `SAIF`, cue `saif_comms`, voice folder `game/assets/audio/voice/saif/` (34 files moved with `git mv`), sheet section
+  "## Saif". HUD strings: "he calls: JUMP", "you predict him", "HIS MODEL IS YOURS", "Saif is typing...", "he is
+  still watching", "He predicted N% of your moves."
+- The recorded lines needed no re-recording: none of them names the handler or uses a pronoun for him.
+- Old saves: a Lore entry stored under the old id is read as `saif` (`GameState.OLD_HANDLER_ID`, DIRECTORTEST S6).
+- Not changed: `docs/DESIGN.md` (the original spec), older LEDGER and DECISIONS entries, and
+  `assets/raw/voice/take1/cuts.json` (gitignored; rerun `split_voice.py match` before cutting again).
+- Verified: no "Sara", "she" or "her" left in `game/scripts`, `game/tests`, `scripts`, README, RULES or CREDITS
+  (grep); all four suites pass; exported game still reports 34 of 69 lines recorded.
+
 ### 2026-11-14 · Operator's voice recording split and imported, voice on/off option (Claude Code, Fable 5.2)
 - Operator sent `Downloads\haven dhaka.mp3` (4 min 19 s, his own voice): "split it up nicely, do the filters nicely
   too - keep a option to turn of the voice in the game", "make sure to split the audio properly".

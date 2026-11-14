@@ -17,7 +17,7 @@ regenerate this sheet.
   `py -I scripts\import_voice.py <that folder>`
   A line with no recording stays as text, so a partial set is fine.
 
-## Sara (34 lines)
+## Saif (34 lines)
 
 | # | File name | Line | How to say it |
 |---|---|---|---|
@@ -32,7 +32,7 @@ regenerate this sheet.
 | 09 | `s2_heavy_1` | Highway Heavy! Double shielding. You'll need two supernova rallies to crack it. | The handler. Warm, fast, urgent, on his side. |
 | 10 | `s2_module_1` | That's your Optic Prism! Stabilize it [Q] now so I can guide you safely up the central shaft! | The handler. Warm, fast, urgent, on his side. |
 | 11 | `s3_intro_2` | Wait. Why are you taking the express shaft straight to Rooftop 09?! The landing pad is too hot, turn back to Sector 4! | The handler. Warm, fast, urgent, on his side. |
-| 12 | `s3_rally_2` | I'm sorry, Vincent. Command says if a courier reads the Lazarus files, we pull the plug. | Quiet and tired, close to the microphone. She is recording an apology nobody is meant to hear. |
+| 12 | `s3_rally_2` | I'm sorry, Vincent. Command says if a courier reads the Lazarus files, we pull the plug. | Quiet and tired, close to the microphone. He is recording an apology nobody is meant to hear. |
 | 13 | `s3_rally_4` | Shut it down, Vincent! You weren't supposed to survive a 90-story drop! Why won't you just stay down?! | The act is over. Cold, angry, giving orders. |
 | 14 | `s3_module_1` | Last warning, Courier. Stabilize that core [Q] and surrender at the roof door, or I will personally vaporize what's left of your nervous system. | The act is over. Cold, angry, giving orders. |
 | 15 | `s4_intro_2` | You really came back. Fine. The Valkyrie doesn't miss twice. | The act is over. Cold, angry, giving orders. |
@@ -65,40 +65,40 @@ the files by file name with an `echo_` prefix on the number (`echo_03.wav`) or b
 | # | File name | Line |
 |---|---|---|
 | 01 | `assist_hard_1` | They have stopped holding back. So have you. |
-| 02 | `s1_echo_2` | ...Why is she lying about the extraction shuttle? Check the ballistic angle on your chest plate... |
+| 02 | `s1_echo_2` | ...Why is he lying about the extraction shuttle? Check the ballistic angle on your chest plate... |
 | 03 | `s1_module_2` | Stabilizing it keeps the memory blocks locked. Overclock it [E]. Remember who was standing behind you in the rain. |
-| 04 | `s2_first_lane_2` | Memory fragment restored: 23:58. Two minutes before the fall. Only two people had the encryption key to disable your sidearm. You... and Sara. |
-| 05 | `s2_module_2` | She doesn't want your optics running at full resolution. Overclock it [E] and look at the IFF tags on these drones. They're HER division. |
+| 04 | `s2_first_lane_2` | Memory fragment restored: 23:58. Two minutes before the fall. Only two people had the encryption key to disable your sidearm. You... and Saif. |
+| 05 | `s2_module_2` | He doesn't want your optics running at full resolution. Overclock it [E] and look at the IFF tags on these drones. They're HIS division. |
 | 06 | `s3_rally_1` | Audio log recovered. 23:59:42, eighteen seconds before the fall. |
-| 07 | `s3_rally_3` | That was her voice. |
-| 08 | `s3_module_2` | 60 seconds are up. We're back on the roof where we died. Overclock the core [E]. Let's return the bullet she gave us. |
-| 09 | `s4_phase3_2` | Five bounces. That's all it takes. She taught us that. |
-| 10 | `s4_phase3_4` | Her fire control is ours now. The blue outline is where she will be. |
+| 07 | `s3_rally_3` | That was his voice. |
+| 08 | `s3_module_2` | 60 seconds are up. We're back on the roof where we died. Overclock the core [E]. Let's return the bullet he gave us. |
+| 09 | `s4_phase3_2` | Five bounces. That's all it takes. He taught us that. |
+| 10 | `s4_phase3_4` | His fire control is ours now. The blue outline is where he will be. |
 | 11 | `first_death_1` | Rewind. Again. You've died on this roof before, Vincent. Count the loops. |
 | 12 | `first_rebound_1` | There it is. We always bounce back. |
 | 13 | `loop_a_5_1` | Five loops. Every one of them ends with you on your feet. |
-| 14 | `loop_a_12_1` | Twelve loops. She keeps asking you to wait. Ask yourself what she is waiting for. |
-| 15 | `loop_b_5_1` | She shot us once. We have come back five times. Do the arithmetic for her. |
-| 16 | `loop_b_12_1` | Twelve loops. She is running out of ways to say stay down. |
+| 14 | `loop_a_12_1` | Twelve loops. He keeps asking you to wait. Ask yourself what he is waiting for. |
+| 15 | `loop_b_5_1` | He shot us once. We have come back five times. Do the arithmetic for him. |
+| 16 | `loop_b_12_1` | Twelve loops. He is running out of ways to say stay down. |
 | 17 | `loop_many_1` | Count the loops if you like. The one that matters is the last. |
 | 18 | `rebound_3_1` | Three hits that should have ended it. Three shots sent back. Keep that feeling. |
-| 19 | `rebound_7_1` | Seven times she has put us on the floor. Seven times we got up. She is counting too. |
+| 19 | `rebound_7_1` | Seven times he has put us on the floor. Seven times we got up. He is counting too. |
 | 20 | `rally_3_1` | Third bounce. The shot comes back harder every time. So do we. |
-| 21 | `after_Q_1_2` | She sounded relieved. Ask yourself what a handler has to be relieved about. |
+| 21 | `after_Q_1_2` | He sounded relieved. Ask yourself what a handler has to be relieved about. |
 | 22 | `after_E_1_2` | One block gone. I can see rain on the roof, and someone standing behind us. |
-| 23 | `after_Q_2_2` | Exactly what she needs. Listen to how she said that. |
-| 24 | `after_E_2_2` | Her division. Her drones. Now you can read the tags yourself. |
+| 23 | `after_Q_2_2` | Exactly what he needs. Listen to how he said that. |
+| 24 | `after_E_2_2` | His division. His drones. Now you can read the tags yourself. |
 | 25 | `after_Q_3_2` | Stable or not, we are standing where we fell. Finish it. |
-| 26 | `after_E_3_2` | Everything she left in us was a leash. Finish it. |
-| 27 | `pred_first_1` | That outline is her fire control. She trained it on forty of our deliveries. Be someone she has not met. |
+| 26 | `after_E_3_2` | Everything he left in us was a leash. Finish it. |
+| 27 | `pred_first_1` | That outline is his fire control. He trained it on forty of our deliveries. Be someone he has not met. |
 | 28 | `pred_miss_b_2` | Not this one. |
 | 29 | `pred_npc_1` | Five calls in a row. You are moving like an NPC. Break the pattern. |
-| 30 | `idle_aura_1` | Aura farming on a rooftop. She can still see you. |
-| 31 | `sync_high_2` | Slow is how she keeps us small. |
-| 32 | `resume_1_1` | Back in the alley. Someone shot us off the roof, and Sara says it was a syndicate. Keep climbing. |
-| 33 | `resume_2_1` | The overpass. Our holster was locked from the inside. Remember that when she talks. |
-| 34 | `resume_3_1` | The shaft. We heard her voice on the recording. The roof is straight up. |
-| 35 | `resume_4_1` | Rooftop 09. She is in the gunship. Send everything back. |
+| 30 | `idle_aura_1` | Aura farming on a rooftop. He can still see you. |
+| 31 | `sync_high_2` | Slow is how he keeps us small. |
+| 32 | `resume_1_1` | Back in the alley. Someone shot us off the roof, and Saif says it was a syndicate. Keep climbing. |
+| 33 | `resume_2_1` | The overpass. Our holster was locked from the inside. Remember that when he talks. |
+| 34 | `resume_3_1` | The shaft. We heard his voice on the recording. The roof is straight up. |
+| 35 | `resume_4_1` | Rooftop 09. He is in the gunship. Send everything back. |
 
 ## Joke takes (2, optional)
 
@@ -107,5 +107,5 @@ plays a low thud for the first and nothing for the second.
 
 - `oh_hell_nah`: plays when Vincent goes down within three seconds of getting up. At most once every
   40 seconds. Say it the way the meme does, under two seconds.
-- `hehe_boi`: plays the first time Sara's fire control calls a move wrong, and on every fifth miss
+- `hehe_boi`: plays the first time Saif's fire control calls a move wrong, and on every fifth miss
   after that. Smug, under two seconds.

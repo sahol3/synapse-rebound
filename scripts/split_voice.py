@@ -7,7 +7,7 @@ so no word is clipped and no neighbour leaks in. Nothing is generated: every out
 
 Usage:
   py -I scripts/split_voice.py match <words.json>                 prints the match table, writes cuts.json beside it
-  py -I scripts/split_voice.py cut <source audio> <cuts.json> <out folder> [--speaker echo|sara|both]
+  py -I scripts/split_voice.py cut <source audio> <cuts.json> <out folder> [--speaker echo|saif|both]
 Then: py -I scripts/import_voice.py <out folder>
 """
 import difflib
@@ -57,8 +57,8 @@ def read_lines() -> list[dict]:
     rows = []
     speaker = ""
     for line in SHEET.read_text(encoding="utf-8").splitlines():
-        if line.startswith("## Sara"):
-            speaker = "sara"
+        if line.startswith("## Saif"):
+            speaker = "saif"
         elif line.startswith("## The Echo"):
             speaker = "echo"
         elif line.startswith("## "):

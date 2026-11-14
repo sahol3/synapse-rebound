@@ -1,7 +1,7 @@
 class_name Epilogue
 extends StageBase
 ## The after-story, shown instead of told. Four small sets stand side by side on one strip of the
-## city, one per epilogue entry (Vincent, Sara, The Echo, the city or the files). The ending screen
+## city, one per epilogue entry (Vincent, Saif, The Echo, the city or the files). The ending screen
 ## drives it: `show_beat(i)` cuts the camera to set i and starts that set's motion. Everything on
 ## screen is art the game already ships; what differs between the three endings is which actors
 ## appear and what they do.
@@ -39,7 +39,7 @@ func build() -> void:
 	prop("banner_sushi", 15.0, 6.6)
 	prop("banner_neon", 27.5, 6.4)
 	prop("antenna", 34.0, 7.4)
-	# Set 1, Sara: the lower deck where the gunship came down.
+	# Set 1, Saif: the lower deck where the gunship came down.
 	building(56, 90, 9)
 	building(58, 68, 6, 1)
 	building(80, 92, 5, 1)
@@ -155,7 +155,7 @@ func _tick_hero(delta: float) -> void:
 				JuiceManager.ghost(_hero, AMBER)
 
 
-# ----------------------------------------------------------------- Sara
+# ----------------------------------------------------------------- Saif
 
 func _build_wreck() -> void:
 	_wreck = Sprite2D.new()
@@ -198,7 +198,7 @@ func _tick_wreck(delta: float) -> void:
 		_next_fx = _bt + 0.5
 		FxLib.spawn(fx, "puff", "magenta", _wreck.position + Vector2(randf_range(-26, 26), -18.0), 0.0, 1.4, Color(0.5, 0.5, 0.6, 0.8))
 	if ending == "A":
-		## A distress light that blinks slower and slower, then stays off: she never corrected the report.
+		## A distress light that blinks slower and slower, then stays off: he never corrected the report.
 		_beacon.visible = _bt < 5.0 and int(_bt * (3.0 - minf(_bt, 4.0) * 0.5)) % 2 == 0
 	else:
 		## A courier's implant, steady, pulsing on a clinic's clock.
